@@ -1,4 +1,27 @@
-# CrispEmbed plan — open work (updated 9 November 2026)
+# CrispEmbed plan — open work (updated 18 November 2026)
+
+## Free OCR model priorities from ParseBench 2 — 18 November 2026
+
+The [updated OCR expansion roadmap](docs/ocr-benchmark-expansion.md#parsebench-2-model-priorities--18-november-2026)
+records the supplied ParseBench 2 snapshot, score/architecture tradeoffs, exact
+license boundaries and native/publication gates. This is a planning update;
+existing model owners and frozen protocols remain in place.
+
+Finish **LightOnOCR-3-0.8B** and **MinerU2605** document/precision/artifact and
+consumer qualification first, then the already integrated experimental
+**LightOnOCR-3-4B** quality lane. Evaluate **KDL-Frontier-Parser-nano-v2** in a
+separate optional AGPL lane after its exact grants/provenance are resolved.
+**Infinity-Parser2-Flash** is the next permissive prototype if it demonstrates
+a distinct benefit; **Nemotron 3.5 Parse** follows as a separate compact-backend
+project. Defer **Infinity-Parser2-Pro** pending a measured server workload and
+resource budget. See the [execution queue](#permissive-ocr-queue) for the bounded
+next actions and preserved existing lanes.
+
+The roadmap distinguishes published upstream pipeline scores from native
+CrispEmbed results and reflects v0.17.19 LightOn0.8 progress and the later
+LightOn4B source-aligned audit without promoting either beyond its evidence.
+No model execution, default, registry, runtime release or app pin changes are
+part of this documentation update.
 
 ## W7 completion ownership — 18 November 2026
 
@@ -2860,46 +2883,85 @@ reference; gated native math with earliest-stage/final-output comparison; C ABI,
 orchestrator, CLI/server, Python/Rust/Dart; actual Q8/Q4_K task qualification;
 immutable upload/readback, registry hashes and real consumers.
 
-The [4 November model-gap review and expansion guide](docs/ocr-benchmark-expansion.md)
-supersedes the initial candidate order. Current main already registers
+The [18 November ParseBench 2 review and expansion guide](docs/ocr-benchmark-expansion.md#parsebench-2-model-priorities--18-november-2026)
+updates the candidate order while preserving the historical 4 November review.
+Current main already registers
 PaddleOCR-VL-1.6, GLM-OCR, olmOCR2, FireRed, Nanonets-OCR2-1.5B, DeepSeek-OCR2,
 MiniCPM-OCR, Unlimited-OCR2, SmolDocling and earlier LightOn/MinerU/Ovis versions.
-Keep exact checkpoint versions separate from generic family coverage.
+Keep exact checkpoint versions separate from generic family coverage. Existing
+owners retain their implementation lanes; this order does not authorize
+repeating completed panels or replacing their frozen protocols.
 
-1. Finish existing MinerU2605, LightOn3-1B/0.8B, Xiaomi and Ovis3 qualification
-   under their already declared protocols. PR141 owns the active norm/cache work.
-2. **LightOnOCR-3-4B (active source/bootstrap lane):** Apache-2.0 difficult-text,
-   handwriting/math/degraded-page candidate. Pin its source and complete tensor
-   inventory first. Current native 1024-wide/24-layer admission, equal linear
-   key/value heads, vocabulary projection allocation and 12-layer vision precision
-   recipe need separate changes; generic Qwen3.5 support is insufficient.
-3. **Qianfan-OCR:** Apache-2.0 document-understanding/KIE candidate. Audit exact
+1. **Finish LightOnOCR-3-0.8B and MinerU2605 first.** The compact LightOn row
+   scores 77.12 and generic MinerU Pro 76.77 in the supplied upstream snapshot.
+   LightOn0.8 already has the v0.17.19 native graph path and bounded exact-document
+   results; finish its remaining numerical, quantized-document and publication
+   gates. MinerU2605 has 8/8 exact F32/F16 decodes but 6/8 at Q8/mixed Q4/Q8.
+   Finish its exact-version F32/F16 task, artifact and public-consumer gates;
+   continue Q8/mixed-Q4 layout repair separately. Qualify and publish only the
+   precisions whose own gates pass. Preserve ongoing LightOn3-1B, Xiaomi and
+   Ovis3 protocols and ownership.
+2. **Complete LightOnOCR-3-4B quality qualification.** Its Apache-2.0 experimental
+   stack is integrated in v0.17.18, default-off and release-fenced. The later
+   [source-aligned fixed audit](docs/lighton4b-source-aligned-fixed-audit.md)
+   passes all three unchanged quantized-source floors; earlier receipt, capped
+   book and BF16 table/form failures remain. Continue representative scan/document
+   quality and public/platform gates. The upstream 78.29 score is only 1.17
+   points above 0.8B and is not native quality or performance evidence.
+3. **Prototype Infinity-Parser2-Flash next in the permissive lane.** Its
+   approximately 2B Apache-2.0-labelled checkpoint scores 75.68. Audit exact
+   weight/code grants, Qwen3.5 hybrid decoder, vision/projector and processor
+   behavior. Native reuse is unproven; require a distinct quality, latency or
+   memory benefit over existing LightOn/MinerU paths.
+4. **Nemotron 3.5 Parse: later compact-backend feasibility.** OpenMDW-1.1
+   weights/source and MIT tokenizer; approximately 0.631B and 74.24 overall.
+   Continue from the completed geometry/packing frontend. Full
+   C-RADIO/causal-prefix mBART and triple-pass pipeline behavior
+   need implementation and total memory/latency/quality measurement.
+
+Other existing scopes remain tracked independently:
+
+- **Qianfan-OCR:** Apache-2.0 document-understanding/KIE candidate. Audit exact
    vision/projector mappings, Qwen3 decoder and actual processor defaults before
    native work; configuration/template names alone do not prove tiling behavior.
-4. **Logics-Parsing-V3 (conditional):** prioritize compact multi-page hierarchy
+- **Logics-Parsing-V3 (conditional):** compact multi-page hierarchy
    and continuation support once the publisher's weight grant is explicit. Its
    Apache-2.0 code can support a separate model-independent document-state/DSL
    contract. Do not transfer Logics v2's score or third-party GGUF license labels.
-5. **Nemotron 3.5 Parse / OpenDoc-0.1B:** footprint-driven feasibility work after
-   existing quality closure. Nemotron needs its full C-RADIO/causal-mBART graph;
-   OpenDoc includes a layout model plus enhanced UniRec, not a standalone 0.1B
-   complete page model. Measure total memory/latency and full pipeline quality.
-6. **Infinity-Parser2-Flash:** later dense-family extension for a demonstrated
-   specialty. **Infinity-Parser2-Pro / Qwen3.6-27B:** separate server-size ports;
-   Pro's 35.1B total MoE weights, 40 layers and 256 experts require storage and
-   backend planning. General Qwen3.5-9B OCR is lower priority than the named tasks.
+- **OpenDoc-0.1B:** footprint-driven feasibility after existing quality closure;
+   includes a layout model plus enhanced UniRec, not a complete standalone 0.1B
+   page model. Measure the whole pipeline.
+- **Infinity-Parser2-Pro / Qwen3.6-27B:** separate server-size ports. Pro's
+   35.1B total MoE weights, 40 layers and 256 experts require storage/backend
+   planning; 78.41 overall is only 0.12 above LightOn4B in this snapshot.
+   Defer absent a demonstrated workload advantage. General Qwen3.5-9B OCR is
+   lower priority than the named tasks; the CSV's Qwen3.8 rows are distinct.
+
+**Separate optional AGPL candidate: KDL-Frontier-Parser-nano-v2.** Its 1.2B
+checkpoint leads the supplied open-weight rows at 80.07 overall, with strong
+charts/grounding. The publisher metadata declares AGPL-3.0; the reviewed tree
+has no standalone weight LICENSE. Resolve exact weight/code/base grants and
+distribution/service treatment before implementation or publication. Qwen2-VL
+dimensions suggest existing MinerU reuse, but this is an engineering hypothesis,
+not converter or pipeline parity. Audit layout/crops/recognition/OTSL, then
+compare complete original/native outputs. Keep this outside the permissive-only
+queue; AGPL is not a noncommercial ban or automatic runtime-license conclusion.
 
 TeleOCR remains in its existing `qwen-research` acknowledgement/qualification
 lane, not this permissive queue. Indra remains public-code-analysis-only.
-**dots.mocr** is the leading conditional new quality/multilingual candidate;
+**dots.mocr** remains a conditional text/multilingual specialist;
 its Qwen2 decoder has a custom Dots vision tower. Its MIT label includes
-supplemental terms requiring a policy decision before adoption. OCRVerse and
-ABot-OCR remain conditional on explicit weight rights; OCRVerse is a specialist
+supplemental terms requiring a policy decision before adoption. The supplied
+snapshot's 86.29 text and 0.78 charts do not support a universal-default claim.
+OCRVerse and ABot-OCR remain conditional on explicit weight rights; OCRVerse is a specialist
 visual/code reconstruction option. Dolphin1.5 (MIT) is a possible compact fallback,
 whereas Dolphin-v2 has Qwen Research weight terms. Chandra2/Surya2.5 require
 separate commercial/competition eligibility decisions; Youtu and Hunyuan have
-territorial limitations. Existing `surya-det` is not Surya2.5 OCR. Read exact
-checkpoint/code/base terms independently; benchmark rank is not permission.
+territorial limitations. The supplied CSV has `surya-ocr-2`, not Surya2.5;
+neither is existing `surya-det`. jina-ocr-v1's CC-BY-NC-4.0 terms exclude it
+from the unrestricted commercial-default queue. Read exact checkpoint/code/base
+terms independently; benchmark rank is not permission. The linked roadmap
+records source links, snapshot hash, pipeline fidelity and complete release gates.
 
 ## Issue71, packaging and downstream delivery
 
