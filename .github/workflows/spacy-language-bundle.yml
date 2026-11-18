@@ -26,6 +26,11 @@ on:
         required: false
         default: false
         type: boolean
+      use_published:
+        description: 'Skip conversion; consume the tracked published bundle revision (card-only publication)'
+        required: false
+        default: false
+        type: boolean
   push:
     branches: ['spacy-language-dev/**']
 
@@ -67,7 +72,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/scratch" "$RUNNER_TEMP/out"
           export HEAVY_SCRATCH="$RUNNER_TEMP/scratch" HEAVY_OUT="$RUNNER_TEMP/out"
           args=(build --model '${{ matrix.model }}')
-          if [ '${{ inputs.publish }}' = true ]; then args+=(--publish); fi
+          if [ '${{ inputs.use_published }}' = true ]; then args+=(--use-published);
+          elif [ '${{ inputs.publish }}' = true ]; then args+=(--publish); fi
           python -u tools/ci-heavy/spacy_v2_bundle.py "${args[@]}"
       - name: Job summary
         if: always() && steps.select.outputs.run
