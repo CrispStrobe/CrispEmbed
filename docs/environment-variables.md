@@ -1377,7 +1377,7 @@ operator candidate has no decoded-quality or release qualification.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_SPACY_TRF_BLAS` | on | off | bool | default-off experimental / opt-in | `src/spacy_transformer.cpp` |  |
-| `CRISPEMBED_SPACY_TRF_FUSED` | on | off | bool | default-off experimental / opt-in | `src/spacy_transformer.cpp` |  |
+| `CRISPEMBED_SPACY_TRF_FUSED` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/spacy_transformer.cpp` | Linux arm64 and macOS arm64); CRISPEMBED_SPACY_TRF_FUSED=0 keeps the reference per-span graph. |
 
 ### surya_det
 

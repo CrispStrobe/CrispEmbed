@@ -263,7 +263,10 @@ TransformerPipeline::TransformerPipeline(TransformerConfig config, std::map<std:
     require(status.ok(), "Invalid SentencePiece model: " + status.ToString());
     m.allocator = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
     if (!m.allocator) throw std::bad_alloc();
-    m.fused = core_env::on("CRISPEMBED_SPACY_TRF_FUSED");
+    // Default since the hosted A/B (all 48 configurations exact on Linux x86-64,
+    // Linux arm64 and macOS arm64); CRISPEMBED_SPACY_TRF_FUSED=0 keeps the
+    // reference per-span graph.
+    m.fused = !core_env::explicitly_off("CRISPEMBED_SPACY_TRF_FUSED");
 #ifdef CRISPEMBED_SPACY_BLAS
     if (core_env::on("CRISPEMBED_SPACY_TRF_BLAS")) {
         m.blas = ggml_backend_blas_init();
