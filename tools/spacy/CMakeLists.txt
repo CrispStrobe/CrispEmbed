@@ -44,6 +44,7 @@ add_library(crispembed-spacy SHARED
     "${CRISPEMBED_ROOT}/src/spacy_pipeline.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_numeric.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_ggml.cpp"
+    "${CRISPEMBED_ROOT}/src/spacy_ner.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_lexical.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_decode.cpp"
     "${CRISPEMBED_ROOT}/src/core/gguf_loader.cpp")

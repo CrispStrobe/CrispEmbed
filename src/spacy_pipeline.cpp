@@ -8,6 +8,8 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "spacy_ggml.h"
+#include "spacy_ner.h"
+#include "gguf.h"
 #include "spacy_numeric.h"
 #include "spacy_lexical.h"
 #include "spacy_decode.h"
@@ -409,8 +411,13 @@ struct crispembed_spacy_context {
     ggml_backend_buffer_t upcast_buffer = nullptr;
     std::unique_ptr<crispembed::spacy::LexicalModel> lexical;
     std::unique_ptr<crispembed::spacy::DecodeResources> decoder;
+    // Opt-in CRISPEMBED_SPACY_NER component from a separate ner.gguf.
+    core_gguf::WeightLoad ner_weights;
+    std::unique_ptr<crispembed::spacy::NerModel> ner;
 
     ~crispembed_spacy_context() {
+        ner.reset();
+        core_gguf::free_weights(ner_weights);
         ggml.reset();
         model.reset();
         if (upcast_buffer) ggml_backend_buffer_free(upcast_buffer);
@@ -428,6 +435,7 @@ struct crispembed_spacy_result {
 struct crispembed_spacy_document {
     std::vector<crispembed::spacy::LexicalToken> tokens;
     crispembed::spacy::DecodeOutput annotations;
+    std::vector<crispembed::spacy::Entity> entities;
     bool analyzed = false;
 };
 
@@ -464,7 +472,8 @@ uint32_t crispembed_spacy_context_capabilities(const crispembed_spacy_context * 
     if (!context) return 0;
     return crispembed_spacy_capabilities() |
            (context->lexical ? static_cast<uint32_t>(CRISPEMBED_SPACY_TOKENIZE_UTF8) : 0u) |
-           (context->lexical && context->decoder ? static_cast<uint32_t>(CRISPEMBED_SPACY_ANALYZE_UTF8) : 0u);
+           (context->lexical && context->decoder ? static_cast<uint32_t>(CRISPEMBED_SPACY_ANALYZE_UTF8) : 0u) |
+           (context->ner ? static_cast<uint32_t>(CRISPEMBED_SPACY_ENTITIES_UTF8) : 0u);
 }
 
 crispembed_spacy_context * crispembed_spacy_create(const char * model_path, const char * expected_sha256, char * error,
@@ -558,6 +567,116 @@ crispembed_spacy_context * crispembed_spacy_create(const char * model_path, cons
         error_text(error, error_capacity, "Unknown spaCy model admission error");
     }
     return nullptr;
+}
+
+int crispembed_spacy_attach_ner(crispembed_spacy_context * context, const char * ner_path,
+                                const char * expected_sha256, char * error, size_t error_capacity) {
+    error_text(error, error_capacity, "");
+    if (!context || (error_capacity && !error) || !ner_path || !*ner_path || !valid_sha(expected_sha256) ||
+        !context->lexical || !context->decoder) {
+        error_text(error, error_capacity, "Invalid NER path/hash or context without admitted analysis resources");
+        return CRISPEMBED_SPACY_INVALID_ARGUMENT;
+    }
+    try {
+        if (!core_env::on("CRISPEMBED_SPACY") || !core_env::on("CRISPEMBED_SPACY_NER")) {
+            error_text(error, error_capacity, "Native spaCy NER is disabled; set CRISPEMBED_SPACY_NER=1");
+            return CRISPEMBED_SPACY_DISABLED;
+        }
+        std::lock_guard<std::mutex> lock(context->mutex);
+        require(!context->ner, "spaCy NER is already attached to this context");
+        const auto bytes = read_model(ner_path);
+        require(core_sha256::bytes(bytes.data(), bytes.size()) == expected_sha256, "NER GGUF SHA-256 mismatch");
+        // Closed metadata profile written by models/convert-spacy-ner-to-gguf.py.
+        gguf_init_params gguf_params{ true, nullptr };
+        std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(gguf_init_from_file(ner_path, gguf_params), gguf_free);
+        require(meta != nullptr, "Invalid NER GGUF container");
+        const std::map<std::string, std::string> strings = {
+            { "general.architecture", "spacy_de_core_news_sm_ner" },
+            { "spacy.model", "de_core_news_sm" },
+            { "spacy.model_version", "3.8.0" },
+            { "spacy.source.sha256", k_source_sha },
+            { "spacy.component", "ner" },
+            { "spacy.feature_order", "NORM,PREFIX,SUFFIX,SHAPE" },
+            { "spacy.precision", "f32" },
+            { "spacy.ner.classes",
+              "B-LOC,B-PER,B-ORG,B-MISC,I-LOC,I-PER,I-ORG,I-MISC,L-LOC,L-PER,L-ORG,L-MISC,U-LOC,U-PER,U-ORG,U-MISC,U-,O" }
+        };
+        const std::map<std::string, uint32_t> integers = { { "spacy.format_version", 1 }, { "spacy.width", 96 },
+                                                           { "spacy.encoder_depth", 4 }, { "spacy.encoder_padding", 4 } };
+        require(gguf_get_n_kv(meta.get()) == static_cast<int64_t>(strings.size() + integers.size() + 1),
+                "Unexpected spaCy NER GGUF metadata inventory");
+        for (const auto & item : strings) {
+            const auto key = gguf_find_key(meta.get(), item.first.c_str());
+            require(key >= 0 && gguf_get_kv_type(meta.get(), key) == GGUF_TYPE_STRING &&
+                        item.second == gguf_get_val_str(meta.get(), key),
+                    ("Unsupported spaCy NER GGUF identity: " + item.first).c_str());
+        }
+        for (const auto & item : integers) {
+            const auto key = gguf_find_key(meta.get(), item.first.c_str());
+            require(key >= 0 && gguf_get_kv_type(meta.get(), key) == GGUF_TYPE_UINT32 &&
+                        gguf_get_val_u32(meta.get(), key) == item.second,
+                    ("Unsupported spaCy NER GGUF dimension: " + item.first).c_str());
+        }
+        const auto epsilon = gguf_find_key(meta.get(), "spacy.layer_norm_epsilon");
+        require(epsilon >= 0 && gguf_get_kv_type(meta.get(), epsilon) == GGUF_TYPE_FLOAT32 &&
+                    gguf_get_val_f32(meta.get(), epsilon) == 1e-8f,
+                "Unsupported spaCy NER layer-norm epsilon");
+        // Original C row-major shapes; ggml ne[] is reversed.
+        std::map<std::string, std::vector<int64_t>> shapes = {
+            { "ner.embed.0.E", { 5000, 96 } }, { "ner.embed.1.E", { 1000, 96 } },
+            { "ner.embed.2.E", { 2500, 96 } }, { "ner.embed.3.E", { 2500, 96 } },
+            { "ner.embed.mix.W", { 96, 3, 384 } }, { "ner.embed.mix.b", { 96, 3 } },
+            { "ner.embed.norm.G", { 96 } }, { "ner.embed.norm.b", { 96 } },
+            { "ner.reduce.W", { 64, 96 } }, { "ner.reduce.b", { 64 } },
+            { "ner.lower.W", { 3, 64, 2, 64 } }, { "ner.lower.b", { 64, 2 } }, { "ner.lower.pad", { 1, 3, 64, 2 } },
+            { "ner.upper.W", { 18, 64 } }, { "ner.upper.b", { 18 } }
+        };
+        for (int layer = 0; layer < 4; ++layer) {
+            const auto prefix = "ner.encoder." + std::to_string(layer);
+            shapes[prefix + ".maxout.W"] = { 96, 3, 288 };
+            shapes[prefix + ".maxout.b"] = { 96, 3 };
+            shapes[prefix + ".norm.G"] = { 96 };
+            shapes[prefix + ".norm.b"] = { 96 };
+        }
+        core_gguf::WeightLoad load;
+        require(core_gguf::load_weights(ner_path, context->backend, "spacy-ner", load, false),
+                "Cannot load admitted spaCy NER weights");
+        std::map<std::string, ggml_tensor *> weights;
+        try {
+            require(!load.used_mmap && load.tensors.size() == shapes.size(), "Unexpected spaCy NER tensor inventory");
+            for (const auto & item : shapes) {
+                const auto found = load.tensors.find(item.first);
+                require(found != load.tensors.end() && found->second->type == GGML_TYPE_F32 &&
+                            ggml_is_contiguous(found->second),
+                        ("Missing or non-F32 spaCy NER tensor: " + item.first).c_str());
+                const auto * tensor = found->second;
+                for (size_t i = 0; i < GGML_MAX_DIMS; ++i) {
+                    const int64_t expected = i < item.second.size() ? item.second[item.second.size() - 1 - i] : 1;
+                    require(tensor->ne[i] == expected, ("Unexpected spaCy NER tensor shape: " + item.first).c_str());
+                }
+                const auto * values = static_cast<const float *>(tensor->data);
+                for (int64_t i = 0; i < ggml_nelements(tensor); ++i)
+                    require(std::isfinite(values[i]), ("Nonfinite spaCy NER tensor: " + item.first).c_str());
+                weights.emplace(item.first, found->second);
+            }
+            require(core_sha256::file(ner_path) == expected_sha256, "NER GGUF file changed while opening");
+            context->ner = std::make_unique<crispembed::spacy::NerModel>(std::move(weights), context->backend);
+        } catch (...) {
+            core_gguf::free_weights(load);
+            throw;
+        }
+        context->ner_weights = load;
+        return CRISPEMBED_SPACY_OK;
+    } catch (const std::invalid_argument & exception) {
+        error_text(error, error_capacity, exception.what());
+        return CRISPEMBED_SPACY_MODEL_ERROR;
+    } catch (const std::bad_alloc &) {
+        error_text(error, error_capacity, "Cannot allocate spaCy NER resources");
+        return CRISPEMBED_SPACY_ALLOCATION_ERROR;
+    } catch (const std::exception & exception) {
+        error_text(error, error_capacity, exception.what());
+        return CRISPEMBED_SPACY_MODEL_ERROR;
+    }
 }
 
 void crispembed_spacy_free(crispembed_spacy_context * context) {
@@ -693,6 +812,12 @@ int crispembed_spacy_analyze_utf8(crispembed_spacy_context * context, const char
         owned->annotations =
             crispembed::spacy::decode_annotations(*context->decoder, numeric, tokens, scorer, parser_trace, cancelled);
         require(owned->annotations.tokens.size() == owned->tokens.size(), "Incomplete spaCy annotation output");
+        if (context->ner) {
+            std::vector<uint8_t> starts;
+            starts.reserve(owned->tokens.size());
+            for (const auto & annotation : owned->annotations.tokens) starts.push_back(annotation.is_sent_start ? 1 : 0);
+            owned->entities = context->ner->run(features, starts, sink, cancelled);
+        }
         check_cancel(cancelled);
         owned->analyzed = true;
         *document = owned.release();
@@ -759,6 +884,33 @@ int crispembed_spacy_document_token(const crispembed_spacy_document * document, 
         if (index + 1 == document->tokens.size() || document->annotations.tokens[index + 1].is_sent_start)
             token->flags |= CRISPEMBED_SPACY_SENTENCE_END;
     }
+    return CRISPEMBED_SPACY_OK;
+}
+
+size_t crispembed_spacy_document_entity_count(const crispembed_spacy_document * document) {
+    return document && document->analyzed ? document->entities.size() : 0;
+}
+
+int crispembed_spacy_document_entity(const crispembed_spacy_document * document, size_t index,
+                                     crispembed_spacy_entity_view * entity) {
+    if (entity) *entity = {};
+    if (!document || !entity || !document->analyzed || index >= document->entities.size())
+        return CRISPEMBED_SPACY_INVALID_ARGUMENT;
+    const auto & value = document->entities[index];
+    const auto & labels = crispembed::spacy::NerModel::labels();
+    if (value.start >= value.end || value.end > document->tokens.size() || value.label >= labels.size())
+        return CRISPEMBED_SPACY_INVALID_ARGUMENT;
+    const auto & first = document->tokens[value.start];
+    const auto & last = document->tokens[value.end - 1];
+    entity->label = { labels[value.label].data(), labels[value.label].size() };
+    entity->token_start = value.start;
+    entity->token_end = value.end;
+    entity->byte_start = first.byte_start;
+    entity->byte_end = last.byte_end;
+    entity->scalar_start = first.scalar_start;
+    entity->scalar_end = last.scalar_end;
+    entity->utf16_start = first.utf16_start;
+    entity->utf16_end = last.utf16_end;
     return CRISPEMBED_SPACY_OK;
 }
 

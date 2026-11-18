@@ -330,7 +330,7 @@ operator candidate has no decoded-quality or release qualification.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-507 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+508 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -1368,6 +1368,7 @@ operator candidate has no decoded-quality or release qualification.
 | `CRISPEMBED_SPACY` | on | off | bool | default-off experimental / opt-in | `src/spacy_pipeline.cpp` |  |
 | `CRISPEMBED_SPACY_GGML` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/spacy_pipeline.cpp` |  |
 | `CRISPEMBED_SPACY_GGML_UPCAST` | on | off | bool | default-off experimental / opt-in | `src/spacy_pipeline.cpp` | weight values but runs the F32 (SGEMM) kernels without activation rounding. Decoded output then equals the scalar engine on that file. |
+| `CRISPEMBED_SPACY_NER` | on | off | bool | default-off experimental / opt-in | `src/spacy_pipeline.cpp` |  |
 | `CRISPEMBED_SPACY_QUANT` | on | off | bool | default-off experimental / opt-in | `src/spacy_pipeline.cpp` |  |
 | `CRISPEMBED_SPACY_THREADS` | value | unset | value | tuning / config | `src/spacy_pipeline.cpp` |  |
 

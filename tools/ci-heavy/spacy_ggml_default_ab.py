@@ -13,7 +13,9 @@ tiled SGEMM; and -DCRISPEMBED_SPACY_SGEMM=OFF), then:
    authenticated wheel (no native output is ever the reference);
 4. the F16 file through the scalar engine, the ggml engine and the opt-in
    CRISPEMBED_SPACY_GGML_UPCAST path, plus original spaCy replayed with the
-   same F16 weights to attribute any decoded change.
+   same F16 weights to attribute any decoded change;
+5. the opt-in NER component (ner.gguf converted on this runner) against the
+   original pipeline's entities, with both main engines.
 
 The consumed native acceptance split and the W6/W7 grammar panels are never
 run. The published model bundle and capsule are unchanged; timings are one
@@ -161,11 +163,31 @@ def main():
                            '--oracle', oracle, '--output', out / 'replay-f16.json',
                            '--native-report', out / 'ab-scalar-f16.json'])
         report['original_spacy_with_f16_weights'] = json.loads((out / 'replay-f16.json').read_text())
+        ner_dir = scratch / 'ner'
+        run('ner-convert', [python, ROOT / 'models/convert-spacy-ner-to-gguf.py', '--wheel', wheel,
+                            '--output', ner_dir, '--dev-environment'])
+        report['ner_sha256'] = common.digest(ner_dir / 'ner.gguf')
+        ner_oracle = scratch / 'ner-oracle.json'
+        run('ner-oracle', [python, ROOT / 'tests/spacy_ner_ab.py', 'oracle', '--wheel', wheel, '--corpus', corpus,
+                           '--output', ner_oracle])
+        ner = {}
+        for label, extra in (('ner-ggml-default', []), ('ner-scalar-main', ['--env', 'CRISPEMBED_SPACY_GGML=0'])):
+            target = out / f'{label}.json'
+            run(label, [python, ROOT / 'tests/spacy_ner_ab.py', 'native', '--library', builds['default'],
+                        '--bundle', bundle, '--ner', ner_dir / 'ner.gguf', '--oracle', ner_oracle,
+                        '--report', target, *extra], env=base_env, check=False)
+            data = json.loads(target.read_text()) if target.is_file() else {}
+            ner[label] = {k: data.get(k) for k in ('attached', 'cases', 'exact_entity_cases', 'oracle_entities',
+                                                   'native_entities', 'matched_entities', 'timing')}
+            ner[label]['differences'] = data.get('differences', [])[:20]
+        report['ner_ab'] = ner
+        report['ner_exact'] = all(v.get('exact_entity_cases') == v.get('cases') == len(corpus_texts)
+                                  for v in ner.values())
         report['corpus'] = {'sentences': len(corpus_texts),
                             'oracle_sha256': hashlib.sha256(oracle.read_bytes()).hexdigest()}
         exact = ab['ggml-sgemm-f32']['exact_cases'] == ab['ggml-sgemm-f32']['cases'] == len(corpus_texts)
         report['default_candidate_exact'] = exact
-        report['passed'] = exact and all(item['passed'] for mode in gates.values() for item in mode.values())
+        report['passed'] = exact and report['ner_exact'] and all(item['passed'] for mode in gates.values() for item in mode.values())
         report['stage'] = 'complete'
     except Exception as exc:
         report['failure'] = {'type': type(exc).__name__, 'message': str(exc)[:1500]}
@@ -173,7 +195,7 @@ def main():
     finally:
         save()
         (out / 'summary.md').write_text('# spaCy ggml+SGEMM default A/B (Linux x86-64/AVX2)\n\n```json\n' + json.dumps(
-            {k: report.get(k) for k in ('stage', 'passed', 'default_candidate_exact', 'failure')}, indent=2) + '\n```\n')
+            {k: report.get(k) for k in ('stage', 'passed', 'default_candidate_exact', 'ner_exact', 'failure')}, indent=2) + '\n```\n')
 
 
 if __name__ == '__main__':
