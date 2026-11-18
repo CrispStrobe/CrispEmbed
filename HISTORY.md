@@ -8,7 +8,10 @@ stages under unchanged2e-4/2e-5 budgets. F16 classifier/legal choices remain
 exact; Q8 changes one classifier case; Q4 changes six classifier cases and four
 legal-action cases on the frozen reference states. This is not free native
 parser/text decoding. All39GPU-produced tensor types/payloads match the prior
-rejected CPU recipes; complete archive bytes differ. Retain both source-bound
+rejected CPU recipes. An independent fresh-byte reader confirms all39
+tensor shapes/types/payloads and metadata values match per profile. The first
+archive difference is byte596, where metadata order differs; full archives
+retain distinct SHA-256 identities. Retain both source-bound
 assessments separately. No CPU build/inference, held-out replay, accepted quant
 profile, speed/default/app change or native GPU backend qualification.
 [Exact counts, errors, hashes and limits](docs/validation/native-spacy-w7-20261118/owner-execution/kaggle-cuda-assessment.json).
