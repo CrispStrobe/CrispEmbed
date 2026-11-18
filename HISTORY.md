@@ -1,23 +1,22 @@
-## 18 November 2026 — local spaCy package and installed consumers
+## 18 November 2026 — Native spaCy Linux package and worker evidence closed
 
-The [W7 continuation](docs/validation/native-spacy-w7-20261118/README.md)
-completes the local Linux x86-64/AVX2 package gates using the unchanged accepted
-native/model bytes and six qualified external dependency builds. Current
-controls pass 25 package, 21 Python consumer and 17 Dart cases. Two complete
-package builds are byte-identical and match the saved original hash; immutable
-installation and full installed-tree verification pass.
+The [paired W7 completion](docs/validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json)
+authenticates the saved package and consumer work: 25 package controls, two
+byte-identical complete-input archives matching the original hash/length,
+immutable installation, 21 current Python controls and a four-process
+operational run, and 17 compiled Dart controls with an eight-case owned-worker
+run. The first Dart outcome and subsequent source-label correction are retained.
 
-The first Python operational run passes four fresh children and 102 owned
-context/document pairs, with exact repeated annotations, maximum sampled RSS
-growth 102,400 bytes and zero final descriptor growth. The actual Quds worker
-passes eight operational cases / 75 tokens / 12 sentences and five additional
-worker requests. Review added loader-override rejection and repaired 14
-truncated source labels; the original result is preserved and the corrected
-source is separately executed and audited. All 342 sealed W6 logical source pins
-remain unchanged. No consumed linguistic panel was rerun and no general quality,
-device, compute-interruption, UI, release or production activation claim follows.
-Source and first outcomes were saved incrementally before subsequent steps,
-with remote Git tree verification and no Actions queries or waits.
+Independent retained-evidence review passes 1,031 Python/package assertions and
+recomputes Dart coordinates, all 38 source/configuration identities and all 342
+sealed W6 sources. The fresh closure performs no native inference, model rebuild,
+linguistic qualification or Actions operation. It integrates main `be20e497`,
+retains the original native/model bytes and corrects stale ENOSPC handoffs.
+The concurrent [615-check paired review](docs/validation/native-spacy-w7-20261118/resume-20261118/independent-review.json)
+and strict 341-direct-plus-lockfile source mapping are preserved separately;
+audit assertion totals are not treated as independent observations.
+Hosted publication/readback, portable dependencies, other platforms/devices and
+production activation remain separate. No runtime release is published here.
 
 ## 15 November 2026 — Worksheet cleanup component validation
 

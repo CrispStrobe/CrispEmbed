@@ -1,17 +1,17 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
-## Native spaCy local W7 checkpoint — 18 November 2026
+## Native spaCy W7 local package closure — 18 November 2026
 
-The [Linux package and installed-consumer gates](validation/native-spacy-w7-20261118/README.md)
-are complete on `feat/native-spacy-w7-20261118` in CrispEmbed and Quds. Exact
-native/model/dependency restoration, deterministic package reproduction,
-immutable installation, 25 package controls, 21 Python controls and 17 Dart
-controls pass. Actual Python and owned Quds-worker execution is retained and
-independently audited; both consumed linguistic panels and all 342 sealed W6
-logical source pins remain unchanged. Follow the [current continuation](validation/native-spacy-w7-20261118/CONTINUE.md)
-for immutable hosted publication/readback and separately declared target/device
-qualification. The manual provider stays off by default. This lane uses local
-validation and incremental remote checkpoints without any Actions query or wait.
+The [paired completion](validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json)
+records verified Linux package reproduction/installation and current Python/Dart
+operational consumers. Independent audits authenticate the saved executions and
+all 342 sealed Quds sources. Main `be20e497` is integrated in the W7 branch;
+the accepted native/model bytes and consumed linguistic panels are preserved.
+The [current continuation](validation/native-spacy-w7-20261118/CONTINUE.md)
+supersedes the old pending/uncompiled handoff and provides read-only auditors.
+Hosted publication/download readback, portable dependencies, other devices and
+activation remain open. Keep checkpoints on `feat/native-spacy-w7-20261118`
+and do not query, wait for, rerun or dispatch Actions for this lane.
 
 ## Current portfolio checkpoint — 12 November 2026
 

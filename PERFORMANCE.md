@@ -1,3 +1,20 @@
+## Native spaCy W7 retained resource observations (18 November 2026)
+
+The source-bound [Python audit](docs/validation/native-spacy-w7-20261118/completion-20261118/python-package-audit.json)
+verifies three enabled processes, each with eight panel calls, one warmup and
+25 measured ownership cycles. All 102 context/document pairs are freed. Each
+process records maximum sampled post-warmup RSS growth of 102,400 bytes against
+the unchanged 33,554,432-byte budget; final open descriptors stay at three.
+These finite post-free samples do not prove general absence of leaks.
+
+The [paired Dart result](https://github.com/CrispStrobe/quds_office_suite/blob/ef22a83b6aef4aa4383f14415c42c7aba67f4873/docs/validation/native-spacy-w7-20261118/completion-20261118/dart-audit.json)
+retains 380.894 ms startup and 5.279 ms shutdown in its corrected-source run.
+Its external process duration is 2.4864 seconds. These historical observations
+are diagnostic, not a speed comparison, UI measurement or physical-cancellation
+latency claim. The current closure audits retained bytes and performs no new
+benchmark. Scope is the preserved Linux x86-64/AVX2, de-DE, CPU/F32 binary and
+six pinned external dependencies; other hosts and devices are unqualified.
+
 ## Worksheet cleanup and binary PDF (15 November 2026)
 
 The subsequent ruled-photo mode 2 corrects position-dependent line tilt with a

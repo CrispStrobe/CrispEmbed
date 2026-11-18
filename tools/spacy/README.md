@@ -101,22 +101,27 @@ python3 -B tools/spacy/distribution.py install \
   --cache /path/to/private-cache
 ```
 
-The package is 7,808,129 bytes. Two fresh full-input builds are byte-identical
-and match the saved original SHA-256. Atomic installation and full installed
-tree verification pass. The native library was restored, not rebuilt.
+The preserved candidate archive is 7,808,129 bytes. Two subsequent full-input
+builds were compared byte for byte and both match its original recorded hash
+and size. The immutable installed tree also passed complete verification. The
+generated archive remains outside ordinary Git and is not a hosted release.
 
-The current Python consumer passes 21 controls and its first four-process
-operational run: 102 owned context/document pairs, exact repeated annotations,
-100 KiB maximum sampled RSS growth and no final descriptor growth. The paired
-Dart consumer passes 17 controls and the actual installed-worker panel. Its
-initial source-label truncation is preserved and independently mapped; the
-corrected-source run passes with 38 correctly named source/configuration pins.
-See the [local completion and exact limits](../../docs/validation/native-spacy-w7-20261118/README.md).
+The current Python consumer passes 21 controls and the frozen operational run:
+one disabled and three enabled processes, 24 panel executions, 78 warmup/cycle
+executions and 102 fully freed context/document pairs. Each enabled process
+records at most 102,400 bytes of sampled post-warmup RSS growth, with final
+file descriptors unchanged at three. The paired current Dart driver compiled
+17 controls and passed its installed-worker eight-case run, including explicit
+locale and worker lifecycle assertions.
 
-The [continuation instructions](../../docs/validation/native-spacy-w7-20261118/CONTINUE.md)
-now identify hosted publication/readback and additional target qualification as
-the remaining work. The package is not a hosted model/native release. No
-application/default or accepted native/model changes accompany these tools.
+The [paired completion](../../docs/validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json)
+links independent retained-source/evidence audits. These supersede the old
+source-only ENOSPC status; historical first outcomes remain intact. Follow the
+[continuation instructions](../../docs/validation/native-spacy-w7-20261118/CONTINUE.md)
+for read-only audit commands and the next publication/readback lane. This
+completion loads no new model and changes no application default or accepted
+native/model bytes. Other platforms, portable dependencies, Flutter/device
+behavior and physical compute interruption are not qualified by these results.
 
 ## Contract and reference evidence
 
@@ -240,8 +245,9 @@ prompt interruption of native compute through Dart is not claimed.
 
 ## Next implementation steps
 
-1. W7 packaging: prepare target-specific native/model packages with exact
-   identities, native dependency closure and notices. Preserve the accepted
+1. W7 packaging: the preserved Linux package and Python/Dart operational
+   consumers are complete. Prepare separately declared portable/platform
+   candidates with exact dependency closure and notices; preserve the accepted
    native candidate and both consumed first qualification results.
 2. W7 device qualification: verify actual loading, offline operation, worker
    cleanup/cancellation and resource budgets on each intended target. The

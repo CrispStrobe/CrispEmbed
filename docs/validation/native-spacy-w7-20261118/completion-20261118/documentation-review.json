@@ -1,0 +1,151 @@
+{
+  "audit_checkpoints": {
+    "CrispEmbed": "24aba65adc3633366fe4b3cf20818ca2965dfefd",
+    "quds_office_suite": "ef22a83b6aef4aa4383f14415c42c7aba67f4873"
+  },
+  "checks": {
+    "audit_file_sha256_and_commit_parents_trees_match": true,
+    "both_prs_remain_draft_in_documented_scope": true,
+    "current_consumer_sha256_matches_completion_record": true,
+    "declared_totals_match_retained_audits": {
+      "dart_additional_control_requests": 5,
+      "dart_compiled_controls": 17,
+      "dart_operational_cases": 8,
+      "dart_sentences": 12,
+      "dart_source_configuration_entries": 38,
+      "dart_tokens": 75,
+      "package_controls": 25,
+      "python_context_document_pairs": 102,
+      "python_controls": 21,
+      "python_final_descriptors_each_enabled_process": 3,
+      "python_maximum_sampled_rss_growth_each_enabled_process_bytes": 102400,
+      "python_package_audit_assertions": 1031,
+      "python_package_audit_failures": 0,
+      "python_panel_executions": 24,
+      "python_warmup_and_cycle_executions": 78,
+      "sealed_w6_source_count": 342
+    },
+    "default_off_and_no_automatic_studio_registration_preserved": true,
+    "documentation_edits_intersect_sealed_w6_source_paths": [],
+    "historical_before_audit_source_refresh_status_preserved": true,
+    "native_w6_and_resume_execution_receipts_unchanged": true,
+    "new_markdown_local_and_cross_repository_file_links_resolved": 42,
+    "no_runtime_rerun_or_actions_claims_introduced": true,
+    "paired_completion_files_byte_identical": true,
+    "paired_completion_sha256": "3b6e89491b43c031909cc7c204128a4e3764d2071b97d8d3cd3bd5ff5a174015",
+    "platform_hosted_publication_device_and_activation_gates_remain_open": true,
+    "raw_missing_bytes_and_harness_assertion_limits_explicit": true,
+    "stale_current_pending_uncompiled_claims_removed": true
+  },
+  "corrected_finding": {
+    "original_issue": "An unconditional no-network assertion did not account for git show/ls-tree lazy fetching in a partial clone.",
+    "path": "docs/validation/native-spacy-w7-20261118/CONTINUE.md",
+    "repositories": [
+      "CrispEmbed",
+      "quds_office_suite"
+    ],
+    "resolution": "Both continuations now state no Actions calls or Dart/native/model loading and qualify that the audit is local when referenced Git objects are present; a partial clone may fetch missing objects.",
+    "verified_after_edit": true
+  },
+  "github_actions_queries_waits_reruns_dispatches": 0,
+  "model_builds_this_review": 0,
+  "native_executions_this_review": 0,
+  "open_findings": [],
+  "recorded_at": "2026-11-18T06:17:14.619860+00:00",
+  "reviewed_files": [
+    {
+      "bytes": 1760110,
+      "path": "HISTORY.md",
+      "repository": "CrispEmbed",
+      "sha256": "a4851f5fecd55014c17888a85e4f4e55e0e77cc8cb622106504224121f812e5e"
+    },
+    {
+      "bytes": 523916,
+      "path": "PERFORMANCE.md",
+      "repository": "CrispEmbed",
+      "sha256": "b33bd9b111f258381a5c99554216a71bf53f5d76968f53c814519010a9e4713c"
+    },
+    {
+      "bytes": 501961,
+      "path": "PLAN.md",
+      "repository": "CrispEmbed",
+      "sha256": "72dab78fd8d59c0c40787645c651030ff2779f1f772590778cfc2f78cb3c68d8"
+    },
+    {
+      "bytes": 86062,
+      "path": "docs/current-state-and-next-steps.md",
+      "repository": "CrispEmbed",
+      "sha256": "01c1b26eee68fa961275449709774787d32ab688fe6a61d772e8abfdcd5a8ee5"
+    },
+    {
+      "bytes": 65706,
+      "path": "docs/next-agent-handoff.md",
+      "repository": "CrispEmbed",
+      "sha256": "bda3d085c7b96209752c4a39fde5705c20a644e3ebdc85581c2f6b748fe740b2"
+    },
+    {
+      "bytes": 6437,
+      "path": "docs/validation/native-spacy-w7-20261118/CONTINUE.md",
+      "repository": "CrispEmbed",
+      "sha256": "5b661798d337ff4c2491d01d755cfdc144eb48193eec9cdba9a9f8e41ed2f6ca"
+    },
+    {
+      "bytes": 5987,
+      "path": "docs/validation/native-spacy-w7-20261118/README.md",
+      "repository": "CrispEmbed",
+      "sha256": "953d499d3868bc5fac3e3f72ea9101d11744f3cefc1999e6691067551837634a"
+    },
+    {
+      "bytes": 6529,
+      "path": "docs/validation/native-spacy-w7-20261118/checkpoint-status.json",
+      "repository": "CrispEmbed",
+      "sha256": "e6fcf41f1039fcc780ea0a41937c6c98918018e8a24c1fb1ecc0da6eac390499"
+    },
+    {
+      "bytes": 7054,
+      "path": "docs/validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json",
+      "repository": "CrispEmbed",
+      "sha256": "3b6e89491b43c031909cc7c204128a4e3764d2071b97d8d3cd3bd5ff5a174015"
+    },
+    {
+      "bytes": 16002,
+      "path": "tools/spacy/README.md",
+      "repository": "CrispEmbed",
+      "sha256": "6d03de6eeb6855709499e0483e4e306b0d2f9165adb52b6913633359e28e10a2"
+    },
+    {
+      "bytes": 6437,
+      "path": "docs/validation/native-spacy-w7-20261118/CONTINUE.md",
+      "repository": "quds_office_suite",
+      "sha256": "5b661798d337ff4c2491d01d755cfdc144eb48193eec9cdba9a9f8e41ed2f6ca"
+    },
+    {
+      "bytes": 6115,
+      "path": "docs/validation/native-spacy-w7-20261118/README.md",
+      "repository": "quds_office_suite",
+      "sha256": "666f24473009256079aac81d74fb141e8b64954b35c73cc000252789620aa906"
+    },
+    {
+      "bytes": 6529,
+      "path": "docs/validation/native-spacy-w7-20261118/checkpoint-status.json",
+      "repository": "quds_office_suite",
+      "sha256": "e6fcf41f1039fcc780ea0a41937c6c98918018e8a24c1fb1ecc0da6eac390499"
+    },
+    {
+      "bytes": 7054,
+      "path": "docs/validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json",
+      "repository": "quds_office_suite",
+      "sha256": "3b6e89491b43c031909cc7c204128a4e3764d2071b97d8d3cd3bd5ff5a174015"
+    },
+    {
+      "bytes": 11900,
+      "path": "packages/quds_proofing_spacy/README.md",
+      "repository": "quds_office_suite",
+      "sha256": "594ed64312f2f74447bded7548d0ba8e34c29144d3abbfae1ba1a73961dd4c6c"
+    }
+  ],
+  "schema": "crispembed.quds.spacy.w7.completion_documentation_review.v1",
+  "scope": "Read-only review of the newly edited W7 completion entrypoints and paired completion records against retained audits, current source identities and the complete source refresh. No runtime or model execution.",
+  "status": "passed",
+  "test_suites_rerun_this_review": 0
+}

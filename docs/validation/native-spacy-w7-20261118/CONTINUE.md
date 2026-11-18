@@ -1,37 +1,121 @@
-# Continue after the completed local W7 gates
+# Continue W7 after the verified Linux package and consumer gates
 
-The Linux package and both installed-consumer gates completed on 18 November 2026. Read [README.md](README.md), [completion.json](resume-20261118/completion.json) and [checkpoint-status.json](checkpoint-status.json) first. The earlier exhausted-workspace handoff is preserved in history; it no longer describes this continuation's execution state.
+The old ENOSPC handoff is superseded. The saved package, current Python consumer
+and corrected current Dart consumer have completed their declared local checks.
+Start from the remote branch and the [paired completion record](completion-20261118/paired-completion.json);
+do not schedule pending runs from the historical source-only checkpoints.
 
-## Source and result checkpoints
+## Exact verified starting points
 
-Both repositories use `feat/native-spacy-w7-20261118`. Fetch the current branch and preserve local differences before changing a worktree.
+Both repositories use `feat/native-spacy-w7-20261118`. New documentation commits
+can follow these immutable audit checkpoints without changing the tested source.
 
-| Repository | Checked consumer source | Saved operational result | Review |
-| --- | --- | --- | --- |
-| CrispStrobe/CrispEmbed | `a71c3ce5326346310289db70953f5e300d9c1aaf` | `482786cce5450e5e9532f5917e2007bbe1c120db` | [PR #237](https://github.com/CrispStrobe/CrispEmbed/pull/237) |
-| CrispStrobe/quds_office_suite | `71e87486489200f7e259594d2967bba8c0682143` | `a6143772f048644187080ee6a1a44c070802af15` | [PR #153](https://github.com/CrispStrobe/quds_office_suite/pull/153), stacked on W6 / PR #139 |
+| Repository | Retained audit checkpoint | Review |
+| --- | --- | --- |
+| CrispStrobe/CrispEmbed | `24aba65adc3633366fe4b3cf20818ca2965dfefd` | [PR #237](https://github.com/CrispStrobe/CrispEmbed/pull/237) |
+| CrispStrobe/quds_office_suite | `ef22a83b6aef4aa4383f14415c42c7aba67f4873` | [PR #153](https://github.com/CrispStrobe/quds_office_suite/pull/153), stacked on W6 / PR #139 |
 
-The source refresh fetched all available origin branches and PR heads. CrispEmbed main `be20e497` (including worksheet PR #235) and Quds main `482e0817` are included; `04e84458` remains the original recorded CrispEmbed base. The later documentation-only workspace probes are preserved as `b847053d` and `225eeb92`. All 342 sealed logical sources still match: 341 direct Git paths and the documented historical lockfile artifact. The final-main reconciliation preserves every incoming worksheet source change and all 22 frozen spaCy source hashes. Office PR #154 remains inventoried separately; do not silently replace the consumed W6 source with unrelated changes.
+Fetch all origin branches and available PR heads before new work, inspect newer
+commits, and preserve any existing local differences. Use isolated worktrees.
+The [refresh receipt](completion-20261118/source-refresh.json) records the current
+main integration and why the independent Office PR #154 remains outside this
+sealed candidate. Preserve all 342 W6 source identities.
 
-The final remote reconciliation also preserves the later package/Python audit at `24aba65a` and Dart audit at `ef22a83b`, including their separate refresh inventories. Their exact artifact identities are recorded in the paired completion. These commits add retained-evidence review; the tested consumer, frozen native/model sources and original execution reports are unchanged.
+Concurrent completion checkpoints `034cbf3c` (CrispEmbed) and `2df0e930`
+(Quds) are also retained, including their [completion](resume-20261118/completion.json),
+[strict source mapping](resume-20261118/source-refresh-audit.json) and
+[native-source reconciliation](resume-20261118/final-main-reconciliation.json).
+The 342 identities comprise 341 direct Git paths and one documented W5 lockfile
+mapping. The [concurrent merge record](completion-20261118/concurrent-reconciliation.json)
+binds these records without replacing either earlier audit.
 
-## Next bounded work
+## Verify the existing results without native execution
 
-1. Define the immutable hosted distribution destination and publication/readback contract. Publish the qualified bytes with notices and external hashes, then verify an actual empty-cache consumer download. A local reproducible package alone is not hosted publication.
-2. For another target, declare its OS/CPU/dependency/toolchain contract before execution. Retain any rejected old-pin preflight, and qualify the new target separately. Do not loosen the six frozen dependency identities or substitute a rebuilt library into these results.
-3. Preserve the default-off provider and explicit Studio registration boundary. Runtime releases, app pins and production activation remain separate decisions.
+From the CrispEmbed checkout:
 
-Do not rerun the consumed native acceptance or W6 grammar panel to tune a new candidate. The completed operational cases may be reused for a declared engineering change; retain new source/result identities and do not count repeated inputs as new linguistic observations. No GitHub Actions query, wait, rerun or dispatch is needed for this lane.
+```sh
+python3 -B docs/validation/native-spacy-w7-20261118/completion-20261118/audit_retained_python_package.py \
+  --repo . --output /path/to/new-python-package-audit.json
+```
 
-## Reproduce exact inputs when needed
+From the Quds checkout:
 
-The original native archive is committed at `93560df6e4e8a592535216ca94b883f5934a915c:docs/validation/native-spacy-20261117/acceptance-candidate-linux-x86_64.tar.gz`. Its 825,745 bytes must hash to `b0cd3ae4d47af442d32a6d2382143c36f8b019470cff7c509f97e4682b67489b`. Restore these bytes; do not rebuild as a substitute.
+```sh
+python3 -B docs/validation/native-spacy-w7-20261118/completion-20261118/audit_retained_dart.py \
+  . --output /path/to/new-dart-audit.json
+```
 
-The official `de_core_news_sm` 3.8.0 wheel is 14,639,490 bytes with SHA-256 `fec69fec52b1780f2d269d5af7582a5e28028738bd3190532459aeb473bfa3e7`. Use CPython 3.12.14, the unchanged full hash lock and tracked converter in [CrispEmbed tools/spacy](https://github.com/CrispStrobe/CrispEmbed/blob/feat/native-spacy-w7-20261118/tools/spacy/README.md). All five bundle hashes must match. Model weights remain outside ordinary Git.
+Use new report paths and preserve failures. These standard-library audit scripts
+load neither Dart nor native/model binaries and make no Actions calls. With the
+referenced Git objects already available, the audit is local; a partial clone
+may fetch missing source objects. They authenticate retained execution/source
+identities; they are not new runtime observations. The Python/package audit has 1,031 assertions. The Dart audit
+recomputes all eight cases and all 342 sealed source identities.
 
-The exact package is 7,808,129 bytes, SHA-256 `4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01`. Build/install with `tools/spacy/distribution.py` and verify the complete immutable tree. The two fresh full-input builds were compared byte for byte; the unavailable older workspace archive was compared by its retained complete hash and length.
+Completed gates: 25 package controls; two equal full-input builds matching the
+original archive hash/length; complete installed-tree verification; 21 current
+Python controls and the 102-pair operational run; 17 compiled Dart controls and
+the eight-case corrected-source worker run. Preserve first outcomes and
+correction history. Rerun affected engineering controls only for an actual source
+or environment change. Native acceptance and W6 grammar qualification are
+consumed and must not be rerun or tuned on as fresh evidence.
 
-The native library has no RPATH/RUNPATH. PCRE2 and five system runtime dependencies are external and must match the fixed hashes; symbol floors alone do not establish portability. The exact Dart 3.13.7 archive and `crypto 3.0.8`, `ffi 2.2.0`, `typed_data 1.4.0` identities and restored file inventory are in the [Quds Dart controls](https://github.com/CrispStrobe/quds_office_suite/tree/a6143772f048644187080ee6a1a44c070802af15/docs/validation/native-spacy-w7-20261118/resume-20261118/dart-controls).
+## Restore exact inputs only when the next task needs them
+
+The original native archive remains at CrispEmbed commit
+`93560df6e4e8a592535216ca94b883f5934a915c`, path
+`docs/validation/native-spacy-20261117/acceptance-candidate-linux-x86_64.tar.gz`.
+Its 825,745 bytes hash to
+`b0cd3ae4d47af442d32a6d2382143c36f8b019470cff7c509f97e4682b67489b`.
+Use these library bytes; rebuilding creates a different candidate.
+
+The model's five files can be reproduced with CPython 3.12.14, the full tracked
+hash lock and official `de_core_news_sm` 3.8.0 wheel. Refer to the paired
+[CrispEmbed package restoration](https://github.com/CrispStrobe/CrispEmbed/blob/24aba65adc3633366fe4b3cf20818ca2965dfefd/docs/validation/native-spacy-w7-20261118/resume-20261118/package/README.md)
+and [runtime restoration](runtime-restoration.json). The package is 7,808,129
+bytes with SHA-256
+`4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01`.
+The two restored builds were compared directly; comparison with the unavailable
+first-workspace archive is through its retained SHA-256 and byte length.
+
+For an affected Dart check, the authenticated SDK 3.13.7 and three package
+archives are fully inventoried in the [saved Dart restoration](https://github.com/CrispStrobe/quds_office_suite/blob/ef22a83b6aef4aa4383f14415c42c7aba67f4873/docs/validation/native-spacy-w7-20261118/resume-20261118/dart-controls/runtime-restoration.json).
+Use the direct VM plus external package config; a Flutter SDK is unnecessary
+for this developer consumer. The current driver digest is
+`cecbc3a4c52dc8880c9eae7add5a925b0c74660e9d1ba1aee7aaae0ffe02cdf6`.
+
+All six runtime dependency hashes remain frozen. Preserve a rejected preflight
+if a fresh host differs; qualify the changed environment explicitly. The ELF
+symbol floors do not authorize weakening these dependency pins.
+
+## Next bounded distribution lane
+
+1. Declare the exact target, artifact destination and intended immutable version
+   before publication. Keep this accepted Linux package and its external digest.
+2. Reconstruct the capsule only if needed, verify the full hash and notices, and
+   record its immutable artifact identity. Keep model/package weights outside
+   ordinary Git. No artifact has yet been hosted by this W7 work.
+3. Qualify a fresh consumer download into an empty private cache: authenticate
+   archive bytes before parsing, install atomically, verify every payload, and
+   run the declared package consumers with new evidence files. Keep the original
+   finite operational protocol and budgets; this adds distribution evidence,
+   not new linguistic-quality evidence.
+4. Treat a portable dependency bundle, rebuilt binary, other OS/architecture or
+   mobile/UI/device target as its own declared candidate and qualification.
+5. Preserve source, protocol, failures and results incrementally on the same
+   remote branches. Use non-forced updates with an expected head and read back
+   both commit parents and tree. Keep the paired PRs draft while that broader
+   distribution work remains open.
+
+Production activation is a separate decision. The provider remains default off
+and Studio has no automatic grammar registration. Caller cancellation does not
+establish physical native-compute interruption. Public, path-redacted Dart
+receipts are preserved; missing raw originals remain a stated limitation.
+
+Do not query, wait for, rerun or dispatch GitHub Actions. Use `[skip ci]` for
+checkpoints. This user instruction governs the lane despite generic repository
+CI guidance. There is no current local execution blocker recorded for the
+completed Linux gates.
 
 ## Operational commands for a declared subsequent check
 
