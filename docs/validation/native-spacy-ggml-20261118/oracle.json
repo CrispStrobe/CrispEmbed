@@ -1,0 +1,8667 @@
+{
+ "schema": "crispembed.spacy.ggml_ab_oracle.v1",
+ "spacy": "3.8.18",
+ "wheel_sha256": "fec69fec52b1780f2d269d5af7582a5e28028738bd3190532459aeb473bfa3e7",
+ "corpus_sha256": "f8bae6d97a82f09e3dc11f4280c9df21a3ad2e9ee52b7ab12ed50a8a83a1ad3b",
+ "fields": [
+  "tag",
+  "pos",
+  "morph",
+  "lemma",
+  "dep",
+  "head",
+  "sent_start"
+ ],
+ "cases": [
+  {
+   "text": "Die Bundesregierung hat am Mittwoch einen neuen Gesetzentwurf zur Digitalisierung der Verwaltung beschlossen.",
+   "tokens": [
+    {
+     "text": "Die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Bundesregierung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Bundesregierung",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "hat",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "haben",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "am",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "an",
+     "dep": "mo",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "Mittwoch",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "Mittwoch",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "einen",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Ind|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "ein",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "neuen",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Acc|Degree=Pos|Gender=Masc|Number=Sing",
+     "lemma": "neu",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Gesetzentwurf",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Gesetzentwurf",
+     "dep": "oa",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "zur",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "zu",
+     "dep": "mnr",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Digitalisierung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Digitalisierung",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Gen|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "Verwaltung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Gen|Gender=Fem|Number=Sing",
+     "lemma": "Verwaltung",
+     "dep": "ag",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "beschlossen",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "beschließen",
+     "dep": "oc",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Ich habe gestern meinen Schlüssel verloren, aber zum Glück hat ihn meine Nachbarin gefunden.",
+   "tokens": [
+    {
+     "text": "Ich",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Sing|Person=1|PronType=Prs",
+     "lemma": "ich",
+     "dep": "sb",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "habe",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin",
+     "lemma": "haben",
+     "dep": "ROOT",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "gestern",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "gestern",
+     "dep": "mo",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "meinen",
+     "tag": "PPOSAT",
+     "pos": "DET",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing|Poss=Yes|PronType=Prs",
+     "lemma": "mein",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "Schlüssel",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Schlüssel",
+     "dep": "oa",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "verloren",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "verlieren",
+     "dep": "oc",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "aber",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "aber",
+     "dep": "cd",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "zum",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "zu",
+     "dep": "mo",
+     "head": 14,
+     "sent_start": false
+    },
+    {
+     "text": "Glück",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Glück",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "hat",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "haben",
+     "dep": "cj",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "ihn",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "ihn",
+     "dep": "oa",
+     "head": 14,
+     "sent_start": false
+    },
+    {
+     "text": "meine",
+     "tag": "PPOSAT",
+     "pos": "DET",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing|Poss=Yes|PronType=Prs",
+     "lemma": "mein",
+     "dep": "nk",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "Nachbarin",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Nachbarin",
+     "dep": "sb",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "gefunden",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "finden",
+     "dep": "oc",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Wann fährt der nächste Zug nach München? Ich muss spätestens um 18:30 Uhr dort sein.",
+   "tokens": [
+    {
+     "text": "Wann",
+     "tag": "PWAV",
+     "pos": "ADV",
+     "morph": "PronType=Int",
+     "lemma": "wann",
+     "dep": "mo",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "fährt",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "fahren",
+     "dep": "ROOT",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "nächste",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Nom|Degree=Pos|Gender=Masc|Number=Sing",
+     "lemma": "nächster",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "Zug",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Zug",
+     "dep": "sb",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "nach",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "nach",
+     "dep": "mo",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "München",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "München",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "?",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "Ich",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Sing|Person=1|PronType=Prs",
+     "lemma": "ich",
+     "dep": "sb",
+     "head": 9,
+     "sent_start": true
+    },
+    {
+     "text": "muss",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=1|Tense=Past|VerbForm=Fin",
+     "lemma": "muss",
+     "dep": "ROOT",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "spätestens",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "spätestens",
+     "dep": "mo",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "um",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "um",
+     "dep": "mo",
+     "head": 15,
+     "sent_start": false
+    },
+    {
+     "text": "18:30",
+     "tag": "NE",
+     "pos": "X",
+     "morph": "Foreign=Yes",
+     "lemma": "18:30",
+     "dep": "nk",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "Uhr",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Gender=Fem",
+     "lemma": "Uhr",
+     "dep": "nk",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "dort",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "dort",
+     "dep": "mo",
+     "head": 15,
+     "sent_start": false
+    },
+    {
+     "text": "sein",
+     "tag": "VAINF",
+     "pos": "AUX",
+     "morph": "VerbForm=Inf",
+     "lemma": "sein",
+     "dep": "oc",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 9,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Der Vertrag tritt mit Unterzeichnung in Kraft und gilt zunächst für die Dauer von zwei Jahren.",
+   "tokens": [
+    {
+     "text": "Der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Vertrag",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Vertrag",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "tritt",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "treten",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "mit",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "mit",
+     "dep": "mo",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Unterzeichnung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Unterzeichnung",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "in",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "in",
+     "dep": "mnr",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "Kraft",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Kraft",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "gilt",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "gelten",
+     "dep": "cj",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "zunächst",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "zunächst",
+     "dep": "mo",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "für",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "für",
+     "dep": "mo",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "Dauer",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Dauer",
+     "dep": "nk",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "von",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "von",
+     "dep": "mnr",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "zwei",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "zwei",
+     "dep": "nk",
+     "head": 15,
+     "sent_start": false
+    },
+    {
+     "text": "Jahren",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Plur",
+     "lemma": "Jahr",
+     "dep": "nk",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Trotz des schlechten Wetters kamen über 20.000 Besucher zum Stadtfest in der Altstadt.",
+   "tokens": [
+    {
+     "text": "Trotz",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "trotz",
+     "dep": "mo",
+     "head": 4,
+     "sent_start": true
+    },
+    {
+     "text": "des",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Gen|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "schlechten",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Gen|Degree=Pos|Gender=Masc|Number=Sing",
+     "lemma": "schlecht",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "Wetters",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Gen|Gender=Masc|Number=Sing",
+     "lemma": "Wetter",
+     "dep": "nk",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "kamen",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "kommen",
+     "dep": "ROOT",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "über",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "über",
+     "dep": "mo",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "20.000",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "20.000",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Besucher",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Plur",
+     "lemma": "Besucher",
+     "dep": "sb",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "zum",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "zu",
+     "dep": "mnr",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Stadtfest",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Stadtfest",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "in",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "in",
+     "dep": "mnr",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "Altstadt",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Altstadt",
+     "dep": "nk",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 4,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Die Kinder spielten im Garten, während ihre Eltern auf der Terrasse Kaffee tranken.",
+   "tokens": [
+    {
+     "text": "Die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Neut|Number=Plur|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Kinder",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Neut|Number=Plur",
+     "lemma": "Kind",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "spielten",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "spielen",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "im",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "in",
+     "dep": "mo",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Garten",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "Garten",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "während",
+     "tag": "KOUS",
+     "pos": "SCONJ",
+     "morph": "",
+     "lemma": "während",
+     "dep": "cp",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "ihre",
+     "tag": "PPOSAT",
+     "pos": "DET",
+     "morph": "Case=Nom|Number=Plur|Poss=Yes|PronType=Prs",
+     "lemma": "ihr",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "Eltern",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Number=Plur",
+     "lemma": "Eltern",
+     "dep": "sb",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "auf",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "auf",
+     "dep": "mo",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "Terrasse",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Terrasse",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "Kaffee",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Kaffee",
+     "dep": "oa",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "tranken",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "tranken",
+     "dep": "mo",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Laut einer aktuellen Studie der Universität Heidelberg schlafen Jugendliche durchschnittlich zu wenig.",
+   "tokens": [
+    {
+     "text": "Laut",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "laut",
+     "dep": "mo",
+     "head": 7,
+     "sent_start": true
+    },
+    {
+     "text": "einer",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Ind|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "ein",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "aktuellen",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Dat|Degree=Pos|Gender=Fem|Number=Sing",
+     "lemma": "aktuell",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "Studie",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Studie",
+     "dep": "nk",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Gen|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "Universität",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Gen|Gender=Fem|Number=Sing",
+     "lemma": "Universität",
+     "dep": "ag",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "Heidelberg",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing",
+     "lemma": "Heidelberg",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "schlafen",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "schlafen",
+     "dep": "ROOT",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Jugendliche",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Number=Plur",
+     "lemma": "jugendliche",
+     "dep": "sb",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "durchschnittlich",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "durchschnittlich",
+     "dep": "mo",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "zu",
+     "tag": "PTKA",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "zu",
+     "dep": "mo",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "wenig",
+     "tag": "PIS",
+     "pos": "PRON",
+     "morph": "PronType=Ind",
+     "lemma": "wenig",
+     "dep": "mo",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 7,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Bitte senden Sie die unterschriebenen Unterlagen bis zum 15. März 2027 an die oben genannte Adresse.",
+   "tokens": [
+    {
+     "text": "Bitte",
+     "tag": "ADV",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "bitte",
+     "dep": "mo",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "senden",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "senden",
+     "dep": "ROOT",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "Sie",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Plur|Person=3|PronType=Prs",
+     "lemma": "sie",
+     "dep": "sb",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Fem|Number=Plur|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "unterschriebenen",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Acc|Degree=Pos|Gender=Fem|Number=Plur",
+     "lemma": "unterschrieben",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "Unterlagen",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Plur",
+     "lemma": "Unterlage",
+     "dep": "oa",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "bis",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "bis",
+     "dep": "ac",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "zum",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "zu",
+     "dep": "mnr",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "15.",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Dat|Degree=Pos|Gender=Masc|Number=Sing",
+     "lemma": "15.",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "März",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "März",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "2027",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "2027",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "an",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "an",
+     "dep": "mo",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 15,
+     "sent_start": false
+    },
+    {
+     "text": "oben",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "oben",
+     "dep": "mo",
+     "head": 14,
+     "sent_start": false
+    },
+    {
+     "text": "genannte",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Acc|Degree=Pos|Gender=Fem|Number=Sing",
+     "lemma": "genannt",
+     "dep": "nk",
+     "head": 15,
+     "sent_start": false
+    },
+    {
+     "text": "Adresse",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Adresse",
+     "dep": "nk",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Das ist doch nicht dein Ernst! Du hast schon wieder vergessen, den Müll rauszubringen.",
+   "tokens": [
+    {
+     "text": "Das",
+     "tag": "PDS",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing|PronType=Dem",
+     "lemma": "der",
+     "dep": "sb",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "ist",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "ROOT",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "doch",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "doch",
+     "dep": "mo",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "nicht",
+     "tag": "PTKNEG",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "nicht",
+     "dep": "ng",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "dein",
+     "tag": "PPOSAT",
+     "pos": "DET",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing|Poss=Yes|PronType=Prs",
+     "lemma": "dein",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "Ernst",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Ernst",
+     "dep": "pd",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "!",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "Du",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Sing|Person=2|PronType=Prs",
+     "lemma": "du",
+     "dep": "sb",
+     "head": 8,
+     "sent_start": true
+    },
+    {
+     "text": "hast",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin",
+     "lemma": "haben",
+     "dep": "ROOT",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "schon",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "schon",
+     "dep": "mo",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "wieder",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "wieder",
+     "dep": "mo",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "vergessen",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "vergessen",
+     "dep": "oc",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "den",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 14,
+     "sent_start": false
+    },
+    {
+     "text": "Müll",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Müll",
+     "dep": "oa",
+     "head": 15,
+     "sent_start": false
+    },
+    {
+     "text": "rauszubringen",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "rauszubringen",
+     "dep": "oc",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 8,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Die Donaudampfschifffahrtsgesellschaft war früher ein bekanntes Unternehmen.",
+   "tokens": [
+    {
+     "text": "Die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Donaudampfschifffahrtsgesellschaft",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Donaudampfschifffahrtsgesellschaft",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "war",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "früher",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "früher",
+     "dep": "mo",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "ein",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Ind|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "ein",
+     "dep": "nk",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "bekanntes",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Nom|Degree=Pos|Gender=Neut|Number=Sing",
+     "lemma": "bekannt",
+     "dep": "nk",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "Unternehmen",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing",
+     "lemma": "Unternehmen",
+     "dep": "pd",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Wenn es morgen regnet, bleiben wir zu Hause und schauen einen Film.",
+   "tokens": [
+    {
+     "text": "Wenn",
+     "tag": "KOUS",
+     "pos": "SCONJ",
+     "morph": "",
+     "lemma": "wenn",
+     "dep": "cp",
+     "head": 3,
+     "sent_start": true
+    },
+    {
+     "text": "es",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "es",
+     "dep": "ep",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "morgen",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "morgen",
+     "dep": "mo",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "regnet",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "regnen",
+     "dep": "mo",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "bleiben",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Plur|Person=1|Tense=Pres|VerbForm=Fin",
+     "lemma": "bleiben",
+     "dep": "ROOT",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "wir",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Plur|Person=1|PronType=Prs",
+     "lemma": "wir",
+     "dep": "sb",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "zu",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "zu",
+     "dep": "mo",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "Hause",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Haus",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "schauen",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "schauen",
+     "dep": "cj",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "einen",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Ind|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "ein",
+     "dep": "nk",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "Film",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Film",
+     "dep": "oa",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 5,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Der Patient wurde nach der Operation auf die Intensivstation verlegt, sein Zustand ist stabil.",
+   "tokens": [
+    {
+     "text": "Der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Patient",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Patient",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "wurde",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "werden",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "nach",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "nach",
+     "dep": "mo",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "Operation",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Operation",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "auf",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "auf",
+     "dep": "mo",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "Intensivstation",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Intensivstation",
+     "dep": "nk",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "verlegt",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "verlegen",
+     "dep": "oc",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "sein",
+     "tag": "PPOSAT",
+     "pos": "DET",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing|Poss=Yes|PronType=Prs",
+     "lemma": "sein",
+     "dep": "nk",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "Zustand",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Zustand",
+     "dep": "sb",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "ist",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "cj",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "stabil",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "stabil",
+     "dep": "pd",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Im dritten Quartal stieg der Umsatz um 4,7 Prozent auf 1,2 Milliarden Euro.",
+   "tokens": [
+    {
+     "text": "Im",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "in",
+     "dep": "mo",
+     "head": 3,
+     "sent_start": true
+    },
+    {
+     "text": "dritten",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Dat|Degree=Pos|Gender=Neut|Number=Sing",
+     "lemma": "dritter",
+     "dep": "nk",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Quartal",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Quartal",
+     "dep": "nk",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "stieg",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "steigen",
+     "dep": "ROOT",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "Umsatz",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Umsatz",
+     "dep": "sb",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "um",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "um",
+     "dep": "mo",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "4,7",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "4,7",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "Prozent",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Gender=Neut",
+     "lemma": "Prozent",
+     "dep": "nk",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "auf",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "auf",
+     "dep": "mo",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "1,2",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "1,2",
+     "dep": "nmc",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "Milliarden",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Plur",
+     "lemma": "Milliarde",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "Euro",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Euro",
+     "dep": "nk",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 3,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "„Wir werden alles tun, um die Arbeitsplätze zu sichern“, sagte die Ministerin.",
+   "tokens": [
+    {
+     "text": "„",
+     "tag": "$(",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": true
+    },
+    {
+     "text": "Wir",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Plur|Person=1|PronType=Prs",
+     "lemma": "wir",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "werden",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Plur|Person=1|Tense=Pres|VerbForm=Fin",
+     "lemma": "werden",
+     "dep": "oc",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "alles",
+     "tag": "PIS",
+     "pos": "PRON",
+     "morph": "Case=Acc|Gender=Neut|Number=Sing|PronType=Ind",
+     "lemma": "alle",
+     "dep": "oa",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "tun",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "tun",
+     "dep": "oc",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "um",
+     "tag": "KOUI",
+     "pos": "SCONJ",
+     "morph": "",
+     "lemma": "um",
+     "dep": "cp",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Masc|Number=Plur|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "Arbeitsplätze",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Plur",
+     "lemma": "Arbeitsplatz",
+     "dep": "oa",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "zu",
+     "tag": "PTKZU",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "zu",
+     "dep": "pm",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "sichern",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "sichern",
+     "dep": "mo",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "“",
+     "tag": "$(",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "sagte",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "sagen",
+     "dep": "ROOT",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 15,
+     "sent_start": false
+    },
+    {
+     "text": "Ministerin",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Ministerin",
+     "dep": "sb",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 13,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Er behauptete, dass er von den Vorwürfen nichts gewusst habe.",
+   "tokens": [
+    {
+     "text": "Er",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "er",
+     "dep": "sb",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "behauptete",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "behaupten",
+     "dep": "ROOT",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "dass",
+     "tag": "KOUS",
+     "pos": "SCONJ",
+     "morph": "",
+     "lemma": "dass",
+     "dep": "cp",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "er",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "er",
+     "dep": "sb",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "von",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "von",
+     "dep": "mo",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "den",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Masc|Number=Plur|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Vorwürfen",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Plur",
+     "lemma": "Vorwurf",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "nichts",
+     "tag": "PIS",
+     "pos": "PRON",
+     "morph": "Gender=Neut|PronType=Ind",
+     "lemma": "nichts",
+     "dep": "oa",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "gewusst",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "wussen",
+     "dep": "oc",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "habe",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Sub|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "haben",
+     "dep": "oc",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Zwischen Berlin und Hamburg verkehren täglich mehr als dreißig Fernzüge.",
+   "tokens": [
+    {
+     "text": "Zwischen",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "zwischen",
+     "dep": "mo",
+     "head": 4,
+     "sent_start": true
+    },
+    {
+     "text": "Berlin",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Berlin",
+     "dep": "nk",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "Hamburg",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Hamburg",
+     "dep": "cj",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "verkehren",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "verkehren",
+     "dep": "ROOT",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "täglich",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "täglich",
+     "dep": "mo",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "mehr",
+     "tag": "PIAT",
+     "pos": "DET",
+     "morph": "PronType=Ind",
+     "lemma": "mehr",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "als",
+     "tag": "KOKOM",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "als",
+     "dep": "cm",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "dreißig",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "dreißig",
+     "dep": "cc",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "Fernzüge",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Plur",
+     "lemma": "Fernzug",
+     "dep": "sb",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 4,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Kannst du mir bitte das Salz reichen? Danke, das ist sehr nett von dir.",
+   "tokens": [
+    {
+     "text": "Kannst",
+     "tag": "VVFIN",
+     "pos": "PROPN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Kannst",
+     "dep": "ROOT",
+     "head": 0,
+     "sent_start": true
+    },
+    {
+     "text": "du",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Sing|Person=2|PronType=Prs",
+     "lemma": "du",
+     "dep": "sb",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "mir",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Dat|Number=Sing|Person=1|PronType=Prs",
+     "lemma": "mir",
+     "dep": "da",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "bitte",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "bitte",
+     "dep": "mo",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "das",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "Salz",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Neut|Number=Sing",
+     "lemma": "Salz",
+     "dep": "oa",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "reichen",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "reichen",
+     "dep": "oc",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "?",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "Danke",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Neut|Number=Plur",
+     "lemma": "Danke",
+     "dep": "ROOT",
+     "head": 8,
+     "sent_start": true
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "das",
+     "tag": "PDS",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing|PronType=Dem",
+     "lemma": "der",
+     "dep": "sb",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "ist",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "oc",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "sehr",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "sehr",
+     "dep": "mo",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "nett",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "nett",
+     "dep": "pd",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "von",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "von",
+     "dep": "pg",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "dir",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Dat|Number=Sing|Person=2|PronType=Prs",
+     "lemma": "dir",
+     "dep": "nk",
+     "head": 14,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 8,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Die Firma Müller & Söhne GmbH sucht ab sofort einen Elektriker (m/w/d) in Vollzeit.",
+   "tokens": [
+    {
+     "text": "Die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Firma",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Firma",
+     "dep": "sb",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "Müller",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Nom|Number=Sing",
+     "lemma": "Müller",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "&",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "&",
+     "dep": "cd",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Söhne",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "",
+     "lemma": "Söhne",
+     "dep": "cj",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "GmbH",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "GmbH",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "sucht",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "suchen",
+     "dep": "ROOT",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "ab",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "ab",
+     "dep": "mo",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "sofort",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "sofort",
+     "dep": "mo",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "einen",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Ind|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "ein",
+     "dep": "nk",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "Elektriker",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Elektriker",
+     "dep": "oa",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "(",
+     "tag": "$(",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "m",
+     "tag": "NN",
+     "pos": "PROPN",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing",
+     "lemma": "m",
+     "dep": "par",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "/",
+     "tag": "$(",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "w",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Nom|Number=Sing",
+     "lemma": "w",
+     "dep": "cj",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "/",
+     "tag": "$(",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "d",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing",
+     "lemma": "d",
+     "dep": "cj",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": ")",
+     "tag": "$(",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "in",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "in",
+     "dep": "mnr",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "Vollzeit",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Vollzeit",
+     "dep": "nk",
+     "head": 18,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 6,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Nachdem sie das Buch gelesen hatte, wollte sie unbedingt auch den Film sehen.",
+   "tokens": [
+    {
+     "text": "Nachdem",
+     "tag": "KOUS",
+     "pos": "SCONJ",
+     "morph": "",
+     "lemma": "nachdem",
+     "dep": "cp",
+     "head": 5,
+     "sent_start": true
+    },
+    {
+     "text": "sie",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "sie",
+     "dep": "sb",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "das",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "Buch",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Neut|Number=Sing",
+     "lemma": "Buch",
+     "dep": "oa",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "gelesen",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "lesen",
+     "dep": "oc",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "hatte",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "haben",
+     "dep": "mo",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "wollte",
+     "tag": "VMFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "wollen",
+     "dep": "ROOT",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "sie",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "sie",
+     "dep": "sb",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "unbedingt",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "unbedingt",
+     "dep": "mo",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "auch",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "auch",
+     "dep": "mo",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "den",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "Film",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Film",
+     "dep": "oa",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "sehen",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sehen",
+     "dep": "oc",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 7,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Weder der Bürgermeister noch der Stadtrat wollten sich zu dem Vorfall äußern.",
+   "tokens": [
+    {
+     "text": "Weder",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "weder",
+     "dep": "cd",
+     "head": 2,
+     "sent_start": true
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Bürgermeister",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Bürgermeister",
+     "dep": "sb",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "noch",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "noch",
+     "dep": "mo",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "Stadtrat",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Stadtrat",
+     "dep": "sb",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "wollten",
+     "tag": "VMFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "wollen",
+     "dep": "ROOT",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "sich",
+     "tag": "PRF",
+     "pos": "PRON",
+     "morph": "Case=Acc|Number=Plur|Person=3|PronType=Prs|Reflex=Yes",
+     "lemma": "sich",
+     "dep": "oa",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "zu",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "zu",
+     "dep": "op",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "dem",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "Vorfall",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "Vorfall",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "äußern",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "äußern",
+     "dep": "oc",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 6,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Die Temperaturen sollen am Wochenende auf bis zu 35 Grad steigen.",
+   "tokens": [
+    {
+     "text": "Die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Fem|Number=Plur|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Temperaturen",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Plur",
+     "lemma": "Temperatur",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "sollen",
+     "tag": "VMFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sollen",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "am",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "an",
+     "dep": "mo",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "Wochenende",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Wochenende",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "auf",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "auf",
+     "dep": "mo",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "bis",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "bis",
+     "dep": "mo",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "zu",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "zu",
+     "dep": "mo",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "35",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "35",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "Grad",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Gender=Neut",
+     "lemma": "Grad",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "steigen",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "steigen",
+     "dep": "oc",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Herr Dr. Schmidt ist heute leider nicht im Büro, er kommt erst am Montag zurück.",
+   "tokens": [
+    {
+     "text": "Herr",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Herr",
+     "dep": "sb",
+     "head": 3,
+     "sent_start": true
+    },
+    {
+     "text": "Dr.",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Dr.",
+     "dep": "nk",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "Schmidt",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Schmidt",
+     "dep": "nk",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "ist",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "ROOT",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "heute",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "heute",
+     "dep": "mo",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "leider",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "leider",
+     "dep": "mo",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "nicht",
+     "tag": "PTKNEG",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "nicht",
+     "dep": "ng",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "im",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "in",
+     "dep": "mo",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "Büro",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Büro",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "er",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "er",
+     "dep": "sb",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "kommt",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "kommen",
+     "dep": "cj",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "erst",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "erst",
+     "dep": "mo",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "am",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "an",
+     "dep": "mo",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "Montag",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "Montag",
+     "dep": "nk",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "zurück",
+     "tag": "PTKVZ",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "zurück",
+     "dep": "svp",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 3,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Mit dem Fahrrad zur Arbeit zu fahren, ist gesund und schont die Umwelt.",
+   "tokens": [
+    {
+     "text": "Mit",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "mit",
+     "dep": "mo",
+     "head": 6,
+     "sent_start": true
+    },
+    {
+     "text": "dem",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Fahrrad",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Fahrrad",
+     "dep": "nk",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "zur",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "zu",
+     "dep": "mo",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "Arbeit",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Arbeit",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "zu",
+     "tag": "PTKZU",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "zu",
+     "dep": "pm",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "fahren",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "fahren",
+     "dep": "sb",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "ist",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "ROOT",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "gesund",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "gesund",
+     "dep": "pd",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "schont",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "schonen",
+     "dep": "cj",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "Umwelt",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Umwelt",
+     "dep": "oa",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 8,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Das Gericht wies die Klage als unbegründet ab und ließ keine Revision zu.",
+   "tokens": [
+    {
+     "text": "Das",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Gericht",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing",
+     "lemma": "Gericht",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "wies",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "weisen",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "Klage",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Klage",
+     "dep": "oa",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "als",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "als",
+     "dep": "mo",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "unbegründet",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "unbegründet",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "ab",
+     "tag": "PTKVZ",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "ab",
+     "dep": "svp",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "ließ",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "lassen",
+     "dep": "cj",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "keine",
+     "tag": "PIAT",
+     "pos": "DET",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing|PronType=Ind",
+     "lemma": "kein",
+     "dep": "nk",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "Revision",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Revision",
+     "dep": "oa",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "zu",
+     "tag": "PTKVZ",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "zu",
+     "dep": "svp",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Sie hat sich sehr über das Geschenk gefreut, das ihr die Kollegen überreicht hatten.",
+   "tokens": [
+    {
+     "text": "Sie",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "sie",
+     "dep": "sb",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "hat",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "haben",
+     "dep": "ROOT",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "sich",
+     "tag": "PRF",
+     "pos": "PRON",
+     "morph": "Case=Acc|Number=Sing|Person=3|PronType=Prs|Reflex=Yes",
+     "lemma": "sich",
+     "dep": "oa",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "sehr",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "sehr",
+     "dep": "mo",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "über",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "über",
+     "dep": "mo",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "das",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "Geschenk",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Neut|Number=Sing",
+     "lemma": "Geschenk",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "gefreut",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "freuen",
+     "dep": "oc",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "das",
+     "tag": "PRELS",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing|PronType=Rel",
+     "lemma": "der",
+     "dep": "oa",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "ihr",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "ihr",
+     "dep": "da",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Plur|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "Kollegen",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Plur",
+     "lemma": "Kollege",
+     "dep": "sb",
+     "head": 14,
+     "sent_start": false
+    },
+    {
+     "text": "überreicht",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "überreichen",
+     "dep": "oc",
+     "head": 14,
+     "sent_start": false
+    },
+    {
+     "text": "hatten",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "haben",
+     "dep": "rc",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Die Ausstellung zeigt Werke von Künstlerinnen und Künstlern aus über vierzig Ländern.",
+   "tokens": [
+    {
+     "text": "Die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Ausstellung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Ausstellung",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "zeigt",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "zeigen",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Werke",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Neut|Number=Plur",
+     "lemma": "Werk",
+     "dep": "oa",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "von",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "von",
+     "dep": "pg",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "Künstlerinnen",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Plur",
+     "lemma": "Künstlerinne",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "Künstlern",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Plur",
+     "lemma": "Künstler",
+     "dep": "cj",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "aus",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "aus",
+     "dep": "mo",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "über",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "über",
+     "dep": "mo",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "vierzig",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "vierzig",
+     "dep": "nk",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "Ländern",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Plur",
+     "lemma": "Land",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Hätte ich das gewusst, wäre ich früher losgefahren.",
+   "tokens": [
+    {
+     "text": "Hätte",
+     "tag": "VAFIN",
+     "pos": "VERB",
+     "morph": "Mood=Sub|Number=Sing|Person=1|Tense=Past|VerbForm=Fin",
+     "lemma": "haben",
+     "dep": "mo",
+     "head": 5,
+     "sent_start": true
+    },
+    {
+     "text": "ich",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Sing|Person=1|PronType=Prs",
+     "lemma": "ich",
+     "dep": "sb",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "das",
+     "tag": "PDS",
+     "pos": "PRON",
+     "morph": "Case=Acc|Gender=Neut|Number=Sing|PronType=Dem",
+     "lemma": "der",
+     "dep": "oa",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "gewusst",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin",
+     "lemma": "Gewusst",
+     "dep": "oc",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "wäre",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Sub|Number=Sing|Person=1|Tense=Past|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "ROOT",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "ich",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Sing|Person=1|PronType=Prs",
+     "lemma": "ich",
+     "dep": "sb",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "früher",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Cmp",
+     "lemma": "früh",
+     "dep": "mo",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "losgefahren",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "losgefahren",
+     "dep": "oc",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 5,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Der Hund des Nachbarn bellt jede Nacht stundenlang.",
+   "tokens": [
+    {
+     "text": "Der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Hund",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Hund",
+     "dep": "sb",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "des",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Gen|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "Nachbarn",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Gen|Gender=Masc|Number=Sing",
+     "lemma": "Nachbar",
+     "dep": "ag",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "bellt",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "bellen",
+     "dep": "ROOT",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "jede",
+     "tag": "PIAT",
+     "pos": "DET",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing|PronType=Ind",
+     "lemma": "jeder",
+     "dep": "nk",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "Nacht",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Nacht",
+     "dep": "oa",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "stundenlang",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "stundenlang",
+     "dep": "mo",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 4,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Es wird empfohlen, das Passwort regelmäßig zu ändern und niemandem mitzuteilen.",
+   "tokens": [
+    {
+     "text": "Es",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "es",
+     "dep": "sb",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "wird",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "werden",
+     "dep": "ROOT",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "empfohlen",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "empfehlen",
+     "dep": "oc",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "das",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "Passwort",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Neut|Number=Sing",
+     "lemma": "Passwort",
+     "dep": "oa",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "regelmäßig",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "regelmäßig",
+     "dep": "mo",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "zu",
+     "tag": "PTKZU",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "zu",
+     "dep": "pm",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "ändern",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "ändern",
+     "dep": "re",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "niemandem",
+     "tag": "PIS",
+     "pos": "PRON",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing|PronType=Ind",
+     "lemma": "niemand",
+     "dep": "da",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "mitzuteilen",
+     "tag": "VVIZU",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "mitteilen",
+     "dep": "cj",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Wo liegt eigentlich der Unterschied zwischen einem Gletscher und einem Eisberg?",
+   "tokens": [
+    {
+     "text": "Wo",
+     "tag": "PWAV",
+     "pos": "ADV",
+     "morph": "PronType=Int",
+     "lemma": "wo",
+     "dep": "mo",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "liegt",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "liegen",
+     "dep": "ROOT",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "eigentlich",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "eigentlich",
+     "dep": "mo",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "Unterschied",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Unterschied",
+     "dep": "sb",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "zwischen",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "zwischen",
+     "dep": "mnr",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "einem",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Ind|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "ein",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Gletscher",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "Gletscher",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "einem",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Ind|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "ein",
+     "dep": "nk",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "Eisberg",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "Eisberg",
+     "dep": "cj",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "?",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Die Mannschaft gewann das Spiel mit 3:1 und steht nun an der Tabellenspitze.",
+   "tokens": [
+    {
+     "text": "Die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Mannschaft",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Mannschaft",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "gewann",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "gewinnen",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "das",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "Spiel",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Neut|Number=Sing",
+     "lemma": "Spiel",
+     "dep": "oa",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "mit",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "mit",
+     "dep": "mnr",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "3:1",
+     "tag": "CARD",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "3:1",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "steht",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "stehen",
+     "dep": "cj",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "nun",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "nun",
+     "dep": "mo",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "an",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "an",
+     "dep": "mo",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "Tabellenspitze",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Tabellenspitze",
+     "dep": "nk",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Viele Menschen arbeiten seit der Pandemie zumindest teilweise im Homeoffice.",
+   "tokens": [
+    {
+     "text": "Viele",
+     "tag": "PIAT",
+     "pos": "DET",
+     "morph": "Case=Nom|Gender=Masc|Number=Plur|PronType=Ind",
+     "lemma": "vieler",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Menschen",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Plur",
+     "lemma": "Mensch",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "arbeiten",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "arbeiten",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "seit",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "seit",
+     "dep": "mo",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "Pandemie",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Pandemie",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "zumindest",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "zumindest",
+     "dep": "mo",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "teilweise",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "teilweise",
+     "dep": "mo",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "im",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "in",
+     "dep": "mo",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Homeoffice",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "Homeoffice",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Er las die Zeitung, trank seinen Tee und ging dann zur Bushaltestelle.",
+   "tokens": [
+    {
+     "text": "Er",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "er",
+     "dep": "sb",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "las",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "lesen",
+     "dep": "ROOT",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "Zeitung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Zeitung",
+     "dep": "oa",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "trank",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "trinken",
+     "dep": "cj",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "seinen",
+     "tag": "PPOSAT",
+     "pos": "DET",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing|Poss=Yes|PronType=Prs",
+     "lemma": "sein",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Tee",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Tee",
+     "dep": "oa",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "ging",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "gehen",
+     "dep": "cj",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "dann",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "dann",
+     "dep": "mo",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "zur",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "zu",
+     "dep": "mo",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "Bushaltestelle",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Bushaltestelle",
+     "dep": "nk",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Die Brücke muss wegen dringender Sanierungsarbeiten bis voraussichtlich Ende Juni gesperrt bleiben.",
+   "tokens": [
+    {
+     "text": "Die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Brücke",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Brücke",
+     "dep": "pd",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "muss",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "muss",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "wegen",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "wegen",
+     "dep": "mnr",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "dringender",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Gen|Degree=Pos|Gender=Fem|Number=Plur",
+     "lemma": "dringend",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "Sanierungsarbeiten",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Gen|Gender=Fem|Number=Plur",
+     "lemma": "Sanierungsarbeit",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "bis",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "bis",
+     "dep": "mnr",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "voraussichtlich",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "voraussichtlich",
+     "dep": "mo",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "Ende",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Gender=Neut|Number=Sing",
+     "lemma": "Ende",
+     "dep": "nk",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "Juni",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Gender=Masc|Number=Sing",
+     "lemma": "Juni",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "gesperrt",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "sperren",
+     "dep": "mnr",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "bleiben",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "bleiben",
+     "dep": "ROOT",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 11,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Obwohl er müde war, arbeitete er bis spät in die Nacht an seiner Präsentation.",
+   "tokens": [
+    {
+     "text": "Obwohl",
+     "tag": "KOUS",
+     "pos": "SCONJ",
+     "morph": "",
+     "lemma": "obwohl",
+     "dep": "cp",
+     "head": 3,
+     "sent_start": true
+    },
+    {
+     "text": "er",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "er",
+     "dep": "sb",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "müde",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "müde",
+     "dep": "pd",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "war",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "mo",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "arbeitete",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "arbeiten",
+     "dep": "ROOT",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "er",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "er",
+     "dep": "sb",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "bis",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "bis",
+     "dep": "mo",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "spät",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "spät",
+     "dep": "mo",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "in",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "in",
+     "dep": "mo",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "Nacht",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Nacht",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "an",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "an",
+     "dep": "mnr",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "seiner",
+     "tag": "PPOSAT",
+     "pos": "DET",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing|Poss=Yes|PronType=Prs",
+     "lemma": "sein",
+     "dep": "nk",
+     "head": 14,
+     "sent_start": false
+    },
+    {
+     "text": "Präsentation",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Präsentation",
+     "dep": "nk",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 5,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Unsere Großmutter erzählte uns oft Geschichten aus ihrer Kindheit auf dem Land.",
+   "tokens": [
+    {
+     "text": "Unsere",
+     "tag": "PPOSAT",
+     "pos": "DET",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing|Poss=Yes|PronType=Prs",
+     "lemma": "unser",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Großmutter",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Großmutter",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "erzählte",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "erzählen",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "uns",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Dat|Number=Plur|Person=1|PronType=Prs",
+     "lemma": "uns",
+     "dep": "da",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "oft",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "oft",
+     "dep": "mo",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Geschichten",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Plur",
+     "lemma": "Geschichte",
+     "dep": "oa",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "aus",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "aus",
+     "dep": "mnr",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "ihrer",
+     "tag": "PPOSAT",
+     "pos": "DET",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing|Poss=Yes|PronType=Prs",
+     "lemma": "ihr",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "Kindheit",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Kindheit",
+     "dep": "nk",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "auf",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "auf",
+     "dep": "mnr",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "dem",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "Land",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Land",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Gemäß § 3 Abs. 2 der Satzung ist der Vorstand zur Einberufung der Versammlung verpflichtet.",
+   "tokens": [
+    {
+     "text": "Gemäß",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "Gemäß",
+     "dep": "mo",
+     "head": 7,
+     "sent_start": true
+    },
+    {
+     "text": "§",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "§",
+     "dep": "nk",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "3",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "3",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "Abs.",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Abs.",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "2",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "2",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Gen|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "Satzung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Gen|Gender=Fem|Number=Sing",
+     "lemma": "Satzung",
+     "dep": "ag",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "ist",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "ROOT",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "Vorstand",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Vorstand",
+     "dep": "sb",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "zur",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "zu",
+     "dep": "op",
+     "head": 14,
+     "sent_start": false
+    },
+    {
+     "text": "Einberufung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Einberufung",
+     "dep": "nk",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Gen|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "Versammlung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Gen|Gender=Fem|Number=Sing",
+     "lemma": "Versammlung",
+     "dep": "ag",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "verpflichtet",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "verpflichten",
+     "dep": "pd",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 7,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Morgen früh um sieben Uhr beginnt die Wanderung am Parkplatz vor dem Rathaus.",
+   "tokens": [
+    {
+     "text": "Morgen",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "morgen",
+     "dep": "mo",
+     "head": 5,
+     "sent_start": true
+    },
+    {
+     "text": "früh",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "früh",
+     "dep": "mo",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "um",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "um",
+     "dep": "mo",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "sieben",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "sieben",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "Uhr",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Uhr",
+     "dep": "nk",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "beginnt",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "beginnen",
+     "dep": "ROOT",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Wanderung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Wanderung",
+     "dep": "sb",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "am",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "an",
+     "dep": "mo",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "Parkplatz",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "Parkplatz",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "vor",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "vor",
+     "dep": "mnr",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "dem",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "Rathaus",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Rathaus",
+     "dep": "nk",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 5,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Die Preise für Strom und Gas sind im vergangenen Jahr deutlich gesunken.",
+   "tokens": [
+    {
+     "text": "Die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Plur|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Preise",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Plur",
+     "lemma": "Preis",
+     "dep": "sb",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "für",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "für",
+     "dep": "mnr",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "Strom",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Strom",
+     "dep": "nk",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "Gas",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Neut|Number=Sing",
+     "lemma": "Gas",
+     "dep": "cj",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "sind",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "ROOT",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "im",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "in",
+     "dep": "mo",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "vergangenen",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Dat|Degree=Pos|Gender=Neut|Number=Sing",
+     "lemma": "vergangen",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "Jahr",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Jahr",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "deutlich",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "deutlich",
+     "dep": "mo",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "gesunken",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "sinken",
+     "dep": "oc",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 6,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Ich weiß nicht, ob ich es schaffe, aber ich werde es auf jeden Fall versuchen.",
+   "tokens": [
+    {
+     "text": "Ich",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Sing|Person=1|PronType=Prs",
+     "lemma": "ich",
+     "dep": "sb",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "weiß",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin",
+     "lemma": "wissen",
+     "dep": "ROOT",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "nicht",
+     "tag": "PTKNEG",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "nicht",
+     "dep": "ng",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "ob",
+     "tag": "KOUS",
+     "pos": "SCONJ",
+     "morph": "",
+     "lemma": "ob",
+     "dep": "cp",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "ich",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Sing|Person=1|PronType=Prs",
+     "lemma": "ich",
+     "dep": "sb",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "es",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Acc|Gender=Neut|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "es",
+     "dep": "oa",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "schaffe",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Sub|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "schaffen",
+     "dep": "oc",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "aber",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "aber",
+     "dep": "cd",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "ich",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Sing|Person=1|PronType=Prs",
+     "lemma": "ich",
+     "dep": "sb",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "werde",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin",
+     "lemma": "werden",
+     "dep": "cj",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "es",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Acc|Gender=Neut|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "es",
+     "dep": "oa",
+     "head": 16,
+     "sent_start": false
+    },
+    {
+     "text": "auf",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "auf",
+     "dep": "mo",
+     "head": 16,
+     "sent_start": false
+    },
+    {
+     "text": "jeden",
+     "tag": "PIAT",
+     "pos": "DET",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing|PronType=Ind",
+     "lemma": "jeder",
+     "dep": "nk",
+     "head": 15,
+     "sent_start": false
+    },
+    {
+     "text": "Fall",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Fall",
+     "dep": "nk",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "versuchen",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "versuchen",
+     "dep": "oc",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Der Roman wurde in mehr als dreißig Sprachen übersetzt und mehrfach ausgezeichnet.",
+   "tokens": [
+    {
+     "text": "Der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Roman",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Roman",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "wurde",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "werden",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "in",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "in",
+     "dep": "mo",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "mehr",
+     "tag": "PIAT",
+     "pos": "DET",
+     "morph": "PronType=Ind",
+     "lemma": "mehr",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "als",
+     "tag": "KOKOM",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "als",
+     "dep": "cm",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "dreißig",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "dreißig",
+     "dep": "cc",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "Sprachen",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Plur",
+     "lemma": "Sprache",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "übersetzt",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "übersetzen",
+     "dep": "oc",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "mehrfach",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "mehrfach",
+     "dep": "mo",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "ausgezeichnet",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "auszeichnen",
+     "dep": "cj",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Beim Kochen sollte man darauf achten, das Gemüse nicht zu lange zu garen.",
+   "tokens": [
+    {
+     "text": "Beim",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "bei",
+     "dep": "mo",
+     "head": 2,
+     "sent_start": true
+    },
+    {
+     "text": "Kochen",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "kochen",
+     "dep": "nk",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "sollte",
+     "tag": "VMFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "sollen",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "man",
+     "tag": "PIS",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Sing|PronType=Ind",
+     "lemma": "man",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "darauf",
+     "tag": "PROAV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "darauf",
+     "dep": "op",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "achten",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "achten",
+     "dep": "oc",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "das",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "Gemüse",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Neut|Number=Sing",
+     "lemma": "Gemüse",
+     "dep": "oa",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "nicht",
+     "tag": "PTKNEG",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "nicht",
+     "dep": "ng",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "zu",
+     "tag": "PTKA",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "zu",
+     "dep": "mo",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "lange",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "lange",
+     "dep": "mo",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "zu",
+     "tag": "PTKZU",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "zu",
+     "dep": "pm",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "garen",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "garen",
+     "dep": "re",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Die Polizei bittet Zeugen, die etwas beobachtet haben, sich unter der Nummer 110 zu melden.",
+   "tokens": [
+    {
+     "text": "Die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Polizei",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Polizei",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "bittet",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "bitten",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Zeugen",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Plur",
+     "lemma": "Zeuge",
+     "dep": "oa",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "PRELS",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Masc|Number=Plur|PronType=Rel",
+     "lemma": "der",
+     "dep": "sb",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "etwas",
+     "tag": "PIS",
+     "pos": "PRON",
+     "morph": "Gender=Neut|PronType=Ind",
+     "lemma": "etwas",
+     "dep": "oa",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "beobachtet",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "beobachten",
+     "dep": "oc",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "haben",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "VerbForm=Inf",
+     "lemma": "haben",
+     "dep": "rc",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "sich",
+     "tag": "PRF",
+     "pos": "PRON",
+     "morph": "Case=Acc|Number=Plur|Person=3|PronType=Prs|Reflex=Yes",
+     "lemma": "sich",
+     "dep": "oa",
+     "head": 16,
+     "sent_start": false
+    },
+    {
+     "text": "unter",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "unter",
+     "dep": "mo",
+     "head": 16,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "Nummer",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Nummer",
+     "dep": "nk",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "110",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "110",
+     "dep": "nk",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "zu",
+     "tag": "PTKZU",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "zu",
+     "dep": "pm",
+     "head": 16,
+     "sent_start": false
+    },
+    {
+     "text": "melden",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "melden",
+     "dep": "oc",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Mein Bruder studiert Informatik an der Technischen Universität in Dresden.",
+   "tokens": [
+    {
+     "text": "Mein",
+     "tag": "PPOSAT",
+     "pos": "DET",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing|Poss=Yes|PronType=Prs",
+     "lemma": "mein",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Bruder",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Bruder",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "studiert",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "studieren",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Informatik",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Informatik",
+     "dep": "oa",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "an",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "an",
+     "dep": "mo",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Technischen",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Dat|Degree=Pos|Gender=Fem|Number=Sing",
+     "lemma": "technisch",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Universität",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Universität",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "in",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "in",
+     "dep": "mnr",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Dresden",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Dresden",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Das Museum ist dienstags bis sonntags von 10 bis 18 Uhr geöffnet, montags bleibt es geschlossen.",
+   "tokens": [
+    {
+     "text": "Das",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Museum",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing",
+     "lemma": "Museum",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "ist",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "dienstags",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "dienstags",
+     "dep": "mo",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "bis",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "bis",
+     "dep": "cd",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "sonntags",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "sonntags",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "von",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "von",
+     "dep": "mo",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "10",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "10",
+     "dep": "nk",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "bis",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "bis",
+     "dep": "cd",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "18",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "18",
+     "dep": "nk",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "Uhr",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Gender=Fem",
+     "lemma": "Uhr",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "geöffnet",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "öffnen",
+     "dep": "pd",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "montags",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "montags",
+     "dep": "mo",
+     "head": 14,
+     "sent_start": false
+    },
+    {
+     "text": "bleibt",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "bleiben",
+     "dep": "cj",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "es",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "es",
+     "dep": "sb",
+     "head": 14,
+     "sent_start": false
+    },
+    {
+     "text": "geschlossen",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "schließen",
+     "dep": "pd",
+     "head": 14,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Ob das Projekt rechtzeitig fertig wird, hängt vor allem von den Lieferanten ab.",
+   "tokens": [
+    {
+     "text": "Ob",
+     "tag": "KOUS",
+     "pos": "SCONJ",
+     "morph": "",
+     "lemma": "ob",
+     "dep": "cp",
+     "head": 5,
+     "sent_start": true
+    },
+    {
+     "text": "das",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Projekt",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing",
+     "lemma": "Projekt",
+     "dep": "sb",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "rechtzeitig",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "rechtzeitig",
+     "dep": "mo",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "fertig",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "fertig",
+     "dep": "pd",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "wird",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "werden",
+     "dep": "sb",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "hängt",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "hängen",
+     "dep": "ROOT",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "vor",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "vor",
+     "dep": "mo",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "allem",
+     "tag": "PIS",
+     "pos": "PRON",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing|PronType=Ind",
+     "lemma": "alle",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "von",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "von",
+     "dep": "op",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "den",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Masc|Number=Plur|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "Lieferanten",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Plur",
+     "lemma": "Lieferant",
+     "dep": "nk",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "ab",
+     "tag": "PTKVZ",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "ab",
+     "dep": "svp",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 7,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Sie lachte, als sie den Brief las, und legte ihn dann in die Schublade.",
+   "tokens": [
+    {
+     "text": "Sie",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "sie",
+     "dep": "sb",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "lachte",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "lachen",
+     "dep": "ROOT",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "als",
+     "tag": "KOUS",
+     "pos": "SCONJ",
+     "morph": "",
+     "lemma": "als",
+     "dep": "cp",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "sie",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "sie",
+     "dep": "sb",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "den",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "Brief",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Brief",
+     "dep": "oa",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "las",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "lesen",
+     "dep": "mo",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "legte",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "legen",
+     "dep": "cj",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "ihn",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "ihn",
+     "dep": "oa",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "dann",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "dann",
+     "dep": "mo",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "in",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "in",
+     "dep": "mo",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 15,
+     "sent_start": false
+    },
+    {
+     "text": "Schublade",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Schublade",
+     "dep": "nk",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Wegen eines technischen Defekts hatte der Flug nach Frankfurt drei Stunden Verspätung.",
+   "tokens": [
+    {
+     "text": "Wegen",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "wegen",
+     "dep": "mo",
+     "head": 4,
+     "sent_start": true
+    },
+    {
+     "text": "eines",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Gen|Definite=Ind|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "ein",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "technischen",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Gen|Degree=Pos|Gender=Masc|Number=Sing",
+     "lemma": "technisch",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "Defekts",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Gen|Gender=Masc|Number=Sing",
+     "lemma": "Defekt",
+     "dep": "nk",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "hatte",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "haben",
+     "dep": "ROOT",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "Flug",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Flug",
+     "dep": "sb",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "nach",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "nach",
+     "dep": "mnr",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "Frankfurt",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Frankfurt",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "drei",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "drei",
+     "dep": "nk",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "Stunden",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Plur",
+     "lemma": "Stunde",
+     "dep": "oa",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "Verspätung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Verspätung",
+     "dep": "nk",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 4,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Die Forscher konnten nachweisen, dass die Pflanze ohne Licht nicht wächst.",
+   "tokens": [
+    {
+     "text": "Die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Plur|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Forscher",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Plur",
+     "lemma": "Forscher",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "konnten",
+     "tag": "VMFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "können",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "nachweisen",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "nachweisen",
+     "dep": "oc",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "dass",
+     "tag": "KOUS",
+     "pos": "SCONJ",
+     "morph": "",
+     "lemma": "dass",
+     "dep": "cp",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Pflanze",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Pflanze",
+     "dep": "sb",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "ohne",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "ohne",
+     "dep": "mo",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "Licht",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Neut|Number=Sing",
+     "lemma": "Licht",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "nicht",
+     "tag": "PTKNEG",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "nicht",
+     "dep": "ng",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "wächst",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "wachsen",
+     "dep": "oc",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Je länger man wartet, desto schwieriger wird die Entscheidung.",
+   "tokens": [
+    {
+     "text": "Je",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "je",
+     "dep": "mo",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "länger",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Cmp",
+     "lemma": "lang",
+     "dep": "mo",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "man",
+     "tag": "PIS",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Sing|PronType=Ind",
+     "lemma": "man",
+     "dep": "sb",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "wartet",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "warten",
+     "dep": "cc",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "desto",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "desto",
+     "dep": "mo",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "schwieriger",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Cmp",
+     "lemma": "schwierig",
+     "dep": "pd",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "wird",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "werden",
+     "dep": "ROOT",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "Entscheidung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Entscheidung",
+     "dep": "sb",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 7,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Am Ende des Tages zählt nur, dass alle gesund nach Hause gekommen sind.",
+   "tokens": [
+    {
+     "text": "Am",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "an",
+     "dep": "mo",
+     "head": 4,
+     "sent_start": true
+    },
+    {
+     "text": "Ende",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Ende",
+     "dep": "nk",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "des",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Gen|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "Tages",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Gen|Gender=Masc|Number=Sing",
+     "lemma": "Tag",
+     "dep": "ag",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "zählt",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "zählen",
+     "dep": "ROOT",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "nur",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "nur",
+     "dep": "mo",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "dass",
+     "tag": "KOUS",
+     "pos": "SCONJ",
+     "morph": "",
+     "lemma": "dass",
+     "dep": "cp",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "alle",
+     "tag": "PIS",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Plur|PronType=Ind",
+     "lemma": "alle",
+     "dep": "sb",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "gesund",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "gesund",
+     "dep": "mo",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "nach",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "nach",
+     "dep": "mo",
+     "head": 12,
+     "sent_start": false
+    },
+    {
+     "text": "Hause",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Haus",
+     "dep": "nk",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "gekommen",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "kommen",
+     "dep": "oc",
+     "head": 13,
+     "sent_start": false
+    },
+    {
+     "text": "sind",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "oc",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 4,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Die neue Software unterstützt jetzt auch die Formate PDF, DOCX und ODT.",
+   "tokens": [
+    {
+     "text": "Die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 2,
+     "sent_start": true
+    },
+    {
+     "text": "neue",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Nom|Degree=Pos|Gender=Fem|Number=Sing",
+     "lemma": "neu",
+     "dep": "nk",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Software",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "Software",
+     "dep": "sb",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "unterstützt",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "unterstützen",
+     "dep": "ROOT",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "jetzt",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "jetzt",
+     "dep": "mo",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "auch",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "auch",
+     "dep": "mo",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "Formate",
+     "tag": "NN",
+     "pos": "PROPN",
+     "morph": "Case=Acc|Gender=Masc|Number=Plur",
+     "lemma": "Format",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "PDF",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Nom|Gender=Fem|Number=Sing",
+     "lemma": "PDF",
+     "dep": "oa",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "DOCX",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Nom|Number=Sing",
+     "lemma": "DOCX",
+     "dep": "cj",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 10,
+     "sent_start": false
+    },
+    {
+     "text": "ODT",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Nom|Number=Sing",
+     "lemma": "ODT",
+     "dep": "cj",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 3,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Ihr solltet euch beeilen, sonst verpasst ihr den Anfang der Vorstellung.",
+   "tokens": [
+    {
+     "text": "Ihr",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Plur|Person=2|PronType=Prs",
+     "lemma": "ihr",
+     "dep": "sb",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "solltet",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sollten",
+     "dep": "ROOT",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "euch",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Acc|Number=Plur|Person=2|PronType=Prs",
+     "lemma": "euch",
+     "dep": "oa",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "beeilen",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "beeilen",
+     "dep": "oc",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "sonst",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "sonst",
+     "dep": "mo",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "verpasst",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "verpassen",
+     "dep": "cj",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "ihr",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "ihr",
+     "dep": "da",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "den",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "Anfang",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Anfang",
+     "dep": "oa",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Gen|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "Vorstellung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Gen|Gender=Fem|Number=Sing",
+     "lemma": "Vorstellung",
+     "dep": "ag",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Das Unternehmen plant, bis 2030 vollständig klimaneutral zu produzieren.",
+   "tokens": [
+    {
+     "text": "Das",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Unternehmen",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing",
+     "lemma": "Unternehmen",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "plant",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "planen",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "bis",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "bis",
+     "dep": "mo",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "2030",
+     "tag": "CARD",
+     "pos": "NUM",
+     "morph": "",
+     "lemma": "2030",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "vollständig",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "vollständig",
+     "dep": "mo",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "klimaneutral",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "klimaneutral",
+     "dep": "oa",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "zu",
+     "tag": "PTKZU",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "zu",
+     "dep": "pm",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "produzieren",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "VerbForm=Inf",
+     "lemma": "produzieren",
+     "dep": "oc",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Nicht jeder, der wandert, ist verloren.",
+   "tokens": [
+    {
+     "text": "Nicht",
+     "tag": "PTKNEG",
+     "pos": "PART",
+     "morph": "",
+     "lemma": "nicht",
+     "dep": "ng",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "jeder",
+     "tag": "PIS",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing|PronType=Ind",
+     "lemma": "jeder",
+     "dep": "sb",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": "der",
+     "tag": "PRELS",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing|PronType=Rel",
+     "lemma": "der",
+     "dep": "sb",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "wandert",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "wandern",
+     "dep": "rc",
+     "head": 1,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "ist",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "ROOT",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "verloren",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "verlieren",
+     "dep": "pd",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 6,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "In der Küche roch es nach frisch gebackenem Brot und Zimt.",
+   "tokens": [
+    {
+     "text": "In",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "in",
+     "dep": "mo",
+     "head": 3,
+     "sent_start": true
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Dat|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "Küche",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Fem|Number=Sing",
+     "lemma": "Küche",
+     "dep": "nk",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "roch",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "roch",
+     "dep": "ROOT",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "es",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Gender=Neut|Number=Sing|Person=3|PronType=Prs",
+     "lemma": "es",
+     "dep": "ep",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "nach",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "nach",
+     "dep": "mo",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "frisch",
+     "tag": "ADJD",
+     "pos": "ADV",
+     "morph": "Degree=Pos",
+     "lemma": "frisch",
+     "dep": "mo",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "gebackenem",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Dat|Degree=Pos|Gender=Neut|Number=Sing",
+     "lemma": "gebacken",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "Brot",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Neut|Number=Sing",
+     "lemma": "Brot",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "und",
+     "tag": "KON",
+     "pos": "CCONJ",
+     "morph": "",
+     "lemma": "und",
+     "dep": "cd",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "Zimt",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Zimt",
+     "dep": "cj",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 3,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Der Ausschuss vertagte die Entscheidung auf die nächste Sitzung im Herbst.",
+   "tokens": [
+    {
+     "text": "Der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Ausschuss",
+     "tag": "NE",
+     "pos": "PROPN",
+     "morph": "Case=Nom|Gender=Masc|Number=Sing",
+     "lemma": "Ausschuss",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "vertagte",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "vertagen",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "Entscheidung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Entscheidung",
+     "dep": "oa",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "auf",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "auf",
+     "dep": "mo",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "nächste",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Acc|Degree=Pos|Gender=Fem|Number=Sing",
+     "lemma": "nächster",
+     "dep": "nk",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "Sitzung",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Fem|Number=Sing",
+     "lemma": "Sitzung",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "im",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "in",
+     "dep": "mnr",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "Herbst",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "Herbst",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Könnten Sie mir sagen, wie ich zum Bahnhof komme?",
+   "tokens": [
+    {
+     "text": "Könnten",
+     "tag": "VMFIN",
+     "pos": "AUX",
+     "morph": "Mood=Sub|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "Können",
+     "dep": "ROOT",
+     "head": 0,
+     "sent_start": true
+    },
+    {
+     "text": "Sie",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Plur|Person=3|PronType=Prs",
+     "lemma": "sie",
+     "dep": "sb",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "mir",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Dat|Number=Sing|Person=1|PronType=Prs",
+     "lemma": "mir",
+     "dep": "da",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "sagen",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sagen",
+     "dep": "oc",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": ",",
+     "tag": "$,",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "wie",
+     "tag": "PWAV",
+     "pos": "SCONJ",
+     "morph": "PronType=Int",
+     "lemma": "wie",
+     "dep": "mo",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "ich",
+     "tag": "PPER",
+     "pos": "PRON",
+     "morph": "Case=Nom|Number=Sing|Person=1|PronType=Prs",
+     "lemma": "ich",
+     "dep": "sb",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "zum",
+     "tag": "APPRART",
+     "pos": "ADP",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "zu",
+     "dep": "mo",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "Bahnhof",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Dat|Gender=Masc|Number=Sing",
+     "lemma": "Bahnhof",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "komme",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Sub|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "kommen",
+     "dep": "oc",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "?",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 0,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Die Schüler mussten einen Aufsatz über ihre Sommerferien schreiben.",
+   "tokens": [
+    {
+     "text": "Die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Masc|Number=Plur|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 1,
+     "sent_start": true
+    },
+    {
+     "text": "Schüler",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Masc|Number=Plur",
+     "lemma": "Schüler",
+     "dep": "sb",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "mussten",
+     "tag": "VVFIN",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+     "lemma": "mussn",
+     "dep": "ROOT",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": "einen",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Ind|Gender=Masc|Number=Sing|PronType=Art",
+     "lemma": "ein",
+     "dep": "nk",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "Aufsatz",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Masc|Number=Sing",
+     "lemma": "Aufsatz",
+     "dep": "oa",
+     "head": 8,
+     "sent_start": false
+    },
+    {
+     "text": "über",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "über",
+     "dep": "mnr",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "ihre",
+     "tag": "PPOSAT",
+     "pos": "DET",
+     "morph": "Case=Acc|Gender=Fem|Number=Plur|Poss=Yes|PronType=Prs",
+     "lemma": "ihr",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "Sommerferien",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Number=Plur",
+     "lemma": "Sommerferien",
+     "dep": "nk",
+     "head": 5,
+     "sent_start": false
+    },
+    {
+     "text": "schreiben",
+     "tag": "VVINF",
+     "pos": "VERB",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "schreiben",
+     "dep": "oc",
+     "head": 2,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 2,
+     "sent_start": false
+    }
+   ]
+  },
+  {
+   "text": "Aufgrund der hohen Nachfrage sind die Tickets für das Konzert bereits ausverkauft.",
+   "tokens": [
+    {
+     "text": "Aufgrund",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "aufgrund",
+     "dep": "mo",
+     "head": 4,
+     "sent_start": true
+    },
+    {
+     "text": "der",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Gen|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "hohen",
+     "tag": "ADJA",
+     "pos": "ADJ",
+     "morph": "Case=Gen|Degree=Pos|Gender=Fem|Number=Sing",
+     "lemma": "hoch",
+     "dep": "nk",
+     "head": 3,
+     "sent_start": false
+    },
+    {
+     "text": "Nachfrage",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Gen|Gender=Fem|Number=Sing",
+     "lemma": "Nachfrage",
+     "dep": "nk",
+     "head": 0,
+     "sent_start": false
+    },
+    {
+     "text": "sind",
+     "tag": "VAFIN",
+     "pos": "AUX",
+     "morph": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+     "lemma": "sein",
+     "dep": "ROOT",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "die",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Nom|Definite=Def|Gender=Neut|Number=Plur|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 6,
+     "sent_start": false
+    },
+    {
+     "text": "Tickets",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Nom|Gender=Neut|Number=Plur",
+     "lemma": "Ticket",
+     "dep": "sb",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": "für",
+     "tag": "APPR",
+     "pos": "ADP",
+     "morph": "",
+     "lemma": "für",
+     "dep": "mo",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "das",
+     "tag": "ART",
+     "pos": "DET",
+     "morph": "Case=Acc|Definite=Def|Gender=Neut|Number=Sing|PronType=Art",
+     "lemma": "der",
+     "dep": "nk",
+     "head": 9,
+     "sent_start": false
+    },
+    {
+     "text": "Konzert",
+     "tag": "NN",
+     "pos": "NOUN",
+     "morph": "Case=Acc|Gender=Neut|Number=Sing",
+     "lemma": "Konzert",
+     "dep": "nk",
+     "head": 7,
+     "sent_start": false
+    },
+    {
+     "text": "bereits",
+     "tag": "ADV",
+     "pos": "ADV",
+     "morph": "",
+     "lemma": "bereits",
+     "dep": "mo",
+     "head": 11,
+     "sent_start": false
+    },
+    {
+     "text": "ausverkauft",
+     "tag": "VVPP",
+     "pos": "VERB",
+     "morph": "VerbForm=Part",
+     "lemma": "ausverkaufen",
+     "dep": "pd",
+     "head": 4,
+     "sent_start": false
+    },
+    {
+     "text": ".",
+     "tag": "$.",
+     "pos": "PUNCT",
+     "morph": "",
+     "lemma": "--",
+     "dep": "punct",
+     "head": 4,
+     "sent_start": false
+    }
+   ]
+  }
+ ]
+}

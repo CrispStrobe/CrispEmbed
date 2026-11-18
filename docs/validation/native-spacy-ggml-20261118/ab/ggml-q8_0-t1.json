@@ -1,0 +1,116 @@
+{
+ "label": "ggml-q8_0-t1",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_QUANT=1",
+  "CRISPEMBED_SPACY_GGML=1",
+  "CRISPEMBED_SPACY_THREADS=1"
+ ],
+ "model": "<scratch>/q/q8_0.gguf",
+ "model_sha256": "3ac54a574c69dc347dd8653e28aa94fccf04b108745408cb30031ad11b07ba39",
+ "model_bytes": 2006336,
+ "load_ms": 185.975,
+ "cases": 60,
+ "tokens": 835,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 53,
+ "agreement": {
+  "tag": 0.997605,
+  "pos": 1.0,
+  "morph": 0.997605,
+  "lemma": 0.998802,
+  "dep": 0.997605,
+  "head": 0.997605,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 2,
+  "pos": 0,
+  "morph": 2,
+  "lemma": 1,
+  "dep": 2,
+  "head": 2,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 171.794,
+  "long_doc_tokens": 835,
+  "long_doc_ms_median": 133.548,
+  "long_doc_tokens_per_s": 6252.4
+ },
+ "max_abs_drift_vs_reference": null,
+ "differences": [
+  {
+   "case": 2,
+   "token": 12,
+   "text": "18:30",
+   "field": "tag",
+   "oracle": "NE",
+   "native": "FM"
+  },
+  {
+   "case": 4,
+   "token": 8,
+   "text": "zum",
+   "field": "dep",
+   "oracle": "mnr",
+   "native": "mo"
+  },
+  {
+   "case": 4,
+   "token": 8,
+   "text": "zum",
+   "field": "head",
+   "oracle": 7,
+   "native": 4
+  },
+  {
+   "case": 16,
+   "token": 0,
+   "text": "Kannst",
+   "field": "tag",
+   "oracle": "VVFIN",
+   "native": "NE"
+  },
+  {
+   "case": 25,
+   "token": 5,
+   "text": "Künstlerinnen",
+   "field": "lemma",
+   "oracle": "Künstlerinne",
+   "native": "Künstlerin"
+  },
+  {
+   "case": 37,
+   "token": 8,
+   "text": "am",
+   "field": "dep",
+   "oracle": "mo",
+   "native": "mnr"
+  },
+  {
+   "case": 37,
+   "token": 8,
+   "text": "am",
+   "field": "head",
+   "oracle": 5,
+   "native": 7
+  },
+  {
+   "case": 51,
+   "token": 6,
+   "text": "die",
+   "field": "morph",
+   "oracle": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+   "native": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art"
+  },
+  {
+   "case": 58,
+   "token": 2,
+   "text": "mussten",
+   "field": "morph",
+   "oracle": "Mood=Ind|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+   "native": "Mood=Sub|Number=Plur|Person=3|Tense=Past|VerbForm=Fin"
+  }
+ ]
+}

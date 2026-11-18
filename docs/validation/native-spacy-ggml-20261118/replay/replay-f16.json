@@ -1,0 +1,15 @@
+{
+ "schema": "crispembed.spacy.quant_oracle_replay.v1",
+ "gguf": "<scratch>/q/f16.gguf",
+ "types": [
+  "F16",
+  "F32"
+ ],
+ "replay_flips": 0,
+ "replay_flipped_cases": 0,
+ "flips": [],
+ "native_flips": 0,
+ "shared_flips": 0,
+ "native_only": [],
+ "replay_only": []
+}

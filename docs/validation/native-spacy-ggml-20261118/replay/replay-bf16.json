@@ -1,0 +1,28 @@
+{
+ "schema": "crispembed.spacy.quant_oracle_replay.v1",
+ "gguf": "<scratch>/q/bf16.gguf",
+ "types": [
+  "BF16",
+  "F32"
+ ],
+ "replay_flips": 2,
+ "replay_flipped_cases": 2,
+ "flips": [
+  {
+   "case": 7,
+   "token": 0,
+   "text": "Bitte",
+   "field": "pos",
+   "oracle": "PART",
+   "replay": "ADV"
+  },
+  {
+   "case": 51,
+   "token": 6,
+   "text": "die",
+   "field": "morph",
+   "oracle": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+   "replay": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art"
+  }
+ ]
+}

@@ -1,0 +1,298 @@
+{
+ "label": "ggml-q4_0",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_QUANT=1",
+  "CRISPEMBED_SPACY_GGML=1",
+  "CRISPEMBED_SPACY_THREADS=4"
+ ],
+ "model": "<scratch>/q/q4_0.gguf",
+ "model_sha256": "5b57d89e5d62d60153dbf55640e2c8f3ab54cbff723a7e30e6c482e7f9f169b2",
+ "model_bytes": 1091104,
+ "load_ms": 86.347,
+ "cases": 60,
+ "tokens": 835,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 38,
+ "agreement": {
+  "tag": 0.99521,
+  "pos": 0.997605,
+  "morph": 0.985629,
+  "lemma": 0.997605,
+  "dep": 0.990419,
+  "head": 0.996407,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 4,
+  "pos": 2,
+  "morph": 12,
+  "lemma": 2,
+  "dep": 8,
+  "head": 3,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 174.699,
+  "long_doc_tokens": 835,
+  "long_doc_ms_median": 122.006,
+  "long_doc_tokens_per_s": 6843.9
+ },
+ "max_abs_drift_vs_reference": {
+  "tok2vec.output": 1.1307041645050049,
+  "tagger.scores": 2.7525079250335693,
+  "morphologizer.scores": 3.0480422973632812,
+  "lemmatizer.scores": 4.549534320831299,
+  "parser.lower_cache": 3.059460163116455
+ },
+ "differences": [
+  {
+   "case": 3,
+   "token": 6,
+   "text": "Kraft",
+   "field": "morph",
+   "oracle": "Case=Dat|Gender=Fem|Number=Sing",
+   "native": "Case=Acc|Gender=Fem|Number=Sing"
+  },
+  {
+   "case": 3,
+   "token": 13,
+   "text": "von",
+   "field": "dep",
+   "oracle": "mnr",
+   "native": "pg"
+  },
+  {
+   "case": 4,
+   "token": 8,
+   "text": "zum",
+   "field": "dep",
+   "oracle": "mnr",
+   "native": "mo"
+  },
+  {
+   "case": 4,
+   "token": 8,
+   "text": "zum",
+   "field": "head",
+   "oracle": 7,
+   "native": 4
+  },
+  {
+   "case": 4,
+   "token": 10,
+   "text": "in",
+   "field": "dep",
+   "oracle": "mnr",
+   "native": "mo"
+  },
+  {
+   "case": 4,
+   "token": 10,
+   "text": "in",
+   "field": "head",
+   "oracle": 9,
+   "native": 4
+  },
+  {
+   "case": 6,
+   "token": 7,
+   "text": "schlafen",
+   "field": "morph",
+   "oracle": "Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin",
+   "native": "VerbForm=Inf"
+  },
+  {
+   "case": 9,
+   "token": 3,
+   "text": "früher",
+   "field": "morph",
+   "oracle": "",
+   "native": "Degree=Cmp"
+  },
+  {
+   "case": 17,
+   "token": 2,
+   "text": "Müller",
+   "field": "head",
+   "oracle": 1,
+   "native": 5
+  },
+  {
+   "case": 17,
+   "token": 8,
+   "text": "sofort",
+   "field": "dep",
+   "oracle": "mo",
+   "native": "nk"
+  },
+  {
+   "case": 17,
+   "token": 12,
+   "text": "m",
+   "field": "pos",
+   "oracle": "PROPN",
+   "native": "NOUN"
+  },
+  {
+   "case": 17,
+   "token": 12,
+   "text": "m",
+   "field": "morph",
+   "oracle": "Case=Nom|Gender=Neut|Number=Sing",
+   "native": "Gender=Masc"
+  },
+  {
+   "case": 17,
+   "token": 14,
+   "text": "w",
+   "field": "morph",
+   "oracle": "Case=Nom|Number=Sing",
+   "native": ""
+  },
+  {
+   "case": 20,
+   "token": 9,
+   "text": "Grad",
+   "field": "morph",
+   "oracle": "Gender=Neut",
+   "native": "Case=Acc|Gender=Neut"
+  },
+  {
+   "case": 25,
+   "token": 5,
+   "text": "Künstlerinnen",
+   "field": "lemma",
+   "oracle": "Künstlerinne",
+   "native": "Künstlerin"
+  },
+  {
+   "case": 26,
+   "token": 3,
+   "text": "gewusst",
+   "field": "pos",
+   "oracle": "VERB",
+   "native": "NOUN"
+  },
+  {
+   "case": 26,
+   "token": 3,
+   "text": "gewusst",
+   "field": "morph",
+   "oracle": "Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin",
+   "native": "Case=Acc|Gender=Neut|Number=Sing"
+  },
+  {
+   "case": 29,
+   "token": 10,
+   "text": "Eisberg",
+   "field": "tag",
+   "oracle": "NN",
+   "native": "NE"
+  },
+  {
+   "case": 30,
+   "token": 6,
+   "text": "3:1",
+   "field": "tag",
+   "oracle": "CARD",
+   "native": "ADV"
+  },
+  {
+   "case": 32,
+   "token": 11,
+   "text": "zur",
+   "field": "dep",
+   "oracle": "mo",
+   "native": "cvc"
+  },
+  {
+   "case": 33,
+   "token": 2,
+   "text": "muss",
+   "field": "tag",
+   "oracle": "ADJD",
+   "native": "NE"
+  },
+  {
+   "case": 36,
+   "token": 0,
+   "text": "Gemäß",
+   "field": "lemma",
+   "oracle": "Gemäß",
+   "native": "gemäß"
+  },
+  {
+   "case": 37,
+   "token": 2,
+   "text": "um",
+   "field": "dep",
+   "oracle": "mo",
+   "native": "mnr"
+  },
+  {
+   "case": 40,
+   "token": 7,
+   "text": "Sprachen",
+   "field": "morph",
+   "oracle": "Case=Acc|Gender=Fem|Number=Plur",
+   "native": "Case=Dat|Gender=Fem|Number=Plur"
+  },
+  {
+   "case": 42,
+   "token": 8,
+   "text": "haben",
+   "field": "tag",
+   "oracle": "VAFIN",
+   "native": "VAINF"
+  },
+  {
+   "case": 44,
+   "token": 5,
+   "text": "sonntags",
+   "field": "dep",
+   "oracle": "nk",
+   "native": "cj"
+  },
+  {
+   "case": 46,
+   "token": 4,
+   "text": "sie",
+   "field": "morph",
+   "oracle": "Case=Nom|Gender=Fem|Number=Sing|Person=3|PronType=Prs",
+   "native": "Case=Nom|Gender=Masc|Number=Plur|Person=3|PronType=Prs"
+  },
+  {
+   "case": 51,
+   "token": 6,
+   "text": "die",
+   "field": "morph",
+   "oracle": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+   "native": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art"
+  },
+  {
+   "case": 52,
+   "token": 7,
+   "text": "ihr",
+   "field": "morph",
+   "oracle": "Case=Dat|Gender=Fem|Number=Sing|Person=3|PronType=Prs",
+   "native": "Case=Nom|Number=Plur|Person=2|PronType=Prs"
+  },
+  {
+   "case": 57,
+   "token": 7,
+   "text": "zum",
+   "field": "dep",
+   "oracle": "mo",
+   "native": "op"
+  },
+  {
+   "case": 58,
+   "token": 2,
+   "text": "mussten",
+   "field": "morph",
+   "oracle": "Mood=Ind|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+   "native": "Mood=Sub|Number=Plur|Person=3|Tense=Past|VerbForm=Fin"
+  }
+ ]
+}

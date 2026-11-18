@@ -1,0 +1,47 @@
+{
+ "label": "scalar-f16",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_QUANT=1"
+ ],
+ "model": "<scratch>/q/f16.gguf",
+ "model_sha256": "8712cdf3840e837cb94994e359a37e124b7010fc2e675983a202e0a1d76439bb",
+ "model_bytes": 3722304,
+ "load_ms": 192.94,
+ "cases": 60,
+ "tokens": 835,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 60,
+ "agreement": {
+  "tag": 1.0,
+  "pos": 1.0,
+  "morph": 1.0,
+  "lemma": 1.0,
+  "dep": 1.0,
+  "head": 1.0,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 0,
+  "pos": 0,
+  "morph": 0,
+  "lemma": 0,
+  "dep": 0,
+  "head": 0,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 765.405,
+  "long_doc_tokens": 835,
+  "long_doc_ms_median": 613.608,
+  "long_doc_tokens_per_s": 1360.8
+ },
+ "max_abs_drift_vs_reference": {
+  "tok2vec.output": 0.0030221939086914062,
+  "tagger.scores": 0.00830221176147461,
+  "morphologizer.scores": 0.007613122463226318,
+  "lemmatizer.scores": 0.009627342224121094,
+  "parser.lower_cache": 0.007540702819824219
+ },
+ "differences": []
+}

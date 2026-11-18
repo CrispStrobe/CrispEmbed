@@ -1,3 +1,18 @@
+## spaCy ggml+SGEMM default, F16 upcast and opt-in NER — 18 November 2026
+
+Branch `feat/spacy-default-ner-20261118`. On 1,776 UD German GSD sentences
+(28,139 tokens) against original spaCy run on the same host, the ggml+SGEMM
+engine is exact on macOS arm64 and Linux AVX2 ([44294318084](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44294318084),
+[44295825163](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44295825163))
+at 6–7× the scalar engine, and passes the frozen development gates with both
+engines; it is now the default (`CRISPEMBED_SPACY_GGML=0` keeps scalar). F16
+changes 3/1,776 sentences, reproduced exactly by original spaCy with the same
+weights, and stays gated; `CRISPEMBED_SPACY_GGML_UPCAST` runs F16 storage at
+F32 speed. Opt-in NER (`ner.gguf`, `CRISPEMBED_SPACY_NER`) matches 1,758/1,758
+original entities on both hosts. The published W7 capsule is unchanged and
+must be rebuilt/requalified before it carries the new default.
+[Audit](docs/validation/native-spacy-ggml-20261118/README.md).
+
 ## W7 isolated AVX2/F32 development assessment — 18 November 2026
 
 [Run44284405910](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44284405910)

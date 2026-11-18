@@ -1,0 +1,202 @@
+{
+ "label": "ggml-q5_0",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_QUANT=1",
+  "CRISPEMBED_SPACY_GGML=1",
+  "CRISPEMBED_SPACY_THREADS=4"
+ ],
+ "model": "<scratch>/q/q5_0.gguf",
+ "model_sha256": "ade336da9f8daac50fa3cc4d4ba2ce96c329517a47b2de686964d102f1b4a88c",
+ "model_bytes": 1319936,
+ "load_ms": 95.185,
+ "cases": 60,
+ "tokens": 835,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 44,
+ "agreement": {
+  "tag": 0.996407,
+  "pos": 0.996407,
+  "morph": 0.991617,
+  "lemma": 0.997605,
+  "dep": 0.996407,
+  "head": 0.998802,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 3,
+  "pos": 3,
+  "morph": 7,
+  "lemma": 2,
+  "dep": 3,
+  "head": 1,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 219.788,
+  "long_doc_tokens": 835,
+  "long_doc_ms_median": 162.408,
+  "long_doc_tokens_per_s": 5141.4
+ },
+ "max_abs_drift_vs_reference": {
+  "tok2vec.output": 0.5863561630249023,
+  "tagger.scores": 1.5093622207641602,
+  "morphologizer.scores": 1.544443130493164,
+  "lemmatizer.scores": 1.8851613998413086,
+  "parser.lower_cache": 1.5660796165466309
+ },
+ "differences": [
+  {
+   "case": 1,
+   "token": 12,
+   "text": "meine",
+   "field": "morph",
+   "oracle": "Case=Nom|Gender=Fem|Number=Sing|Poss=Yes|PronType=Prs",
+   "native": "Case=Acc|Gender=Fem|Number=Sing|Poss=Yes|PronType=Prs"
+  },
+  {
+   "case": 2,
+   "token": 12,
+   "text": "18:30",
+   "field": "tag",
+   "oracle": "NE",
+   "native": "FM"
+  },
+  {
+   "case": 3,
+   "token": 6,
+   "text": "Kraft",
+   "field": "morph",
+   "oracle": "Case=Dat|Gender=Fem|Number=Sing",
+   "native": "Case=Acc|Gender=Fem|Number=Sing"
+  },
+  {
+   "case": 6,
+   "token": 11,
+   "text": "wenig",
+   "field": "dep",
+   "oracle": "mo",
+   "native": "sb"
+  },
+  {
+   "case": 7,
+   "token": 0,
+   "text": "Bitte",
+   "field": "pos",
+   "oracle": "PART",
+   "native": "ADV"
+  },
+  {
+   "case": 11,
+   "token": 9,
+   "text": "verlegt",
+   "field": "tag",
+   "oracle": "VVPP",
+   "native": "VVFIN"
+  },
+  {
+   "case": 16,
+   "token": 0,
+   "text": "Kannst",
+   "field": "tag",
+   "oracle": "VVFIN",
+   "native": "NE"
+  },
+  {
+   "case": 26,
+   "token": 3,
+   "text": "gewusst",
+   "field": "lemma",
+   "oracle": "Gewusst",
+   "native": "gewusst"
+  },
+  {
+   "case": 30,
+   "token": 6,
+   "text": "3:1",
+   "field": "pos",
+   "oracle": "ADV",
+   "native": "NUM"
+  },
+  {
+   "case": 36,
+   "token": 0,
+   "text": "Gemäß",
+   "field": "lemma",
+   "oracle": "Gemäß",
+   "native": "gemäß"
+  },
+  {
+   "case": 37,
+   "token": 8,
+   "text": "am",
+   "field": "dep",
+   "oracle": "mo",
+   "native": "mnr"
+  },
+  {
+   "case": 37,
+   "token": 8,
+   "text": "am",
+   "field": "head",
+   "oracle": 5,
+   "native": 7
+  },
+  {
+   "case": 46,
+   "token": 4,
+   "text": "sie",
+   "field": "morph",
+   "oracle": "Case=Nom|Gender=Fem|Number=Sing|Person=3|PronType=Prs",
+   "native": "Case=Nom|Gender=Masc|Number=Plur|Person=3|PronType=Prs"
+  },
+  {
+   "case": 51,
+   "token": 6,
+   "text": "die",
+   "field": "morph",
+   "oracle": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+   "native": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art"
+  },
+  {
+   "case": 55,
+   "token": 3,
+   "text": "roch",
+   "field": "pos",
+   "oracle": "VERB",
+   "native": "ADV"
+  },
+  {
+   "case": 55,
+   "token": 3,
+   "text": "roch",
+   "field": "morph",
+   "oracle": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+   "native": ""
+  },
+  {
+   "case": 58,
+   "token": 2,
+   "text": "mussten",
+   "field": "morph",
+   "oracle": "Mood=Ind|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+   "native": "Mood=Sub|Number=Plur|Person=3|Tense=Past|VerbForm=Fin"
+  },
+  {
+   "case": 58,
+   "token": 7,
+   "text": "Sommerferien",
+   "field": "morph",
+   "oracle": "Case=Acc|Number=Plur",
+   "native": "Case=Acc|Gender=Fem|Number=Sing"
+  },
+  {
+   "case": 59,
+   "token": 11,
+   "text": "ausverkauft",
+   "field": "dep",
+   "oracle": "pd",
+   "native": "oc"
+  }
+ ]
+}

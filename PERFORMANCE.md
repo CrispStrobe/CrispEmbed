@@ -1,3 +1,34 @@
+## Native spaCy ggml engine and precisions (18 November 2026, macOS arm64 dev build)
+
+Long document of 835 tokens (60 development texts joined), warm, through the
+Python ctypes harness; decoded agreement against original spaCy 3.8.18.
+Details and receipts: [audit](docs/validation/native-spacy-ggml-20261118/README.md).
+
+| Configuration | GGUF | Decoded vs oracle | tok/s |
+| --- | ---: | --- | ---: |
+| scalar F32 (default, unchanged) | 7.38 MB | 60/60 exact | 1,375 |
+| ggml F32, 1 thread | 7.38 MB | 60/60 exact | 3,968 |
+| ggml F32 + SGEMM build, 1 thread | 7.38 MB | 60/60 exact | 8,900 |
+| ggml F16, 1 thread | 3.72 MB | 60/60 exact | 4,116 |
+| ggml Q8_0 | 2.01 MB | 53/60 (rejected) | 8,381 |
+
+Scalar time was ~95% in the strict-order scalar affine. With SGEMM, extra
+threads slow this small model on macOS (t4 6,293 tok/s).
+
+Larger corpus (1,776 UD German GSD sentences, 28,139 tokens; long document
+≤1,800 tokens), exact decoded agreement with original spaCy:
+
+| Configuration | macOS arm64 tok/s | Linux AVX2 tok/s | Exact |
+| --- | ---: | ---: | --- |
+| scalar F32 (`CRISPEMBED_SPACY_GGML=0`) | 2,270 | 1,530 | 1,776/1,776 |
+| ggml F32 + SGEMM (default since 18 Nov) | 14,343 | 10,689 | 1,776/1,776 |
+| ggml F32 + SGEMM, 4 threads | — | 12,560 | 1,776/1,776 |
+| ggml F16 + `CRISPEMBED_SPACY_GGML_UPCAST` | 14,294 | 10,746 | 1,773/1,776 |
+| ggml F16 dot products | 8,819 | 7,384 | 1,773/1,776 |
+
+Opt-in NER adds 31% to analysis time with the default engine (macOS). Linux
+host: AMD EPYC 9V74, GCC 15.2, hosted runner; single-run diagnostics.
+
 ## Native spaCy W7 ARM64 component sample (18 November 2026)
 
 [Real Mac44262399612](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44262399612),

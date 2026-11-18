@@ -1,0 +1,42 @@
+{
+ "label": "ggml-f32-t4",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_GGML=1",
+  "CRISPEMBED_SPACY_THREADS=4"
+ ],
+ "model": "<scratch>/bundle/model.gguf",
+ "model_sha256": "fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd",
+ "model_bytes": 7383104,
+ "load_ms": 209.89,
+ "cases": 60,
+ "tokens": 835,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 60,
+ "agreement": {
+  "tag": 1.0,
+  "pos": 1.0,
+  "morph": 1.0,
+  "lemma": 1.0,
+  "dep": 1.0,
+  "head": 1.0,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 0,
+  "pos": 0,
+  "morph": 0,
+  "lemma": 0,
+  "dep": 0,
+  "head": 0,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 173.207,
+  "long_doc_tokens": 835,
+  "long_doc_ms_median": 119.776,
+  "long_doc_tokens_per_s": 6971.4
+ },
+ "max_abs_drift_vs_reference": null,
+ "differences": []
+}

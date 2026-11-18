@@ -1,0 +1,34 @@
+crispembed_diff: loaded 1440 tensors from <scratch>/ref-f32.gguf
+stage                                 cases    cos_min cos_global    max_abs
+tok2vec.embed.concat                      -          -          -          -  (no reference)
+tok2vec.embed.affine                      -          -          -          -  (no reference)
+tok2vec.embed.maxout                     60   1.000000   1.000000  3.815e-05  PASS
+tok2vec.embed.norm                       60   1.000000   1.000000  5.484e-06  PASS
+tok2vec.encoder.input                     -          -          -          -  (no reference)
+tok2vec.encoder.layer.0.window           60   1.000000   1.000000  5.484e-06  PASS
+tok2vec.encoder.layer.0.affine            -          -          -          -  (no reference)
+tok2vec.encoder.layer.0.maxout           60   1.000000   1.000000  1.907e-05  PASS
+tok2vec.encoder.layer.0.norm             60   1.000000   1.000000  2.861e-06  PASS
+tok2vec.encoder.layer.0.residual         60   1.000000   1.000000  6.318e-06  PASS
+tok2vec.encoder.layer.1.window           60   1.000000   1.000000  6.318e-06  PASS
+tok2vec.encoder.layer.1.affine            -          -          -          -  (no reference)
+tok2vec.encoder.layer.1.maxout           60   1.000000   1.000000  3.052e-05  PASS
+tok2vec.encoder.layer.1.norm             60   1.000000   1.000000  3.934e-06  PASS
+tok2vec.encoder.layer.1.residual         60   1.000000   1.000000  6.914e-06  PASS
+tok2vec.encoder.layer.2.window           60   1.000000   1.000000  6.914e-06  PASS
+tok2vec.encoder.layer.2.affine            -          -          -          -  (no reference)
+tok2vec.encoder.layer.2.maxout           60   1.000000   1.000000  5.341e-05  PASS
+tok2vec.encoder.layer.2.norm             60   1.000000   1.000000  4.530e-06  PASS
+tok2vec.encoder.layer.2.residual         60   1.000000   1.000000  7.331e-06  PASS
+tok2vec.encoder.layer.3.window           60   1.000000   1.000000  7.331e-06  PASS
+tok2vec.encoder.layer.3.affine            -          -          -          -  (no reference)
+tok2vec.encoder.layer.3.maxout           60   1.000000   1.000000  3.052e-05  PASS
+tok2vec.encoder.layer.3.norm             60   1.000000   1.000000  4.768e-06  PASS
+tok2vec.encoder.layer.3.residual         60   1.000000   1.000000  8.464e-06  PASS
+tok2vec.output                           60   1.000000   1.000000  8.464e-06  PASS
+tagger.scores                            60   1.000000   1.000000  2.670e-05  PASS
+morphologizer.scores                     60   1.000000   1.000000  2.098e-05  PASS
+lemmatizer.scores                        60   1.000000   1.000000  2.289e-05  PASS
+parser.reduce                            60   1.000000   1.000000  5.722e-06  PASS
+parser.lower_cache                       60   1.000000   1.000000  1.717e-05  PASS
+first divergent stage (cos_min < 0.999000): none

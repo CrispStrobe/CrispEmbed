@@ -43,14 +43,17 @@ and ten guard inputs. Its manual provider API stays default off; Studio does
 not register it automatically. Eight misses and four conservative corrected
 recheck abstentions remain explicit. The native/model bytes are unchanged,
 and the consumed native acceptance was not rerun. Other-platform packaging,
-device qualification and production release remain separate gates. NER and
-other model/locale profiles are not part of this target.
+device qualification and production release remain separate gates. NER is an
+opt-in separate component (see the API section); other model/locale profiles
+are not part of this target.
 
 The implementation starts with CPU/F32 and a scalar numerical reference path
 using ggml's GGUF/CPU weight ownership. Each source operation has been compared
 before selecting an optimized ggml execution graph. This is an
 explicit staging decision within the C++/ggml implementation, not a change of
-model. No existing model path, release version, or default changes.
+model. Since 18 November 2026 the ggml graph engine is the default numeric
+path; the scalar reference remains available with `CRISPEMBED_SPACY_GGML=0`.
+The model file and release versions are unchanged.
 
 ## Reproduce the conversion
 
@@ -225,6 +228,22 @@ counted original UTF-8, including embedded NUL. Token views contain counted
 UTF-8 fields, source spans in bytes/scalars/UTF-16, lexical IDs, and, for full
 analysis, linguistic annotations. Roots use their own absolute token index.
 Text-only contexts do not exist; both services share the admitted model owner.
+
+The numeric pass runs as one ggml graph with tiled SGEMM by default
+(`CRISPEMBED_SPACY_GGML=0` selects the scalar reference engine; build with
+`-DCRISPEMBED_SPACY_SGEMM=OFF` for the previous kernel set). Both engines match
+original spaCy on 1,776/1,776 UD German GSD sentences; see the
+[engine audit](../../docs/validation/native-spacy-ggml-20261118/README.md).
+`CRISPEMBED_SPACY_THREADS` sets ggml CPU threads (default 1).
+
+Named entities are opt-in. Convert the separate component with
+`models/convert-spacy-ner-to-gguf.py --wheel WHEEL --output DIR`, set
+`CRISPEMBED_SPACY_NER=1` and call `crispembed_spacy_attach_ner(context,
+"DIR/ner.gguf", trusted_sha256, ...)` on a context created with resources.
+Analyses then also return LOC/PER/ORG/MISC spans through
+`crispembed_spacy_document_entity_count()`/`crispembed_spacy_document_entity()`
+(token range plus byte/scalar/UTF-16 offsets), and the context reports
+capability bit 16. Tokenization, token views and existing trace stages are unchanged.
 
 Input bounds are 1 MiB and 2,048 tokens, with no truncation. Malformed UTF-8 and
 over-limit input fail. Empty text returns an explicit empty owned document.

@@ -1,0 +1,40 @@
+{
+ "schema": "crispembed.spacy.quant_oracle_replay.v1",
+ "gguf": "<scratch>/f16.gguf",
+ "types": [
+  "F16",
+  "F32"
+ ],
+ "replay_flips": 3,
+ "replay_flipped_cases": 3,
+ "flips": [
+  {
+   "case": 154,
+   "token": 21,
+   "text": "Salbe",
+   "field": "lemma",
+   "oracle": "Salbe",
+   "replay": "Salb"
+  },
+  {
+   "case": 1020,
+   "token": 4,
+   "text": "um",
+   "field": "head",
+   "oracle": 3,
+   "replay": 11
+  },
+  {
+   "case": 1152,
+   "token": 4,
+   "text": "auf",
+   "field": "dep",
+   "oracle": "op",
+   "replay": "mo"
+  }
+ ],
+ "native_flips": 3,
+ "shared_flips": 3,
+ "native_only": [],
+ "replay_only": []
+}
