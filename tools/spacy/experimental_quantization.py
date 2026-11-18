@@ -109,7 +109,39 @@ def pipeline(source):
     return source
 
 
-def generate(root, destination):
+def optimized_numeric(source):
+    expected = '664ab23f4169706d1a79299ff062d381889bc207fd7addccd047d4d1587fa9d0'
+    if hashlib.sha256(source.encode()).hexdigest() != expected:
+        raise ValueError('Numeric source differs from the frozen F32 baseline')
+    source = replace_once(source, '#include "spacy_numeric.h"',
+        '#include "spacy_numeric.h"\n#include "core/env_gate.h"\n#include <immintrin.h>')
+    source = replace_once(source, '// W is original C row-major', '''// Explicit Linux x86-64/AVX2 development candidate, never a default flip.
+__attribute__((target("avx2")))
+float fast_dot(const float * x, const float * w, std::size_t count) {
+    __m256 lanes = _mm256_setzero_ps();
+    std::size_t k = 0;
+    for (; k + 8 <= count; k += 8)
+        lanes = _mm256_add_ps(lanes, _mm256_mul_ps(_mm256_loadu_ps(x + k), _mm256_loadu_ps(w + k)));
+    alignas(32) float values[8];
+    _mm256_store_ps(values, lanes);
+    float sum = 0.0f;
+    for (const auto value : values) sum += value;
+    for (; k < count; ++k) sum += x[k] * w[k];
+    return sum;
+}
+
+// W is original C row-major''')
+    source = replace_once(source, '    const auto columns = weights.size / input.cols;',
+        '''    const bool fast = core_env::on("CRISPEMBED_SPACY_FAST_DOT");
+    if (fast && !__builtin_cpu_supports("avx2")) throw std::runtime_error("AVX2 CPU required by fast-dot candidate");
+    const auto columns = weights.size / input.cols;''')
+    source = replace_once(source, '            for (std::size_t k = 0; k < input.cols; ++k) sum += x[k] * w[k];',
+        '''            if (fast) sum = fast_dot(x, w, input.cols);
+            else for (std::size_t k = 0; k < input.cols; ++k) sum += x[k] * w[k];''')
+    return source
+
+
+def generate(root, destination, *, optimized=False):
     root, destination = Path(root).resolve(), Path(destination).resolve()
     destination.mkdir(exist_ok=False)
     (destination / 'spacy_pipeline.cpp').write_text(pipeline((root / 'src/spacy_pipeline.cpp').read_text()))
@@ -125,6 +157,10 @@ def generate(root, destination):
                          'set(CRISPEMBED_ROOT "' + str(root) + '")')
     cmake = replace_once(cmake, '"${CRISPEMBED_ROOT}/src/spacy_pipeline.cpp"',
                          '"${CMAKE_CURRENT_LIST_DIR}/spacy_pipeline.cpp"')
+    if optimized:
+        (destination / 'spacy_numeric.cpp').write_text(optimized_numeric((root / 'src/spacy_numeric.cpp').read_text()))
+        cmake = cmake.replace('"${CRISPEMBED_ROOT}/src/spacy_numeric.cpp"',
+                              '"${CMAKE_CURRENT_LIST_DIR}/spacy_numeric.cpp"')
     cmake += '\nadd_executable(crispembed-quantize "${CMAKE_CURRENT_LIST_DIR}/quantize.cpp")\n'
     cmake += 'target_link_libraries(crispembed-quantize PRIVATE ggml ggml-cpu)\n'
     cmake += 'add_library(spacy-diff SHARED "${CMAKE_CURRENT_LIST_DIR}/quantized_diff.cpp")\n'

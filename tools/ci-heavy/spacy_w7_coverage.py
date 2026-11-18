@@ -17,7 +17,7 @@ REVISION = '659dae33997d00296ae12b76510fa4dfe26540e0'
 PCRE2 = 'b2bd4254b379b9d7dc9a3dda060a7e27009ccdff'
 
 
-def main():
+def original_producer_for_review_only():
     assert os.environ.get('GITHUB_ACTIONS') == 'true'
     assert os.environ.get('GITHUB_REPOSITORY') == 'CrispStrobe/CrispEmbed'
     assert sys.platform == 'linux' and platform.machine() == 'x86_64'
@@ -137,6 +137,12 @@ def main():
         (out / 'summary.md').write_text('# W7 new finite coverage panel\n\n' +
             json.dumps({key: report.get(key) for key in ('stage', 'passed', 'new_panel_started', 'summary', 'failure')}, indent=2) +
             '\n\nOriginal W6 held-out split was not rerun; no population-level grammar or app activation claim.\n')
+
+
+def main():
+    raise SystemExit('This96-case panel was consumed once in44262982569. Never rerun it. '
+        'Audit the immutable original result/seal at Hub revision4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23. '
+        'Original producer source0dc3cef74179cf452d92ec8cf3b75d85c324b5a8 remains preserved for review.')
 
 
 if __name__ == '__main__':

@@ -43,3 +43,15 @@ run by this driver. Candidate rejection is a terminal assessment result, not a
 reason to replace F32, widen a tolerance or claim grammar quality. Hosted
 diagnostic artifacts are labeled separately from accepted distributions.
 Kaggle is unused because this closed backend has no real GPU inference path.
+
+The separate `spacy_w7_optimize.py` experiment uses the unchanged F32 model.
+Only an explicit `optimized=True` private build emits an AVX2 affine-dot
+candidate. `CRISPEMBED_SPACY_FAST_DOT` defaults OFF through `core_env::on()`;
+the scalar alternative remains present and unsupported CPUs are rejected.
+Each mode must first enter the complete unchanged development prepared/text
+gates. Only a passing candidate may run a finite alternating-order operational
+timing sample. Its predeclared signal is at least10% lower median and at most
+32MiB sampled growth, with exact copied token records between modes. This is
+not an accepted profile, production speed claim, app/grammar qualification or
+permission to repeat a consumed held-out split. The published capsule and all
+production sources remain unchanged.
