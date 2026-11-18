@@ -1,0 +1,110 @@
+{
+  "schema": "crispembed.quds.spacy.w7.continuation_status.v1",
+  "recorded_date": "2026-11-18",
+  "status": "package_controls_passed_consumer_execution_blocked_by_workspace_enospc",
+  "branch": "feat/native-spacy-w7-20261118",
+  "source_checkpoints": {
+    "CrispEmbed": {
+      "commit": "d1d9985e143206e8f8e930cf23b947fd71f9c451",
+      "tree": "090d24f92d8e9c6a1696433dbd52e7059d416dc9",
+      "package_implementation_commit": "c0f9837c2af318a10f907531b41e3269757efe64",
+      "base_main": "04e8445823d82591120203e953365582d7ba33be"
+    },
+    "quds_office_suite": {
+      "commit": "2e57784093fd2d1f44fe27edb31077d4163693f2",
+      "tree": "296e1dec41848d098af72898a7c1ee46052e83b0",
+      "current_main_merge": "13747281fb25b5c55c549255595c75a7ca0854ef",
+      "base_main": "482e08176dea6bd8f5fc80d1c0064d96b712db43"
+    }
+  },
+  "preceding_w6": {
+    "paired_completion_commit": "93560df6e4e8a592535216ca94b883f5934a915c",
+    "quds_completion_commit": "20026ff49ac37391e2a1fd0947560a587f2f7332",
+    "sealed_source_blobs_unchanged": 342,
+    "native_acceptance_and_grammar_qualification": "consumed; preserved without rerunning"
+  },
+  "completed": {
+    "branches_and_pr_heads_fetched_and_inventoried": true,
+    "relevant_current_main_integrated": true,
+    "package_model_free_controls": {
+      "passed": 25,
+      "failed": 0,
+      "source_sha256": "327f68ea67e0179caf017477054aafab322b84b9e7c6f998da8eee5aa95402d5",
+      "receipt": "distribution-controls.txt"
+    },
+    "real_input_package_build": {
+      "passed": true,
+      "sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+      "bytes": 7808129,
+      "payload_files": 20,
+      "receipt": "distribution-build.json"
+    },
+    "real_input_atomic_install_and_full_tree_verification": {
+      "passed": true,
+      "receipt": "distribution-install.json",
+      "native_library_loaded": false
+    },
+    "runtime_restoration": {
+      "passed": true,
+      "native_files": 15,
+      "model_files": 5,
+      "qualified_system_dependencies": 6,
+      "context_create_free": 1,
+      "inference_executions": 0,
+      "receipt": "runtime-restoration.json"
+    },
+    "python_consumer_static_review": "two findings corrected; independent remote rereview accepted source",
+    "dart_consumer_static_review": "actual Quds API and JSON schemas checked; checked typed readers and explicit annotation comparison saved"
+  },
+  "pending": {
+    "current_python_consumer_21_controls": "not executed",
+    "current_python_consumer_first_operational_run": "not executed",
+    "current_dart_consumer_compilation_and_self_test": "not executed",
+    "current_dart_installed_worker_run": "not executed",
+    "second_full_real_input_package_build_byte_comparison": "not executed; fixture determinism is covered by passing package tests",
+    "hosted_distribution_upload_and_consumer_download_readback": "not performed",
+    "other_platforms_and_devices": "unqualified",
+    "production_activation": "separate decision"
+  },
+  "protocol": {
+    "path": "operational-protocol.json",
+    "sha256": "60f85df220bb05ff467c6036ce465c841cff3480103720d5139af0644cfd3934",
+    "first_remote_freeze": "c0f9837c2af318a10f907531b41e3269757efe64",
+    "case_types": 8,
+    "distinct_texts_including_cycle": 9,
+    "enabled_processes": 3,
+    "disabled_processes": 1,
+    "context_document_pairs_if_completed": 102,
+    "changed": false
+  },
+  "preservation": {
+    "source_and_available_package_restoration_evidence": "saved on the remote branches",
+    "latest_consumer_files": "source-only recovery checkpoints; local checkouts may lag these remote commits",
+    "python_reconstruction": "Reconstructed from authored tool-call text after local commands failed; no claim of identity with the earlier local source. Earlier 18-pass evidence applies only to the earlier hashes.",
+    "unavailable_raw_receipts": "Full original Python preflight/control and Dart SDK restoration/review logs could not all be reread after ENOSPC. Consumer checkpoints retain observed metadata and available hashes, not replacement raw evidence.",
+    "generated_package_and_model_weights": "Not uploaded to ordinary Git; retain or reconstruct from pinned remote native archive, official model wheel and tracked converter/hash lock.",
+    "native_archive": {
+      "repository": "CrispStrobe/CrispEmbed",
+      "commit": "93560df6e4e8a592535216ca94b883f5934a915c",
+      "path": "docs/validation/native-spacy-20261117/acceptance-candidate-linux-x86_64.tar.gz",
+      "sha256": "b0cd3ae4d47af442d32a6d2382143c36f8b019470cff7c509f97e4682b67489b"
+    }
+  },
+  "blocker": {
+    "kind": "shared filesystem exhaustion during execution sandbox setup",
+    "observed_error": "bwrap: Can't create file WORKSPACE/.git: No space left on device",
+    "path_redacted": true,
+    "local_commands_and_edits_unavailable": true,
+    "prior_task_owned_cleanup": "Approximately 440 MB reclaimed from the temporary converter environment, redundant fetched Git blobs and downloaded model wheel before later exhaustion.",
+    "cleanup_escalation": "Narrow task-owned cleanup outside the sandbox was rejected before execution because sandbox approvals are disabled.",
+    "no_unrelated_files_deleted": true,
+    "required_recovery": "Restore workspace capacity or use a fresh writable workspace; preserve uncommitted local differences before replacing old checkouts."
+  },
+  "github_actions_queries_waits_reruns_dispatches": 0,
+  "app_defaults_native_source_model_and_consumed_panels_changed": false,
+  "resume_document": "CONTINUE.md",
+  "pull_requests": {
+    "CrispEmbed": "https://github.com/CrispStrobe/CrispEmbed/pull/237",
+    "quds_office_suite": "https://github.com/CrispStrobe/quds_office_suite/pull/153"
+  }
+}

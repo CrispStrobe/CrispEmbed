@@ -1,7 +1,7 @@
 # W7: immutable Linux spaCy packaging
 
-Status: implementation and operational qualification in progress, 18 November
-2026. This continuation starts from the completed W6 checkpoint `93560df6` and
+Status: package controls passed; current consumer execution is blocked by
+workspace exhaustion, 18 November 2026. This continuation starts from the completed W6 checkpoint `93560df6` and
 paired Quds checkpoint `20026ff4`. The accepted native library, model bundle,
 original native acceptance, and W6 grammar qualification remain unchanged.
 
@@ -10,6 +10,21 @@ and PR head, current main, the Quds documentation-only merge, and unchanged
 Git blob identities for all 342 sealed Quds source files. Historical Office
 evidence remains at its recorded original branches. The worksheet and GECToR
 lanes retain their independent ownership.
+
+## Saved status
+
+| Work | Observed outcome |
+| --- | --- |
+| Source refresh and relevant main integration | Complete; all 342 sealed Quds source blobs preserved |
+| Package controls | 25 passed on the saved packager source |
+| Real package build and atomic installation | Passed; 20 payload files plus authenticated manifest |
+| Second complete real-input build comparison | Pending |
+| Corrected Python consumer | Source reviewed and saved; current 21 controls and first native run pending |
+| Dart installed-package consumer | Source reviewed and saved; compilation, self-test and worker run pending |
+
+Local execution is blocked by filesystem exhaustion during sandbox startup. Even task-owned cleanup commands could no longer launch. Approximately 440 MB of reproducible task files had already been removed before the later exhaustion. GitHub connector saves and readback remained available.
+
+Follow [CONTINUE.md](CONTINUE.md) and [checkpoint-status.json](checkpoint-status.json) from a workspace with capacity. The latest remote source can be newer than the local checkouts. Package/model binaries were not uploaded to ordinary Git, and some raw local preflight/SDK logs could not be reread after exhaustion; these preservation limits are explicit in the checkpoints.
 
 ## Bounded work
 

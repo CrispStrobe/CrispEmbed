@@ -82,6 +82,37 @@ the bundle; output byte hashes and tensor inventories are retained in the
 validation receipt. A separately published native/model distribution does not
 exist yet. The application must not run this converter or embed Python.
 
+## W7 immutable package checkpoint
+
+The [W7 evidence](../../docs/validation/native-spacy-w7-20261118/README.md)
+retains 25 passing package controls and a successful real-input build and atomic
+installation. `distribution.py` authenticates an externally pinned archive before
+parsing, admits only the fixed 20 payloads and manifest, and publishes a verified
+read-only installation without replacing an existing directory. It does not load
+the native library or qualify the host runtime.
+
+```sh
+python3 -B tools/spacy/distribution.py build \
+  --native-archive /path/to/acceptance-candidate-linux-x86_64.tar.gz \
+  --bundle /path/to/verified-spacy-bundle --output /path/to/new-distribution.tar.gz
+python3 -B tools/spacy/distribution.py install \
+  --archive /path/to/new-distribution.tar.gz \
+  --sha256 4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01 \
+  --cache /path/to/private-cache
+```
+
+The preserved candidate archive is 7,808,129 bytes. A second complete build-byte
+comparison remains pending, although fixture determinism controls passed.
+The generated archive is not a hosted model/native release.
+
+The corrected Python operational driver and the paired Dart worker driver are
+saved source-only checkpoints: their current tests/compilation and actual
+operational runs were blocked by workspace exhaustion. Follow the
+[continuation instructions](../../docs/validation/native-spacy-w7-20261118/CONTINUE.md)
+before using them. Earlier 18-control evidence applies only to the earlier Python
+source, not its reconstructed/corrected checkpoint. No application/default or
+accepted native/model changes accompany these developer tools.
+
 ## Contract and reference evidence
 
 [MODEL_FORMAT.md](MODEL_FORMAT.md) defines version 1. The authoritative tensor

@@ -1,0 +1,35 @@
+{
+  "schema": "crispembed.spacy.w7.consumer_independent_rereview.v1",
+  "status": "static_corrections_accepted_execution_pending",
+  "reviewed_commit": "d1d9985e143206e8f8e930cf23b947fd71f9c451",
+  "reviewed_source_sha256": {
+    "tools/spacy/distribution_consumer.py": "a9241a3c701ab7c4a03381f9a98df18fe47f047dd2b8cbebc6be71d3a3477172",
+    "tests/test_spacy_distribution_consumer.py": "c9d127ef2b9144b66ffcfa4c6ed4aa6348c345315e0380cb0628285d2e08bfa2"
+  },
+  "source_hashes_independently_recomputed_from_remote_utf8": true,
+  "findings": [
+    {
+      "id": "child_provenance_admission",
+      "status": "resolved_in_source",
+      "evidence": "child_identity binds schema, role, mode, integer index, external archive/protocol identity, admitted package manifest/count and both child source maps to the launched contract and driver initial sources. Admission occurs before aggregation. Original child files and reported outcomes survive parent rejection. Three corresponding controls were added."
+    },
+    {
+      "id": "unique_text_denominator_label",
+      "status": "resolved_in_source",
+      "evidence": "Summary distinguishes eight panel case types from nine distinct texts including the cycle; 24 panel executions, 78 cycle/warmup executions and 102 context/document pairs remain unchanged."
+    }
+  ],
+  "frozen_protocol": {
+    "sha256": "60f85df220bb05ff467c6036ce465c841cff3480103720d5139af0644cfd3934",
+    "git_blob_sha1": "e01ad788498cfddc494bd348023abf4102e91359",
+    "changed": false
+  },
+  "current_control_definitions": 21,
+  "current_controls_executed": false,
+  "previous_18_passing_controls_apply_to_current_bytes": false,
+  "native_inference_executions": 0,
+  "native_acceptance_rerun": false,
+  "grammar_qualification_rerun": false,
+  "github_actions_queries_waits_reruns": 0,
+  "completion_condition": "Run the current 21 model-free controls after workspace recovery, retain their exact source-bound outcome remotely, then perform the first unchanged operational run. Static acceptance does not establish successful execution."
+}
