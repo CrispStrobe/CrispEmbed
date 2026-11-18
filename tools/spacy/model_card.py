@@ -94,6 +94,13 @@ def render(catalog: dict) -> str:
             if not receipt.startswith('https://') and p.get('revision'):
                 receipt = f"{resolve}/{p['revision']}/{receipt}"
             lines.append(f"- {p['platform']}: {receipt}")
+    ner = catalog.get("ner")
+    if ner:
+        lines += ["", "## Optional NER model", "", f"Status: {ner['status']}. {ner.get('qualification', '')}", ""]
+        if ner.get("revision"):
+            lines += ["| File | Bytes | SHA-256 |", "| --- | ---: | --- |"]
+            for path, pin in ner["files"].items():
+                lines.append(f"| [`{path}`]({resolve}/{ner['revision']}/{path}) | {pin['bytes']:,} | `{pin['sha256']}` |")
     lines += [
         "",
         "## Not qualified",

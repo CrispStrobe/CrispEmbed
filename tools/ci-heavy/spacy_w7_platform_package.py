@@ -40,6 +40,7 @@ PCRE2 = 'b2bd4254b379b9d7dc9a3dda060a7e27009ccdff'
 ORACLE = 'dcf2ec9b4d6fba05fa5eec2634c6654266332cc9'
 BUNDLE_REVISION = '659dae33997d00296ae12b76510fa4dfe26540e0'
 HUB_CATALOG = 'hub-catalog.json'
+NER_RUNTIME_OWNER_DEV_SHA256 = '1b65fce5864703d971880cf038a67f2ffd1ef99cad2cd49f9dc122d7882cdaa1'
 RUNNERS = {
     'linux-x86_64': ('Linux', 'x86_64'),
     'linux-arm64': ('Linux', 'aarch64'),
@@ -82,11 +83,14 @@ def main():
     parser.add_argument('--platform', choices=sorted(RUNNERS))
     parser.add_argument('--publish', action='store_true')
     parser.add_argument('--card-only', action='store_true')
+    parser.add_argument('--ner', action='store_true',
+                        help='Convert ner.gguf canonically on CPython 3.12.14 and (with --publish) publish it')
     parser.add_argument('--linux-runtime', choices=['shared', 'static'], default='shared',
                         help='Linux only: link libstdc++/libgcc dynamically (default) or statically')
     args = parser.parse_args()
     assert os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ.get('GITHUB_REPOSITORY') == 'CrispStrobe/CrispEmbed'
-    assert args.card_only or args.platform, '--platform is required unless --card-only'
+    assert sum(map(bool, (args.card_only, args.platform, args.ner))) == 1, \
+        'choose exactly one of --platform, --ner or --card-only'
     if args.publish:
         assert os.environ.get('GITHUB_REF') == 'refs/heads/main', 'Hub writes only from main'
     out = Path(os.environ['HEAVY_OUT'])
@@ -113,7 +117,41 @@ def main():
         payload = scratch / 'payload'
         payload.mkdir()
         entry = None
-        if not args.card_only:
+        ner = None
+        if args.ner:
+            assert sys.platform == 'linux' and host.python_version() == '3.12.14', 'Canonical NER conversion needs CPython 3.12.14'
+            wheel = scratch / common.WHEEL
+            report['source_wheel'] = common.download(
+                'https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.8.0/' + common.WHEEL,
+                wheel, common.WHEEL_SHA, 14639490)
+            reference = scratch / 'reference-environment'
+            run('reference-venv', [sys.executable, '-m', 'venv', reference])
+            run('reference-install', [reference / 'bin/python', '-m', 'pip', 'install', '--only-binary=:all:',
+                                      '--require-hashes', '-r', ROOT / 'tools/spacy/requirements-reference.txt'])
+            converted = scratch / 'ner-converted'
+            run('ner-conversion', [reference / 'bin/python', ROOT / 'models/convert-spacy-ner-to-gguf.py',
+                                   '--wheel', wheel, '--output', converted])
+            manifest = json.loads((converted / 'ner-manifest.json').read_text())
+            assert manifest['dev_environment'] is False and manifest['reference_python'] == '3.12.14'
+            assert sorted(p.name for p in converted.iterdir()) == ['ner-manifest.json', 'ner.gguf']
+            pin = manifest['files']['ner.gguf']
+            assert common.digest(converted / 'ner.gguf') == pin['sha256']
+            assert (converted / 'ner.gguf').stat().st_size == pin['size_bytes']
+            (payload / 'ner').mkdir()
+            for name in ('ner.gguf', 'ner-manifest.json'):
+                shutil.copyfile(converted / name, payload / 'ner' / name)
+            ner = {'status': 'published', 'revision': None, 'source_commit': source,
+                   'files': {f'ner/{name}': {'sha256': common.digest(payload / 'ner' / name),
+                                             'bytes': (payload / 'ner' / name).stat().st_size}
+                             for name in ('ner.gguf', 'ner-manifest.json')},
+                   'reproduces_runtime_owner_dev_sha256': pin['sha256'] == NER_RUNTIME_OWNER_DEV_SHA256,
+                   'qualification': ('Opt-in (CRISPEMBED_SPACY_NER=1, crispembed_spacy_attach_ner). '
+                                     'Runtime-owner receipts: 1,776/1,776 UD GSD sentences and 1,758/1,758 '
+                                     'entities identical to original spaCy on macOS arm64 and Linux AVX2 '
+                                     '(run 44295825163). Not qualified for any Quds grammar use.')}
+            report['ner'] = ner
+            save()
+        if args.platform:
             system, machine = RUNNERS[args.platform]
             assert host.system() == system and host.machine() == machine, \
                 f'Real {args.platform} runner required (got {host.system()}/{host.machine()}); no emulation'
@@ -245,8 +283,7 @@ def main():
             report['passed'] = True
             report['dry_run'] = True
             save()
-            (out / 'summary.md').write_text('# spaCy platform capsule dry run\n\nBuilt, packaged, installed and '
-                                            'tested from capsule bytes. Nothing was uploaded.\n')
+            (out / 'summary.md').write_text('# spaCy distribution dry run\n\nNothing was uploaded.\n')
             return
         subprocess.run([sys.executable, '-m', 'pip', 'install', 'huggingface_hub==0.36.0'], check=True)
         from huggingface_hub import CommitOperationAdd, HfApi
@@ -293,7 +330,16 @@ def main():
             entry['revision'] = revision
             report['catalog_entry'] = entry
             save()
+        if ner:
+            revision, fresh, report['ner_publication'] = publish(
+                {path: payload / path for path in ner['files']},
+                f'Publish opt-in NER model converted on CPython 3.12.14 from CrispEmbed {source[:12]}')
+            ner['revision'] = revision
+            report['ner'] = ner
+            save()
         catalog = catalog_with(entry, current_hub_catalog(tracked))
+        if ner:
+            catalog['ner'] = ner
         (payload / HUB_CATALOG).write_text(json.dumps(catalog, indent=2) + '\n')
         (payload / 'README.md').write_text(card.render(catalog))
         revision, _, report['card_publication'] = publish(
@@ -302,7 +348,8 @@ def main():
         report['passed'] = True
         save()
         (out / 'summary.md').write_text('# spaCy Hub publication\n\n' + json.dumps(
-            {k: report[k]['revision'] for k in ('package_publication', 'card_publication') if k in report}) + '\n')
+            {k: report[k]['revision'] for k in ('package_publication', 'ner_publication', 'card_publication')
+             if k in report}) + '\n')
         print(json.dumps({'passed': True, 'card_revision': revision,
                           'package_revision': report.get('package_publication', {}).get('revision')}))
     except Exception as exc:
