@@ -280,6 +280,13 @@ def main():
             }
             report['catalog_entry'] = entry
         if not args.publish:
+            # Dry-run outputs travel as a short-lived workflow artifact only, for
+            # local consumer checks; they are never a publication.
+            for item in payload.rglob('*'):
+                if item.is_file():
+                    target = out / 'dry-run-payload' / item.relative_to(payload)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(item, target)
             report['passed'] = True
             report['dry_run'] = True
             save()
