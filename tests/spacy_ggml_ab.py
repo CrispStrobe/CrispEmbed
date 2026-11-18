@@ -122,7 +122,15 @@ def main():
             exact_cases += case_exact
         # Warm timing: per-case analyze and one long concatenated document.
         texts = [c["text"] for c in oracle["cases"]]
-        long_text = " ".join(texts)
+        # One long document under the runtime's 2,048-token admission limit:
+        # oracle token counts bound the concatenation (joining adds no tokens).
+        long_parts, budget = [], 0
+        for case in oracle["cases"]:
+            if budget + len(case["tokens"]) > 1800:
+                break
+            long_parts.append(case["text"])
+            budget += len(case["tokens"])
+        long_text = " ".join(long_parts)
         analyze(api, context, long_text)
         corpus_ms, long_ms = [], []
         for _ in range(args.repeats):

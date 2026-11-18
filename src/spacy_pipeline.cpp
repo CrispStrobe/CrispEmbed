@@ -4,6 +4,8 @@
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
 #include "core/sha256.h"
+#include "ggml-alloc.h"
+#include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "spacy_ggml.h"
 #include "spacy_numeric.h"
@@ -399,14 +401,20 @@ struct crispembed_spacy_context {
     // Scalar-reference F32 copies of non-F32 matrices (quantized GGUF only).
     std::vector<std::vector<float>> dequantized;
     std::unique_ptr<crispembed::spacy::NumericModel> model;
-    // Opt-in CRISPEMBED_SPACY_GGML document engine over the same weights.
+    // Default ggml document engine over the same weights (CRISPEMBED_SPACY_GGML=0
+    // selects the scalar reference engine instead).
     std::unique_ptr<crispembed::spacy::GgmlNumeric> ggml;
+    // Opt-in CRISPEMBED_SPACY_GGML_UPCAST: F32 ggml copies of non-F32 matrices.
+    ggml_context * upcast_ctx = nullptr;
+    ggml_backend_buffer_t upcast_buffer = nullptr;
     std::unique_ptr<crispembed::spacy::LexicalModel> lexical;
     std::unique_ptr<crispembed::spacy::DecodeResources> decoder;
 
     ~crispembed_spacy_context() {
         ggml.reset();
         model.reset();
+        if (upcast_buffer) ggml_backend_buffer_free(upcast_buffer);
+        if (upcast_ctx) ggml_free(upcast_ctx);
         core_gguf::free_weights(weights);
         if (backend) ggml_backend_free(backend);
     }
@@ -425,8 +433,8 @@ struct crispembed_spacy_document {
 
 namespace {
 
-// The ggml engine handles nonempty documents; the scalar reference keeps the
-// empty-document contract and remains the default (CRISPEMBED_SPACY_GGML off).
+// The ggml engine (default; CRISPEMBED_SPACY_GGML=0 disables it) handles
+// nonempty documents; the scalar reference keeps the empty-document contract.
 crispembed::spacy::NumericOutput run_numeric(const crispembed_spacy_context & context,
                                              const std::vector<crispembed::spacy::FeatureRow> & features,
                                              const crispembed::spacy::TraceSink & sink,
@@ -485,6 +493,7 @@ crispembed_spacy_context * crispembed_spacy_create(const char * model_path, cons
                 "Unexpected spaCy weight ownership/inventory");
         crispembed::spacy::TensorMap tensors;
         std::map<std::string, ggml_tensor *> ggml_weights;
+        std::map<std::string, const float *> tensors_for_upcast;
         context->dequantized.reserve(profile.tensors.size());
         for (const auto & item : profile.tensors) {
             const auto loaded = context->weights.tensors.find(item.first);
@@ -509,11 +518,36 @@ crispembed_spacy_context * crispembed_spacy_create(const char * model_path, cons
             size_t elements = 1;
             for (auto dimension : extent.shape) elements *= dimension;
             tensors.emplace(item.first, crispembed::spacy::TensorView{ extent.shape, values, elements });
+            if (extent.type != GGML_TYPE_F32) tensors_for_upcast.emplace(item.first, values);
             ggml_weights.emplace(item.first, loaded->second);
         }
         require(core_sha256::file(model_path) == expected_sha256, "GGUF file changed while opening");
+        const bool use_ggml = !core_env::explicitly_off("CRISPEMBED_SPACY_GGML");
+        // CRISPEMBED_SPACY_GGML_UPCAST (default off): give the ggml engine exact F32
+        // expansions of compressed matrices, so an F16/quantized file keeps its
+        // weight values but runs the F32 (SGEMM) kernels without activation
+        // rounding. Decoded output then equals the scalar engine on that file.
+        if (use_ggml && !context->dequantized.empty() && core_env::on("CRISPEMBED_SPACY_GGML_UPCAST")) {
+            ggml_init_params params = { ggml_tensor_overhead() * context->dequantized.size() + 1024, nullptr, true };
+            context->upcast_ctx = ggml_init(params);
+            if (!context->upcast_ctx) throw std::bad_alloc();
+            std::vector<std::pair<ggml_tensor *, const float *>> uploads;
+            for (auto & item : ggml_weights) {
+                if (item.second->type == GGML_TYPE_F32) continue;
+                const auto view = tensors_for_upcast.find(item.first);
+                require(view != tensors_for_upcast.end(), "Upcast tensor view missing");
+                ggml_tensor * f32 = ggml_new_tensor(context->upcast_ctx, GGML_TYPE_F32, GGML_MAX_DIMS, item.second->ne);
+                ggml_set_name(f32, item.first.c_str());
+                uploads.emplace_back(f32, view->second);
+                item.second = f32;
+            }
+            context->upcast_buffer = ggml_backend_alloc_ctx_tensors(context->upcast_ctx, context->backend);
+            if (!context->upcast_buffer) throw std::bad_alloc();
+            for (const auto & upload : uploads)
+                ggml_backend_tensor_set(upload.first, upload.second, 0, ggml_nbytes(upload.first));
+        }
         context->model = std::make_unique<crispembed::spacy::NumericModel>(std::move(tensors));
-        if (core_env::on("CRISPEMBED_SPACY_GGML"))
+        if (use_ggml)
             context->ggml = std::make_unique<crispembed::spacy::GgmlNumeric>(std::move(ggml_weights), context->backend);
         return context.release();
     } catch (const std::bad_alloc &) {

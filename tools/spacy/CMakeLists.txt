@@ -13,10 +13,12 @@ endif()
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Static ggml dependencies" FORCE)
 set(GGML_CPU ON CACHE BOOL "CPU backend" FORCE)
-# CRISPEMBED_SPACY_SGEMM (default OFF) keeps ggml's portable tiled SGEMM
-# (llamafile tinyBLAS) for the opt-in CRISPEMBED_SPACY_GGML engine. It changes
-# only the F32/F16 mul_mat kernels; the scalar reference path never uses it.
-option(CRISPEMBED_SPACY_SGEMM "Enable ggml tiled SGEMM for the spaCy ggml engine" OFF)
+# CRISPEMBED_SPACY_SGEMM (default ON since 18 November 2026) keeps ggml's portable
+# tiled SGEMM (llamafile tinyBLAS) for the default ggml engine. It changes only
+# the F32/F16 mul_mat kernels; the scalar reference path
+# (CRISPEMBED_SPACY_GGML=0) never uses it. -DCRISPEMBED_SPACY_SGEMM=OFF rebuilds
+# the previous ggml kernel set.
+option(CRISPEMBED_SPACY_SGEMM "Enable ggml tiled SGEMM for the spaCy ggml engine" ON)
 set(_spacy_disabled_ggml NATIVE BACKEND_DL CPU_ALL_VARIANTS CPU_HBM CPU_KLEIDIAI CPU_REPACK
     OPENMP ACCELERATE BLAS CUDA HIP MUSA CANN VULKAN METAL
     SYCL RPC OPENCL OPENVINO WEBGPU ZDNN ZENDNN VIRTGPU
@@ -24,7 +26,7 @@ set(_spacy_disabled_ggml NATIVE BACKEND_DL CPU_ALL_VARIANTS CPU_HBM CPU_KLEIDIAI
 if(NOT CRISPEMBED_SPACY_SGEMM)
     list(APPEND _spacy_disabled_ggml LLAMAFILE)
 else()
-    set(GGML_LLAMAFILE ON CACHE BOOL "Tiled SGEMM for the opt-in spaCy ggml engine" FORCE)
+    set(GGML_LLAMAFILE ON CACHE BOOL "Tiled SGEMM for the default spaCy ggml engine" FORCE)
 endif()
 foreach(flag IN LISTS _spacy_disabled_ggml)
     set(GGML_${flag} OFF CACHE BOOL "Disabled in the closed spaCy CPU target" FORCE)
