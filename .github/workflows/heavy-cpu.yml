@@ -93,6 +93,7 @@ jobs:
       KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
       KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
       HF_TOKEN_2: ${{ secrets.HF_TOKEN_2 }}
+      HF_PUBLISH_TOKEN: ${{ startsWith(inputs.script, 'tools/ci-heavy/spacy_w7_') && secrets.HF_PUBLISH_TOKEN || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -133,7 +134,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ startsWith(inputs.script, 'tools/ci-heavy/spacy_w7_') && '3.12.14' || '3.12' }}
 
       - name: Install extra pip packages
         if: inputs.pip != ''
