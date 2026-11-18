@@ -1,3 +1,16 @@
+## W7 isolated AVX2/F32 development assessment — 18 November 2026
+
+[Run44284405910](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44284405910)
+at `41195dc43b27ed15c19a991803aa8519fff4d7ee` passes four CTest controls and
+unchanged prepared/rawtext parity for scalar and opt-in AVX2 reductions:
+16development cases/1,201stages/1,406,553floats/244parserstates/339decisions per
+arm. One new72token operational input has exact copied token records across
+10alternating measured pairs after3warmup pairs; sampled RSSgrowth0. The
+predeclared finite timing signal passes, but this is not a broad speed result
+or an accepted runtime profile. Default remains OFF; original F32 production
+sources/capsule and all consumed splits remain unchanged.
+[Exact sources, numerical gates and diagnostic timings](docs/validation/native-spacy-w7-20261118/owner-execution/optimized-f32-assessment.json).
+
 ## W7 same signed Runner: ARM64 worker and normal startup — 18 November 2026
 
 [Run44279211190](https://github.com/CrispStrobe/CrispCloud/actions/runs/44279211190)

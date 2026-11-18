@@ -769,7 +769,15 @@
           "limits": "Diagnostic actual signed Runner/native worker operational sample; not UI/grammar accuracy or a leak proof."
         }
       },
-      "normal_startup_receipt": "signed-app-assessment.json"
+      "normal_startup_receipt": "signed-app-assessment.json",
+      "PR": {
+        "number": 271,
+        "url": "https://github.com/CrispStrobe/CrispCloud/pull/271",
+        "head": "b01676d417a57b116451e3d0314ad36f0bf32cb8",
+        "state": "OPEN/DRAFT",
+        "merge_blocker": "Quds139 has3actualOffice failures;153 unmerged/current139 not integrated, candidate pin not final",
+        "default": "OFF"
+      }
     }
   },
   "limits": [
@@ -887,5 +895,16 @@
     "receipt": "kaggle-cuda-assessment.json",
     "consumed_panels_replayed": false,
     "CPU_build_or_forward": false
+  },
+  "isolated_AVX2_F32_assessment": {
+    "run": 44284405910,
+    "source": "41195dc43b27ed15c19a991803aa8519fff4d7ee",
+    "execution_passed": true,
+    "prepared_and_rawtext_scalar_and_fast": "PASS16development cases/1201stages/1406553floats/244parserstates/339decisions each",
+    "model_free_CTest_pass": 4,
+    "default": "OFF",
+    "promoted_profile": false,
+    "speed_claim": false,
+    "receipt": "optimized-f32-assessment.json"
   }
 }

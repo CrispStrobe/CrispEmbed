@@ -13,8 +13,11 @@ The independently valid Linux PR237 is merged; immutable publication/readback,
 real ARM64 Mac component and new finite grammar/quantization assessments now
 have actual [source-bound results](validation/native-spacy-w7-20261118/owner-execution/results.json).
 The current completion scope includes explicit hosted W7 qualification and
-supersedes the dated no-Actions local-closure constraint. Quds139/153 integration,
-signed-app/sandbox loading and Mac grammar remain open; the provider stays OFF.
+supersedes the dated no-Actions local-closure constraint. Signed ARM64 Runner/native-worker and normal startup pass at44279211190;
+the isolated AVX2/F32 development candidate also passes its frozen gates,
+remaining OFF and unpromoted. CrispCloud draftPR271 is the tested source
+candidate. Quds139/153 integration, final app pin and Mac grammar remain open;
+the provider stays OFF.
 All quantized candidates are rejected; accepted F32 and both consumed grammar
 panels remain unchanged. Do not repeat consumed native/W6/new-W7 held-out runs.
 

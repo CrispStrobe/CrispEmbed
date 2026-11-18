@@ -2,10 +2,11 @@
 
 ## W7 completion ownership — 18 November 2026
 
-Remaining W7 work is paired integration and gated native optimization qualification.
+Remaining W7 work is paired integration and final merged consumer pin.
 Quds139 has three actual Office failures; Quds153 is its unmerged W7 descendant.
 Do not merge failed139 or call its sealed historical evidence current integration.
-CrispCloud settings/manual registration stay default OFF. Signing preflight
+CrispCloud [draftPR271](https://github.com/CrispStrobe/CrispCloud/pull/271)
+records tested settings/manual registration at `b01676d4`, default OFF. Signing preflight
 passes. Actual signed ARM64 Runner/native-worker run44274988880 at
 `b07d1307` passes 3 warmups/25 measured operational requests, strict sandbox
 and library validation, copied-result disposal and signing-material cleanup.
@@ -16,7 +17,9 @@ alongside3warmups/25real native-worker requests and signing cleanup.
 Mac grammar remains an unrun gate. Inspect actual
 outcomes and fix only actual defects, then normally integrate/merge153 and pin
 the merged source
-after139's blockers are resolved. Mac grammar, accelerated quantized execution,
+after139's blockers are resolved. The isolated AVX2/F32 candidate passes its prepared/rawtext development gates
+at44284405910/source `41195dc4`; it remains OFF and unpromoted.
+Mac grammar, accelerated quantized execution,
 releases and provider activation remain unqualified. Real CUDA assessment
 kernel145760385/version1 is complete: F32 prepared gate passes; F16/Q8/Q4
 remain rejected. Normal signed Runner startup follow-up44279211190 at
