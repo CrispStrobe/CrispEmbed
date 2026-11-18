@@ -160,7 +160,32 @@ def build(args, entry, out, scratch, report, run):
     python = venv / 'bin/python'
     run('reference-install', [python, '-m', 'pip', 'install', '--only-binary=:all:', '--require-hashes',
                               '-r', ROOT / 'tools/spacy/requirements-reference.txt'])
+    if args.use_published:
+        # Consumers/card for the already published bundle: no conversion (the
+        # converter may have moved on); every file is read back fresh from the
+        # tracked immutable revision and checked against the tracked pins.
+        published = entry['published']
+        payload = out / 'payload'
+        (payload / 'bundle').mkdir(parents=True)
+        pins = {f'bundle/{name}': pin for name, pin in entry['expected_files'].items()}
+        pins['bundle/manifest.json'] = published['manifest']
+        report['published_readback'] = {}
+        for path, pin in pins.items():
+            url = f"https://huggingface.co/{entry['repository']}/resolve/{published['revision']}/{path}"
+            report['published_readback'][path] = common.download(url, payload / path, pin['sha256'], pin['bytes'])
+        manifest = json.loads((payload / 'bundle/manifest.json').read_text(encoding='utf-8'))
+        for name, pin in entry['expected_files'].items():
+            assert manifest['files'][name] == {'sha256': pin['sha256'], 'size_bytes': pin['bytes']}, name
+        report['bundle_files'] = {path: {'sha256': pin['sha256'], 'bytes': pin['bytes']} for path, pin in pins.items()}
+        report['revision'] = published['revision']
+        report['publication'] = {'reused_tracked_revision': True, 'revision': published['revision'],
+                                 'published_by_run': published['run']}
+        oracle_only = True
+    else:
+        oracle_only = False
     converted = scratch / 'converted'
+    if oracle_only:
+        return oracle(args, entry, out, scratch, report, run, python, wheel)
     run('convert', [python, ROOT / 'models/convert-spacy-pipeline-to-gguf.py', '--wheel', wheel,
                     '--output', converted])
     assert sorted(p.name for p in converted.iterdir()) == sorted(BUNDLE_FILES), sorted(converted.iterdir())
@@ -185,7 +210,15 @@ def build(args, entry, out, scratch, report, run):
                                                  'bytes': (payload / 'bundle' / name).stat().st_size}
                               for name in BUNDLE_FILES}
     report['converter_sha256'] = manifest['converter_sha256']
-    # Original-spaCy oracle on the raw test-set text (input only; not redistributed).
+    oracle(args, entry, out, scratch, report, run, python, wheel)
+    if not args.publish:
+        report['dry_run'] = True
+        return
+    publish_bundle(args, entry, out, scratch, report, payload)
+
+
+def oracle(args, entry, out, scratch, report, run, python, wheel):
+    """Original-spaCy oracle on the raw test-set text (input only; not redistributed)."""
     run('pip-model', [python, '-m', 'pip', 'install', '--no-deps', wheel])
     treebank = entry['treebank']
     conllu = scratch / treebank['file']
@@ -204,9 +237,9 @@ def build(args, entry, out, scratch, report, run):
                    '--oracle', oracle / 'oracle.json', '--ner-oracle', oracle / 'ner-oracle.json'])
     report['oracle'] = {name: common.digest(oracle / name) for name in ('texts.txt', 'oracle.json', 'ner-oracle.json')}
     report['oracle_texts'] = len(texts)
-    if not args.publish:
-        report['dry_run'] = True
-        return
+
+
+def publish_bundle(args, entry, out, scratch, report, payload):
     api = hub_api()
     report['publisher'] = api.whoami()['name']
     api.create_repo(entry['repository'], repo_type='model', private=False, exist_ok=True)
@@ -388,6 +421,8 @@ def main():
     parser.add_argument('--build-dir', type=Path, help='consume/card: the build step output')
     parser.add_argument('--consume-dir', type=Path, help='card: directory of consume outputs (one per platform)')
     parser.add_argument('--publish', action='store_true')
+    parser.add_argument('--use-published', action='store_true',
+                        help='build: skip conversion; read back the tracked published bundle revision')
     args = parser.parse_args()
     assert os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ.get('GITHUB_REPOSITORY') == 'CrispStrobe/CrispEmbed'
     if args.publish:
