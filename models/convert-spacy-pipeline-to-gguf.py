@@ -34,8 +34,10 @@ FORMAT_VERSION = 2
 WHEELS = {
     "en_core_web_sm-3.8.0-py3-none-any.whl": ("1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85", 12806118),
     "fr_core_news_sm-3.8.0-py3-none-any.whl": ("7d6ad14cd5078e53147bfbf70fb9d433c6a3865b695fda2657140bbc59a27e29", 16271721),
+    "fr_dep_news_trf-3.8.0-py3-none-any.whl": ("df243e539bbc365390744a411aa574fb03eb2ee2f948cf6149ad722c59ab419b", 397740844),
 }
-SUPPORTED_COMPONENTS = {"tok2vec", "tagger", "morphologizer", "parser", "attribute_ruler", "lemmatizer", "ner"}
+SUPPORTED_COMPONENTS = {"tok2vec", "transformer", "tagger", "morphologizer", "parser", "attribute_ruler",
+                        "lemmatizer", "ner"}
 TOK2VEC_FEATURES = ["NORM", "PREFIX", "SUFFIX", "SHAPE", "SPACY", "IS_SPACE"]
 NER_FEATURES = ["NORM", "PREFIX", "SUFFIX", "SHAPE"]
 RULE_LEMMATIZERS = {"en": "EnglishLemmatizer", "fr": "FrenchLemmatizer"}
@@ -64,7 +66,7 @@ def load_wheel(wheel: Path, destination: Path):
             require(not parts.is_absolute() and ".." not in parts.parts, "Unsafe archive path")
             if info.filename.startswith(prefix) and not info.is_dir():
                 relative = info.filename[len(prefix):]
-                require(info.file_size < 64 * 1024 * 1024, "Oversized model resource")
+                require(info.file_size < 1024 * 1024 * 1024, "Oversized model resource")
                 target = destination / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(archive.read(info))
@@ -136,22 +138,85 @@ def export_classifier(nlp, name, tensors, origins):
 
 
 def export_transition(nlp, name, prefix, tensors, origins, features):
+    """TransitionBasedParser.v2: reduce Linear -> PrecomputableAffine (nF x nO x
+    nP) -> optional upper Linear. Without the upper layer (spaCy trf parsers)
+    the maxout output is the class score vector itself (nO == n_moves)."""
     component = nlp.get_pipe(name)
     model = component.model
-    require(model.attrs["has_upper"] is True and not model.attrs["unseen_classes"], f"{name}: class mask/upper")
+    has_upper = model.attrs["has_upper"] is True
+    require(not model.attrs["unseen_classes"], f"{name}: class mask")
     require(component.cfg.get("beam_width", 1) == 1, f"{name}: only greedy decoding")
     nodes = walk(model)
-    require(nodes[2].name == "precomputable_affine" and nodes[3].name == "linear" and nodes[6].name == "linear",
-            f"{name}: unexpected transition model graph")
-    put(tensors, origins, f"{prefix}reduce", nodes[6], ["W", "b"], name, 6)
-    put(tensors, origins, f"{prefix}lower", nodes[2], ["W", "b", "pad"], name, 2)
-    put(tensors, origins, f"{prefix}upper", nodes[3], ["W", "b"], name, 3)
-    require(int(nodes[2].get_param("W").shape[0]) == features, f"{name}: state feature count")
-    return [component.moves.get_class_name(i) for i in range(component.moves.n_moves)]
+    lower = [i for i, n in enumerate(nodes) if n.name == "precomputable_affine"]
+    linears = [i for i, n in enumerate(nodes) if n.name == "linear"]
+    require(len(lower) == 1 and len(linears) == (2 if has_upper else 1), f"{name}: unexpected transition graph")
+    moves = [component.moves.get_class_name(i) for i in range(component.moves.n_moves)]
+    reduce_index = linears[-1]
+    put(tensors, origins, f"{prefix}reduce", nodes[reduce_index], ["W", "b"], name, reduce_index)
+    put(tensors, origins, f"{prefix}lower", nodes[lower[0]], ["W", "b", "pad"], name, lower[0])
+    shape = nodes[lower[0]].get_param("W").shape
+    require(int(shape[0]) == features, f"{name}: state feature count")
+    if has_upper:
+        put(tensors, origins, f"{prefix}upper", nodes[linears[0]], ["W", "b"], name, linears[0])
+    else:
+        require(int(shape[1]) == len(moves), f"{name}: upper-less parser must score every move")
+    return moves, has_upper
 
 
 UNIVERSAL_POS = ["noun", "verb", "adj", "adv", "propn", "num", "pron", "det", "adp", "aux", "cconj", "sconj",
                  "part", "intj", "punct", "sym", "x", "space", "eol"]
+
+
+def export_transformer(nlp, tensors, origins):
+    """spacy-curated-transformers CamemBERT (RoBERTa post-LN encoder) with the
+    CamemBERT SentencePiece piece encoder and WithStridedSpans."""
+    import base64
+    import numpy as np
+    component = nlp.get_pipe("transformer")
+    cfg = nlp.config["components"]["transformer"]["model"]
+    require(cfg["@architectures"] == "spacy-curated-transformers.CamembertTransformer.v1", "Unsupported transformer")
+    require(cfg["piece_encoder"]["@architectures"] == "spacy-curated-transformers.CamembertSentencepieceEncoder.v1",
+            "Unsupported piece encoder")
+    spans = cfg["with_spans"]
+    require(spans["@architectures"] == "spacy-curated-transformers.WithStridedSpans.v1", "Unsupported span extractor")
+    require(cfg["hidden_act"] == "gelu" and cfg["type_vocab_size"] == 1, "Unsupported transformer activation/types")
+    for name in nlp.pipe_names[1:]:
+        tok2vec = (nlp.config["components"][name].get("model") or {}).get("tok2vec")
+        if tok2vec is None and name == "parser":
+            raise ValueError("parser without a transformer listener")
+        if tok2vec is not None:
+            require(tok2vec["@architectures"] == "spacy-curated-transformers.LastTransformerLayerListener.v1" and
+                    tok2vec["pooling"]["@layers"] == "reduce_mean.v1" and tok2vec["upstream"] == "transformer",
+                    f"{name}: unsupported transformer listener")
+    state = component.model.get_ref("transformer").shims[0]._model.state_dict()
+    layers = cfg["num_hidden_layers"]
+    prefix = "curated_encoder."
+    mapping = {"embeddings.inner.word_embeddings.weight": "trf.embed.word",
+               "embeddings.inner.position_embeddings.weight": "trf.embed.position",
+               "embeddings.inner.token_type_embeddings.weight": "trf.embed.type",
+               "embeddings.inner.layer_norm.weight": "trf.embed.norm.weight",
+               "embeddings.inner.layer_norm.bias": "trf.embed.norm.bias"}
+    for i in range(layers):
+        for source, target in (("mha.input", "qkv"), ("mha.output", "attn_out"),
+                               ("attn_output_layernorm", "attn_norm"), ("ffn.intermediate", "ffn_in"),
+                               ("ffn.output", "ffn_out"), ("ffn_output_layernorm", "ffn_norm")):
+            for kind in ("weight", "bias"):
+                mapping[f"layers.{i}.{source}.{kind}"] = f"trf.layer.{i}.{target}.{kind}"
+    require(set(state) == {prefix + key for key in mapping}, "Unexpected transformer state dict")
+    for key, target in mapping.items():
+        value = state[prefix + key].detach().cpu().numpy()
+        require(value.dtype == np.dtype("float32") and bool(np.isfinite(value).all()), f"Not finite F32: {key}")
+        tensors[target] = np.array(value, dtype="<f4", order="C", copy=True)
+        origins[target] = {"component": "transformer", "state_dict": prefix + key}
+    encoder = component.model.get_ref("piece_encoder").get_ref("encoder")
+    spp = encoder.attrs["sentencepiece_processor"]
+    return {"architecture": "camembert", "piece_encoder": "camembert_sentencepiece",
+            "layers": layers, "width": cfg["hidden_width"], "heads": cfg["num_attention_heads"],
+            "intermediate": cfg["intermediate_width"], "layer_norm_eps": cfg["layer_norm_eps"],
+            "padding_idx": cfg["padding_idx"], "max_positions": cfg["max_position_embeddings"],
+            "model_max_length": cfg["model_max_length"], "window": spans["window"], "stride": spans["stride"],
+            "listener": "last_layer_reduce_mean",
+            "sentencepiece_model_base64": base64.b64encode(spp.to_protobuf()).decode("ascii")}
 
 
 def table_json(name, table):
@@ -171,8 +236,12 @@ def extract(nlp, source: Path):
     import srsly
     tensors, origins, labels = {}, {}, {}
     pipes = nlp.pipe_names
-    require(pipes[0] == "tok2vec" and "parser" in pipes, "Expected a shared tok2vec and a parser")
-    rows = export_tok2vec(nlp, nlp.get_pipe("tok2vec").model, "", "tok2vec", TOK2VEC_FEATURES, tensors, origins)
+    require(pipes[0] in ("tok2vec", "transformer") and "parser" in pipes, "Expected tok2vec/transformer and a parser")
+    if pipes[0] == "transformer":
+        labels["transformer"] = export_transformer(nlp, tensors, origins)
+        rows = []
+    else:
+        rows = export_tok2vec(nlp, nlp.get_pipe("tok2vec").model, "", "tok2vec", TOK2VEC_FEATURES, tensors, origins)
     for name in ("tagger", "morphologizer"):
         if name in pipes:
             export_classifier(nlp, name, tensors, origins)
@@ -190,14 +259,17 @@ def extract(nlp, source: Path):
             "assign": [{"pos": NAMES[morph.cfg["labels_pos"][label]] if morph.cfg["labels_pos"][label] else "",
                         "morph": str(MorphAnalysis(nlp.vocab, morph.cfg["labels_morph"][label]))}
                        for label in morph.labels]}
-    labels["parser"] = {"moves": export_transition(nlp, "parser", "parser.", tensors, origins, 8),
+    parser_moves, parser_upper = export_transition(nlp, "parser", "parser.", tensors, origins, 8)
+    labels["parser"] = {"moves": parser_moves, "has_upper": parser_upper,
                         "learn_tokens": nlp.get_pipe("parser").cfg.get("learn_tokens", False),
                         "features": ["B0", "B1", "S0", "S1", "S2", "L(B0,1)", "L(S0,1)", "R(S0,1)"]}
     require(labels["parser"]["learn_tokens"] is False, "Subtoken learning parser unsupported")
     if "ner" in pipes:
         ner_rows = export_tok2vec(nlp, nlp.get_pipe("ner").model, "ner.", "ner", NER_FEATURES, tensors, origins)
         require(ner_rows == rows[:4], "NER embedding rows differ from the shared tok2vec rows")
-        labels["ner"] = {"moves": export_transition(nlp, "ner", "ner.", tensors, origins, 3)}
+        ner_moves, ner_upper = export_transition(nlp, "ner", "ner.", tensors, origins, 3)
+        require(ner_upper, "NER without an upper layer is unsupported")
+        labels["ner"] = {"moves": ner_moves}
     if "attribute_ruler" in pipes:
         from spacy.tokens import MorphAnalysis
         rules = nlp.get_pipe("attribute_ruler").patterns

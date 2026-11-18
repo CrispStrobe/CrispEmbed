@@ -744,8 +744,14 @@ namespace {
 bool is_v2_model(const char * model_path, const char * expected_sha256) {
     require(model_path && *model_path && valid_sha(expected_sha256),
             "Explicit model path and trusted lowercase SHA-256 required");
-    const auto bytes = read_model(model_path);
-    require(core_sha256::bytes(bytes.data(), bytes.size()) == expected_sha256, "GGUF SHA-256 mismatch");
+    // Streamed hash: v2 transformer models are several hundred MB.
+    std::ifstream probe(model_path, std::ios::binary | std::ios::ate);
+    require(static_cast<bool>(probe), "Cannot open spaCy GGUF file");
+    const auto length = probe.tellg();
+    require(length >= 24 && length <= static_cast<std::streamoff>(1024u * 1024u * 1024u),
+            "GGUF file size outside admitted bounds");
+    probe.close();
+    require(core_sha256::file(model_path) == expected_sha256, "GGUF SHA-256 mismatch");
     gguf_init_params params{ true, nullptr };
     std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(gguf_init_from_file(model_path, params), gguf_free);
     require(meta != nullptr, "Invalid spaCy GGUF container");
