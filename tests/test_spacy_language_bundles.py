@@ -79,6 +79,8 @@ class Cards(unittest.TestCase):
         fr = card.render(self.catalog("fr_core_news_sm", [ok, bad]))
         self.assertIn("license: other", fr)
         self.assertIn("license_name: lgpl-lr", fr)
+        self.assertIn("license_link: https://huggingface.co/cstr/crispembed-spacy-fr-core-news-sm-3.8.0/blob/"
+                      + "b" * 40 + "/bundle/LICENSE", fr)
         self.assertIn("LGPL-LR", fr)
         self.assertIn("loads and matches", fr)
         self.assertIn("FAILED (AssertionError: No published v2-capable capsule)", fr)
@@ -93,6 +95,9 @@ class Cards(unittest.TestCase):
     def test_german_card_renders_language_bundles(self):
         card = load("model_card", "tools/spacy/model_card.py")
         catalog = json.loads((ROOT / "tools/spacy/hub_catalog.json").read_text(encoding="utf-8"))
+        tracked = catalog.pop("language_bundles")
+        self.assertEqual({item["repository"] for item in tracked},
+                         {entry["repository"] for entry in CATALOG["bundles"].values()})
         self.assertNotIn("Other languages", card.render(catalog))
         catalog["language_bundles"] = [{"language": "en", "model": "en_core_web_sm",
                                         "repository": "cstr/x", "revision": "1" * 40, "license": "MIT",
