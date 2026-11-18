@@ -2,36 +2,32 @@
 
 ## W7 completion ownership — 18 November 2026
 
-Remaining W7 work is paired integration and final merged consumer pin.
-Quds139 has three actual Office failures; Quds153 is its unmerged W7 descendant.
-Do not merge failed139 or call its sealed historical evidence current integration.
-CrispCloud [draftPR271](https://github.com/CrispStrobe/CrispCloud/pull/271)
-records tested settings/manual registration at `b01676d4`, default OFF. Signing preflight
-passes. Actual signed ARM64 Runner/native-worker run44274988880 at
-`b07d1307` passes 3 warmups/25 measured operational requests, strict sandbox
-and library validation, copied-result disposal and signing-material cleanup.
-Earlier dependency and sandbox descriptor-capture failures remain retained.
-Normal GUI startup follow-up44279211190 at `b01676d4` now passes
-the existing30second credential/setup UI smoke in the same signed Runner,
-alongside3warmups/25real native-worker requests and signing cleanup.
-Mac grammar remains an unrun gate. Inspect actual
-outcomes and fix only actual defects, then normally integrate/merge153 and pin
-the merged source
-after139's blockers are resolved. The isolated AVX2/F32 candidate passes its prepared/rawtext development gates
-at44284405910/source `41195dc4`; it remains OFF and unpromoted.
-Mac grammar, accelerated quantized execution,
-releases and provider activation remain unqualified. Real CUDA assessment
-kernel145760385/version1 is complete: F32 prepared gate passes; F16/Q8/Q4
-remain rejected. Normal signed Runner startup follow-up44279211190 at
-`b01676d4` passes; do not rerun consumed panels.
+Remaining work is paired Quds integration and the final merged consumer pin.
+PR139 has three actual Office check failures: footer PAGE compatibility and
+seven editor raster goldens. Resolve those failures without weakening assertions
+or goldens, normally integrate the current139 source into stacked153, then
+merge/pin the reviewed153 path. Its sealed historical evidence is not current
+integration proof. Preserve all342sealed identities.
 
-Completed Linux publication, unsigned ARM64 component, separately consumed
-96-case coverage and rejected F16/Q8/Q4 assessments are in [HISTORY](HISTORY.md),
+CrispCloud [draftPR271](https://github.com/CrispStrobe/CrispCloud/pull/271)
+at `b01676d4` carries the guarded unmerged153 candidate; main still pins6245a695.
+Actual signed ARM64 Runner/native-worker and normal30second startup pass at
+44279211190, including signatures, sandbox/library validation and cleanup.
+Final pin, manual-provider UI activation and Mac grammar remain unqualified.
+Settings/manual registration stay default OFF with no automatic downloads.
+
+F16/Q8/Q4 CPU and real CUDA assessments are complete and rejected under the
+original numerical/discrete gates. The isolated AVX2/F32 development candidate
+passes prepared/rawtext gates at44284405910/source `41195dc4`; it remains OFF
+and unpromoted. No accepted quantized profile or broad speed result exists.
+
+Completed Linux PR237/publication, ARM64 component/signed-app startup, finite
+96-case coverage and quantization/optimization evidence are in [HISTORY](HISTORY.md),
 [PERFORMANCE](PERFORMANCE.md) and the
 [source-bound execution receipt](docs/validation/native-spacy-w7-20261118/owner-execution/results.json).
-Preserve original W6 5/30,22/30/eight misses and the new panel's16 misses. Never
-rerun either consumed grammar panel or the consumed native acceptance split.
-F32 remains accepted; no runtime/app release or activation is implied.
+Preserve original W6 5/30,22/30/eight misses and new panel14/40,24/40/sixteen
+misses. Never rerun either consumed grammar panel or native acceptance split.
+F32 remains accepted; runtime/app release and provider activation remain open.
 
 ## PR235 post-OOM owner repair — 18 November 2026
 
