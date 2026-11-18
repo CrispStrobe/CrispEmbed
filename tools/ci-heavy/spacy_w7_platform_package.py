@@ -82,6 +82,8 @@ def main():
     parser.add_argument('--platform', choices=sorted(RUNNERS))
     parser.add_argument('--publish', action='store_true')
     parser.add_argument('--card-only', action='store_true')
+    parser.add_argument('--linux-runtime', choices=['shared', 'static'], default='shared',
+                        help='Linux only: link libstdc++/libgcc dynamically (default) or statically')
     args = parser.parse_args()
     assert os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ.get('GITHUB_REPOSITORY') == 'CrispStrobe/CrispEmbed'
     assert args.card_only or args.platform, '--platform is required unless --card-only'
@@ -140,7 +142,8 @@ def main():
             build, install = scratch / 'native-build', scratch / 'native-install'
             link = (['-DCMAKE_INSTALL_NAME_DIR=@rpath', '-DCMAKE_INSTALL_RPATH=@loader_path',
                      '-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON'] if darwin
-                    else ['-DCMAKE_SHARED_LINKER_FLAGS=-static-libstdc++ -static-libgcc'])
+                    else (['-DCMAKE_SHARED_LINKER_FLAGS=-static-libstdc++ -static-libgcc']
+                          if args.linux_runtime == 'static' else []))
             configure = ['cmake', '-S', ROOT / 'tools/spacy', '-B', build, '-DCMAKE_BUILD_TYPE=Release', *apple,
                          '-DSPACY_PCRE2_INCLUDE_DIR=' + str(prefix / 'include'),
                          '-DSPACY_PCRE2_LIBRARY=' + str(static_pcre), *link]
@@ -169,8 +172,10 @@ def main():
                         floors[family] = (key, version)
                 dependencies = {'elf_needed': needed, 'bundled': False, 'pcre2': 'static ' + PCRE2,
                                 'symbol_version_floors': {k: v[1] for k, v in floors.items()},
-                                'static_runtime': ['libstdc++', 'libgcc']}
-                assert not [n for n in needed if 'pcre' in n or 'stdc++' in n or 'python' in n.lower()], needed
+                                'static_runtime': ['libstdc++', 'libgcc'] if args.linux_runtime == 'static' else []}
+                assert not [n for n in needed if 'pcre' in n or 'python' in n.lower()], needed
+                if args.linux_runtime == 'static':
+                    assert not [n for n in needed if 'stdc++' in n], needed
             capsule = payload / pd.archive_name(args.platform)
             built = pd.build(args.platform, install, bundle, capsule, source_commit=source,
                              build_info={'cmake_cache': cache_flags, 'compiler': compiler,
@@ -191,21 +196,28 @@ def main():
             run('oracle-sparse', ['git', 'sparse-checkout', 'set', 'tools/proofing/spacy'], oracle)
             run('oracle-checkout', ['git', 'checkout', '--detach', ORACLE], oracle)
             run('numpy-install', [sys.executable, '-m', 'pip', 'install', 'numpy==2.4.6'])
+            def check(label, command):
+                with (out / f'{label}.log').open('w') as log:
+                    # faulthandler keeps a native crash diagnosable in the log.
+                    code = subprocess.run([sys.executable, '-X', 'faulthandler', *map(str, command)],
+                                          cwd=ROOT, stdout=log, stderr=subprocess.STDOUT).returncode
+                target = out / f'{label}.json'
+                return code, (json.loads(target.read_text()) if target.exists() else None)
+
+            report['text_api'] = {}
+            code, api = check('text-api', [ROOT / 'tests/test_spacy_text_api.py', '--library', installed_library,
+                                           '--bundle', installed_bundle, '--report', out / 'text-api.json'])
+            report['text_api'] = {'returncode': code, 'passed': bool(api and api.get('status') == 'pass'),
+                                  'controls': (api or {}).get('tests_run')}
+            save()
             report['parity'] = {}
             for script, name in [('spacy_parity.py', 'prepared'), ('spacy_text_parity.py', 'text')]:
-                target = out / f'{name}-parity.json'
-                subprocess.run([sys.executable, str(ROOT / 'tests' / script), '--library', str(installed_library),
-                                '--bundle', str(installed_bundle), '--quds-root', str(oracle),
-                                '--report', str(target)], cwd=ROOT, check=False,
-                               stdout=(out / f'{name}-parity.log').open('w'), stderr=subprocess.STDOUT)
-                result = json.loads(target.read_text())
-                report['parity'][name] = {'passed': result['passed'], 'counts': result.get('counts')}
-            subprocess.run([sys.executable, str(ROOT / 'tests/test_spacy_text_api.py'), '--library',
-                            str(installed_library), '--bundle', str(installed_bundle),
-                            '--report', str(out / 'text-api.json')], cwd=ROOT, check=False,
-                           stdout=(out / 'text-api.log').open('w'), stderr=subprocess.STDOUT)
-            api = json.loads((out / 'text-api.json').read_text())
-            report['text_api'] = {'passed': api.get('passed'), 'controls': len(api.get('controls', api.get('cases', [])))}
+                code, result = check(f'{name}-parity', [ROOT / 'tests' / script, '--library', installed_library,
+                                                        '--bundle', installed_bundle, '--quds-root', oracle,
+                                                        '--report', out / f'{name}-parity.json'])
+                report['parity'][name] = {'returncode': code, 'passed': bool(result and result['passed']),
+                                          'counts': (result or {}).get('counts')}
+                save()
             save()
             assert all(item['passed'] for item in report['parity'].values()), 'Development parity failed'
             assert report['text_api']['passed'], 'Text API controls failed'
