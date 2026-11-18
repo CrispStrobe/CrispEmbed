@@ -889,6 +889,23 @@ add_executable(punct-ab tests/punct_ab.cpp)
 target_include_directories(punct-ab PRIVATE src)
 target_link_libraries(punct-ab PRIVATE crispembed)
 
+# Explicit future-gate observer, never part of normal builds or installation.
+# Keep byte-shared src/pcs.cpp intact; the adapter only inserts diagnostic calls.
+option(CRISPEMBED_BUILD_PCS_CAPTURE "Expose test-only PCS provenance/casing observer" OFF)
+if(CRISPEMBED_BUILD_PCS_CAPTURE)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    set(PCS_CAPTURE_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/pcs_gate_observed.cpp")
+    add_custom_command(OUTPUT "${PCS_CAPTURE_SOURCE}"
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/pcs_gate_capture.py"
+            prepare --source "${CMAKE_CURRENT_SOURCE_DIR}/src/pcs.cpp" --output "${PCS_CAPTURE_SOURCE}"
+        DEPENDS src/pcs.cpp tests/pcs_gate_trace.h tools/pcs_gate_capture.py
+        VERBATIM)
+    add_executable(punct-ab-capture EXCLUDE_FROM_ALL tests/punct_ab.cpp "${PCS_CAPTURE_SOURCE}")
+    target_include_directories(punct-ab-capture PRIVATE src tests)
+    target_link_libraries(punct-ab-capture PRIVATE crispembed)
+    crispembed_apply_arch_flags(punct-ab-capture)
+endif()
+
 # Live (needs a GGUF): dump the token ids the shipping runtime produces, for
 # ANY tokenizer family. SentencePiece/BPE parity cannot be checked from a
 # vocab file the way WordPiece can — merges, charsmap and pre-tokenizer

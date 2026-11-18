@@ -17,6 +17,12 @@ need it, then run `python tools/list_env_vars.py --write`. See the
 
 ## Semantics
 
+The explicit test-only `punct-ab-capture` target uses default-off
+`PCS_GATE_CAPTURE` (`core_env::on`) and the output file path
+`PCS_GATE_CAPTURE_PATH`. These are unavailable in production builds. See the
+[PCS source audit](pcs-casing-source-audit.md) for its uncompiled status and
+future capture/neutrality requirements; no ordinary gate is changed.
+
 Document cleanup correctness and binary PDF storage are enabled by default.
 Ruled-photo perspective rectification is explicitly requested with cleanup
 `deskew_consensus=2`, or enabled for diagnostics with

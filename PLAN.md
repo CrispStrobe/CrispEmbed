@@ -1,5 +1,32 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## PCS main failure: source-only attribution/capture — 18 November 2026
+
+PR235 owner-merged as `be20e497` from reviewed `7ab522d6` after 43 passing
+checks and two expected skips; its merged tree is identical. Main's separate
+push-only [PCS gate](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44247044277/job/134608391665)
+fails casing 66/67 and decoded text 5/6 (`OK` → `oK`). Preserve that failure;
+main is not CI green. PR236 remains merged at `04e84458`.
+
+The [source audit](docs/pcs-casing-source-audit.md) traces the first retained
+discrete difference to comparison row 37, original significant cap slot 1.
+Native token mapping, logit/margin and historical model/binary identity are
+missing; reference IDs alone do not prove native alignment. Historical PCS/core
+sources and the ggml pin are unchanged. GNU 15.2.0/native code generation is
+recorded, but neither it nor model drift is uniquely attributable.
+
+Source-only branch `diag/pcs-gate-capture-20261118` prepares a default-off,
+excluded/uninstalled diagnostic driver overlay, immutable model receipt and
+offline binary/compiler/CPU/compile-command provenance, actual token/chunk,
+SBD-conditioning and F32 casing-logit capture. Original production PCS, corpus,
+scorer, assertions, tolerances and workflow remain untouched. The target is
+uncompiled; no model/CI/provider execution or push is authorized or performed.
+All 13 synthetic source-only controls, pinned formatting, environment inventory,
+Python syntax and original runtime/gate/reference byte checks pass. Next:
+review the prepared source, then separately authorize build/link and
+observer-neutrality validation before any future frozen numerical attribution.
+No waiver, default/quality/performance promotion, release or app/model distribution.
+
 ## PR235 post-OOM owner repair — 18 November 2026
 
 At `6dffe3029`, artifact validation and clang-format pass; current Build
