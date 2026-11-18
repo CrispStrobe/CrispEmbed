@@ -71,7 +71,8 @@ def pipeline(source):
         }''')
     source = replace_once(source, '        require(reader.u32() == GGML_TYPE_F32, "Only F32 spaCy tensors are admitted");\n        const uint64_t offset = reader.u64();\n        const size_t tensor_bytes = elements * sizeof(float);',
         '''        const uint32_t raw_type = reader.u32();
-        require(raw_type == GGML_TYPE_F32 || (candidate && raw_type == static_cast<uint32_t>(requested)),
+        require(raw_type == GGML_TYPE_F32 || (candidate && raw_type == static_cast<uint32_t>(requested)) ||
+                    (candidate && requested == GGML_TYPE_Q4_0 && name.rfind("embed.", 0) == 0 && raw_type == GGML_TYPE_Q8_0),
                 "Tensor type is outside the admitted storage profile");
         const auto tensor_type = static_cast<ggml_type>(raw_type);
         const size_t block = static_cast<size_t>(ggml_blck_size(tensor_type));

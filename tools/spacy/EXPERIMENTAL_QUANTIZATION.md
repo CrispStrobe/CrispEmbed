@@ -14,6 +14,9 @@ finite F32 arrays. It retains the scalar F32 numerical implementation. This
 tests compressed storage and loading, not accelerated quantized matrix
 multiplication. Loaded compressed buffers and expanded arrays can increase
 resident memory. No performance improvement is assumed.
+The Q4_0 recipe retains the quantizer's existing Q8_0 protection for `embed.*`
+tensors. This closed mixed storage inventory is admitted explicitly; unrelated
+Q8_0 tensors are not admitted by a Q4_0 declaration.
 
 The existing `crispembed-quantize` implementation is compiled in isolation.
 The private source overlay prevents its generic convolution flattening from
