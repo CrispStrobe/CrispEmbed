@@ -34,9 +34,17 @@ cover counted-string ownership, exact original UTF-16 navigation, snapshot and
 locale validation, stale/cancel/close/retry paths and explicit browser
 unavailability. Analysis starts only on the user's action; it registers no
 grammar provider. Final checks on merge `8d89e4f7` also pass after Quds main
-`4b2b4e78`, with source/runtime bytes unchanged. Incremental grammar benefit, other-platform packaging and
-production release remain separate gates. NER and other model/locale profiles
-are not part of this target.
+`4b2b4e78`, with source/runtime bytes unchanged.
+
+The separate [W6 guarded-agreement qualification](../../docs/validation/native-spacy-w6-20261117/README.md)
+now passes against the newer Quds `6245a695` deterministic baseline: 5/30 exact
+errors become 22/30 with the guarded native planner, with zero findings on 42 valid
+and ten guard inputs. Its manual provider API stays default off; Studio does
+not register it automatically. Eight misses and four conservative corrected
+recheck abstentions remain explicit. The native/model bytes are unchanged,
+and the consumed native acceptance was not rerun. Other-platform packaging,
+device qualification and production release remain separate gates. NER and
+other model/locale profiles are not part of this target.
 
 The implementation starts with CPU/F32 and a scalar numerical reference path
 using ggml's GGUF/CPU weight ownership. Each source operation has been compared
@@ -73,6 +81,47 @@ The immutable source wheel plus the pinned converter/environment reproduce
 the bundle; output byte hashes and tensor inventories are retained in the
 validation receipt. A separately published native/model distribution does not
 exist yet. The application must not run this converter or embed Python.
+
+## W7 immutable package checkpoint
+
+The [W7 evidence](../../docs/validation/native-spacy-w7-20261118/README.md)
+retains 25 passing package controls and a successful real-input build and atomic
+installation. `distribution.py` authenticates an externally pinned archive before
+parsing, admits only the fixed 20 payloads and manifest, and publishes a verified
+read-only installation without replacing an existing directory. It does not load
+the native library or qualify the host runtime.
+
+```sh
+python3 -B tools/spacy/distribution.py build \
+  --native-archive /path/to/acceptance-candidate-linux-x86_64.tar.gz \
+  --bundle /path/to/verified-spacy-bundle --output /path/to/new-distribution.tar.gz
+python3 -B tools/spacy/distribution.py install \
+  --archive /path/to/new-distribution.tar.gz \
+  --sha256 4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01 \
+  --cache /path/to/private-cache
+```
+
+The preserved candidate archive is 7,808,129 bytes. Two subsequent full-input
+builds were compared byte for byte and both match its original recorded hash
+and size. The immutable installed tree also passed complete verification. The
+generated archive remains outside ordinary Git and is not a hosted release.
+
+The current Python consumer passes 21 controls and the frozen operational run:
+one disabled and three enabled processes, 24 panel executions, 78 warmup/cycle
+executions and 102 fully freed context/document pairs. Each enabled process
+records at most 102,400 bytes of sampled post-warmup RSS growth, with final
+file descriptors unchanged at three. The paired current Dart driver compiled
+17 controls and passed its installed-worker eight-case run, including explicit
+locale and worker lifecycle assertions.
+
+The [paired completion](../../docs/validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json)
+links independent retained-source/evidence audits. These supersede the old
+source-only ENOSPC status; historical first outcomes remain intact. Follow the
+[continuation instructions](../../docs/validation/native-spacy-w7-20261118/CONTINUE.md)
+for read-only audit commands and the next publication/readback lane. This
+completion loads no new model and changes no application default or accepted
+native/model bytes. Other platforms, portable dependencies, Flutter/device
+behavior and physical compute interruption are not qualified by these results.
 
 ## Contract and reference evidence
 
@@ -196,15 +245,22 @@ prompt interruption of native compute through Dart is not claimed.
 
 ## Next implementation steps
 
-1. W6: measure incremental grammar benefit against the latest deterministic
-   Quds main, including the newly reconciled bounded German controls, before
-   enabling any grammar provider. Freeze a separate evaluation; preserve the
-   native candidate and consumed first acceptance result.
-2. W7/platform work: qualify target-specific packaging, model/native
-   distribution, notices and device behavior separately from the Linux W5
-   validation. Production activation and release remain explicit later gates.
+1. W7 packaging: the preserved Linux package and Python/Dart operational
+   consumers are complete. Prepare separately declared portable/platform
+   candidates with exact dependency closure and notices; preserve the accepted
+   native candidate and both consumed first qualification results.
+2. W7 device qualification: verify actual loading, offline operation, worker
+   cleanup/cancellation and resource budgets on each intended target. The
+   bounded Linux x86-64/AVX2, de-DE, CPU/F32 evidence does not qualify other
+   platforms or mobile devices.
+3. W7 distribution: qualify immutable release artifacts and consumer readback
+   before deployment. Production activation remains a separate decision; the
+   manual provider API stays default off, with no automatic Studio registration.
 
 The [native receipts](../../docs/validation/native-spacy-20261117/README.md)
 retain the first and final numerical runs, negative setup evidence, dependency
-inventory, installed notices and exact source hashes. No model alias, runtime
-release, app pin, or grammar provider was enabled.
+inventory, installed notices and exact source hashes. The
+[W6 receipts](../../docs/validation/native-spacy-w6-20261117/README.md) retain
+the first grammar result, misses and source-bound local controls. No model
+alias, runtime release, app pin or production default changed. No GitHub
+Actions endpoint was queried, awaited or rerun for W6.

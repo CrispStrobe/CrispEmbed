@@ -1,5 +1,18 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
+## Native spaCy W7 local package closure — 18 November 2026
+
+The [paired completion](validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json)
+records verified Linux package reproduction/installation and current Python/Dart
+operational consumers. Independent audits authenticate the saved executions and
+all 342 sealed Quds sources. Main `be20e497` is integrated in the W7 branch;
+the accepted native/model bytes and consumed linguistic panels are preserved.
+The [current continuation](validation/native-spacy-w7-20261118/CONTINUE.md)
+supersedes the old pending/uncompiled handoff and provides read-only auditors.
+Hosted publication/download readback, portable dependencies, other devices and
+activation remain open. Keep checkpoints on `feat/native-spacy-w7-20261118`
+and do not query, wait for, rerun or dispatch Actions for this lane.
+
 ## Current portfolio checkpoint — 12 November 2026
 
 This dated checkpoint supersedes conflicting status claims in the older sections

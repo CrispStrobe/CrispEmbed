@@ -1,0 +1,100 @@
+{
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "51c5afe923cd1c6125ed8ff45216007b149794c4d7f905ca9cfcc95d62ad823a",
+      "size_bytes": 2383
+    },
+    {
+      "path": "bundle-files.json",
+      "sha256": "ca256652506cf7c57f31f08d472e9820870a2269d48898397cf1a5814533bd5d",
+      "size_bytes": 1022
+    },
+    {
+      "path": "conversion.log",
+      "sha256": "c65f19db7bf69a1031e2f925535d8664f59d8de5a0db91ba7d1f3e2911f1978c",
+      "size_bytes": 169
+    },
+    {
+      "path": "dependency-preflight.json",
+      "sha256": "719ea37f3e38d3c2446aeb1ddf8bada4214987b4f0eb19f4a0552f14b55b3988",
+      "size_bytes": 3007
+    },
+    {
+      "path": "distribution-build-a.json",
+      "sha256": "ac79a1b678e9e871f5459c8dc6405e8e645506e09952e2fcadf72e908f075699",
+      "size_bytes": 7707
+    },
+    {
+      "path": "distribution-build-b.json",
+      "sha256": "1e24341b16d0c89501c50fcc0ddfbc9e6c420c59af527e66e4d0b3d3906eadab",
+      "size_bytes": 7707
+    },
+    {
+      "path": "distribution-byte-comparison.json",
+      "sha256": "3c2b6f61c546d929ee5b747d597e3aac956f559f634fea08c3d5c4d725228769",
+      "size_bytes": 974
+    },
+    {
+      "path": "distribution-controls.txt",
+      "sha256": "b9593e1f4b476531a6efb1a17fbf51d250d1e53bf6baad12b87a9c94c00a9358",
+      "size_bytes": 3820
+    },
+    {
+      "path": "distribution-install.json",
+      "sha256": "d9c016859c8d65623af6e1735fadde88a4a35762027f5b2a62b4eafe3f7cbd59",
+      "size_bytes": 914
+    },
+    {
+      "path": "distribution-verify-install.json",
+      "sha256": "5ddb16058a200278165efc4486150d7f5743cdc43bb5b72d3421ea42eb4ffe3a",
+      "size_bytes": 863
+    },
+    {
+      "path": "elf-dynamic.txt",
+      "sha256": "d0a9fe1de2d379f14abc5ba014d398e466e2012c4c98b9fe4d7633a11923c7f7",
+      "size_bytes": 1771
+    },
+    {
+      "path": "elf-header.txt",
+      "sha256": "b544a20ba7a41667b88ff0e1e572c68e82e8efba0ed78ae703d1a3720a097742",
+      "size_bytes": 955
+    },
+    {
+      "path": "elf-versions.txt",
+      "sha256": "c3bf35c2ea6d120fe20972a91721ce40b8631c18e9380b25f8de98cbbf41a7f4",
+      "size_bytes": 30701
+    },
+    {
+      "path": "loader-resolution.txt",
+      "sha256": "cd59f8be183a26995bfbbd82394520af001381c185b71665356cfbd1e87e0508",
+      "size_bytes": 453
+    },
+    {
+      "path": "model-wheel-download.json",
+      "sha256": "3f91081a5d19f8105eb6519004748438c3452a5e2ece73ba8d22d9127595cbb8",
+      "size_bytes": 350
+    },
+    {
+      "path": "native-restore.json",
+      "sha256": "75e728edc0d732845351a2937ae56fc0095dd3ad864d76bf5298e5b37a60477d",
+      "size_bytes": 3495
+    },
+    {
+      "path": "package-result.json",
+      "sha256": "6ad42c97511f9e6465a29344c5a253c04d86b36b47ba5709c87ec361728ea93e",
+      "size_bytes": 1754
+    },
+    {
+      "path": "reference-environment.json",
+      "sha256": "aea0b20ab3ee4b7879f98db2466bf5c31d891bbb0eeb35bf19656a20a0815bdc",
+      "size_bytes": 1251
+    },
+    {
+      "path": "reference-install.log",
+      "sha256": "2cc7e3ee1c782e102116acf6256058b229229e20d90ef2ecdb70cf3aa6d74b4b",
+      "size_bytes": 10133
+    }
+  ],
+  "schema": "crispembed.spacy.w7.resume_package_evidence.v1"
+}

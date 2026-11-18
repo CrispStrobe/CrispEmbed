@@ -1,0 +1,53 @@
+{
+  "archive_sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+  "archive_size_bytes": 7808129,
+  "bundle_files_exact": 5,
+  "complete_rebuild_bytes_equal": true,
+  "github_actions_queries_waits_reruns_dispatches": 0,
+  "hash_locked_reference_install": {
+    "index": "https://pypi.org/simple",
+    "log": "reference-install.log",
+    "only_binary": true,
+    "passed": true,
+    "python": "3.12.14",
+    "require_hashes": true
+  },
+  "inference_executed": false,
+  "installed_tree_verified": true,
+  "model_free_controls": {
+    "failed": 0,
+    "log": "distribution-controls.txt",
+    "passed": 25
+  },
+  "model_wheel_exact": true,
+  "native_files_exact": 15,
+  "native_library_loaded": false,
+  "native_rebuilt": false,
+  "operational_consumers_run": false,
+  "qualified_external_dependencies_exact": 6,
+  "real_input_package_builds": 2,
+  "schema": "crispembed.spacy.w7.resume_package_result.v1",
+  "sources": {
+    "models/convert-spacy-to-gguf.py": {
+      "sha256": "ab719cb5145a94797f14c2350f7e0da0431c5bb087581d4dc52b3d00859eeed5",
+      "size_bytes": 922
+    },
+    "models/spacy_bundle.py": {
+      "sha256": "142171d33f06dfc67322e2ca813bf433953112e78222b81ed826103063ce4fb6",
+      "size_bytes": 30611
+    },
+    "tests/test_spacy_distribution.py": {
+      "sha256": "cd0c9cfb177ec705d7e7cc98dabbde76efbc36e370448b1fb7b812a33c0c08f3",
+      "size_bytes": 19344
+    },
+    "tools/spacy/distribution.py": {
+      "sha256": "327f68ea67e0179caf017477054aafab322b84b9e7c6f998da8eee5aa95402d5",
+      "size_bytes": 27196
+    },
+    "tools/spacy/requirements-reference.txt": {
+      "sha256": "e1bd56aef4aba0c45135fb2b51961c0d94c3be99a785be71a46c698cd22cc98a",
+      "size_bytes": 106951
+    }
+  },
+  "status": "passed"
+}

@@ -1,0 +1,87 @@
+{
+  "file_count": 15,
+  "inference_executed": false,
+  "native_archive_sha256": "b0cd3ae4d47af442d32a6d2382143c36f8b019470cff7c509f97e4682b67489b",
+  "native_archive_size_bytes": 825745,
+  "native_files": {
+    "include/spacy_pipeline.h": {
+      "matches_frozen": true,
+      "sha256": "756c25b664b38d26d1da13264d47417d9914f8dd805c588a539fe6f3681f7e62",
+      "size_bytes": 10045
+    },
+    "lib/libcrispembed-spacy.so": {
+      "matches_frozen": true,
+      "sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977",
+      "size_bytes": 1959256
+    },
+    "share/licenses/crispembed-spacy/CrispEmbed-LICENSE": {
+      "matches_frozen": true,
+      "sha256": "a70d0ab5fb2dbab83d1a63071776891e6dfc7ba6e3063b3940c21274c1225a3e",
+      "size_bytes": 4739
+    },
+    "share/licenses/crispembed-spacy/THIRD_PARTY_NOTICES": {
+      "matches_frozen": true,
+      "sha256": "9386f6a62a3220da9c082dfceea4a018d2a73c1a0dbd03e28e1804912cf0115f",
+      "size_bytes": 2188
+    },
+    "share/licenses/crispembed-spacy/ggml-LICENSE": {
+      "matches_frozen": true,
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+      "size_bytes": 1078
+    },
+    "share/licenses/crispembed-spacy/notices/CPython-LICENSE": {
+      "matches_frozen": true,
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf",
+      "size_bytes": 13936
+    },
+    "share/licenses/crispembed-spacy/notices/PCRE2-LICENCE.md": {
+      "matches_frozen": true,
+      "sha256": "9cf7ac6976099a1d856826d3ef1b093bd6b84489dc6100628ac79e740cf9885a",
+      "size_bytes": 3867
+    },
+    "share/licenses/crispembed-spacy/notices/Thinc-LICENSE": {
+      "matches_frozen": true,
+      "sha256": "d7192459f33a5d8c66358e2115ccbd3265478750f0b9d15f0c22e68e3ce6cc1e",
+      "size_bytes": 1123
+    },
+    "share/licenses/crispembed-spacy/notices/Unicode-15.0.0-ReadMe.txt": {
+      "matches_frozen": true,
+      "sha256": "53672c0d0b5185e3cf04c8e970d544c3af81ae7c8eeba0b9cf6d355aa954ae1f",
+      "size_bytes": 635
+    },
+    "share/licenses/crispembed-spacy/notices/Unicode-LICENSE.txt": {
+      "matches_frozen": true,
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+      "size_bytes": 1995
+    },
+    "share/licenses/crispembed-spacy/notices/continuation-notice-sources.json": {
+      "matches_frozen": true,
+      "sha256": "2f71d905ddbb8ea162a13c89e4e1d4e1f9858fcb4f82c967911912c79c4bf62f",
+      "size_bytes": 2408
+    },
+    "share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSE": {
+      "matches_frozen": true,
+      "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+      "size_bytes": 1056
+    },
+    "share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSES_SOURCES": {
+      "matches_frozen": true,
+      "sha256": "0c3ab78745569d848b7c83a486183bce42b9643561084d6d6f67eb0229c79869",
+      "size_bytes": 13470
+    },
+    "share/licenses/crispembed-spacy/notices/ggml-LICENSE": {
+      "matches_frozen": true,
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+      "size_bytes": 1078
+    },
+    "share/licenses/crispembed-spacy/notices/spaCy-LICENSE": {
+      "matches_frozen": true,
+      "sha256": "3f4378e67708fecacd3e27651c8bc0f977cf20789e19da0d81a2840e7cf573a2",
+      "size_bytes": 1128
+    }
+  },
+  "native_library_loaded": false,
+  "native_rebuilt": false,
+  "schema": "crispembed.spacy.w7.resume_native_restore.v1",
+  "status": "passed"
+}

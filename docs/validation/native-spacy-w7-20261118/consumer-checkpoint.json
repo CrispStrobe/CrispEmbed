@@ -1,0 +1,46 @@
+{
+  "schema": "crispembed.spacy.w7.consumer_checkpoint.v1",
+  "status": "source_only_unexecuted_recovery",
+  "source_reconstruction": "Reconstructed from the agent's authored tool-call text after ENOSPC blocked every local command and edit. No claim of byte equality with the earlier local files.",
+  "current_sources": {
+    "tools/spacy/distribution_consumer.py": "a9241a3c701ab7c4a03381f9a98df18fe47f047dd2b8cbebc6be71d3a3477172",
+    "tests/test_spacy_distribution_consumer.py": "c9d127ef2b9144b66ffcfa4c6ed4aa6348c345315e0380cb0628285d2e08bfa2"
+  },
+  "last_executed_local_sources": {
+    "tools/spacy/distribution_consumer.py": "7528ac8cb90d9ce6425bfb9ae60451a44f17695267b80fc51ab850a097694775",
+    "tests/test_spacy_distribution_consumer.py": "26e82821df9b40aa5d06966aef532aa4c929327f21c3c3560c27885bc41ef054",
+    "tools/spacy/distribution.py": "327f68ea67e0179caf017477054aafab322b84b9e7c6f998da8eee5aa95402d5"
+  },
+  "historical_local_evidence": {
+    "unit_controls_passed": 18,
+    "unit_controls_failed": 0,
+    "actual_installed_preflight": "passed without candidate library loading",
+    "preflight_receipt_sha256": "7c36b1d7058680db6f59d7d7d2b9ae6fc656ba13ad6bdf993026adca08e70490",
+    "applies_to_current_reconstructed_sources": false
+  },
+  "review_findings": [
+    {
+      "finding": "Child per-process source before/after equality did not bind each child to the driver initial source or launched identities.",
+      "prepared_correction": "Parent validates child schema/role/mode/index, archive/protocol, admitted package identity and both source maps against the launch and driver baseline; original child files and reported status remain retained.",
+      "correction_executed": false
+    },
+    {
+      "finding": "Eight operational case types exclude the ninth distinct short-cycle text.",
+      "prepared_correction": "Aggregate reports eight case input types and nine distinct texts including the cycle.",
+      "protocol_inputs_or_thresholds_changed": false
+    }
+  ],
+  "prepared_unit_tests": 21,
+  "current_unit_tests_executed": false,
+  "native_inference_executed": false,
+  "native_acceptance_rerun": false,
+  "grammar_qualification_rerun": false,
+  "ci_queried_or_waited": false,
+  "next_steps": [
+    "Restore sufficient workspace capacity and fetch this exact remote source.",
+    "Compare reconstruction to any recovered local source and retain differences.",
+    "Run the 21 model-free controls and compare canonical protocol bytes with the already frozen remote protocol.",
+    "Save final source/test receipts remotely before the first bounded operational consumer run.",
+    "Preserve all first-run outcomes; do not rerun the consumed native or W6 linguistic qualifications."
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schema": "crispembed.spacy.w7.consumer_independent_review.v1",
+  "status": "changes_requested_execution_blocked",
+  "scope": "Static independent review of the first consumer implementation and its model-free controls; no native execution",
+  "reviewed_source_sha256": {
+    "tools/spacy/distribution.py": "327f68ea67e0179caf017477054aafab322b84b9e7c6f998da8eee5aa95402d5",
+    "tools/spacy/distribution_consumer.py": "7528ac8cb90d9ce6425bfb9ae60451a44f17695267b80fc51ab850a097694775",
+    "tests/test_spacy_distribution_consumer.py": "26e82821df9b40aa5d06966aef532aa4c929327f21c3c3560c27885bc41ef054"
+  },
+  "protocol": {
+    "path": "docs/validation/native-spacy-w7-20261118/operational-protocol.json",
+    "local_sha256_observed": "60f85df220bb05ff467c6036ce465c841cff3480103720d5139af0644cfd3934",
+    "remote_commit_read": "c0f9837c2af318a10f907531b41e3269757efe64",
+    "remote_git_blob_sha1": "e01ad788498cfddc494bd348023abf4102e91359",
+    "inputs_or_threshold_changes_requested": false
+  },
+  "findings": [
+    {
+      "id": "child_provenance_admission",
+      "severity": "medium",
+      "status": "accepted_fix_pending_verification",
+      "problem": "The driver records but does not require each successful child's before/after source hashes to equal the driver's initial hashes. It also does not bind child role, schema, mode, index, protocol and archive identity to the launched command. Mixed-source child evidence could therefore reach aggregation.",
+      "required_change": "Validate successful child identity and both source maps against the launch contract before aggregation. Preserve the original child report and reported outcome when parent admission fails. Add model-free controls for mismatched source and identity.",
+      "protocol_amendment_needed": false
+    },
+    {
+      "id": "unique_text_denominator_label",
+      "severity": "low",
+      "status": "accepted_fix_pending_verification",
+      "problem": "The summary labels eight panel cases as unique operational input types, although the separate cycle text is a ninth distinct text.",
+      "required_change": "Distinguish eight panel case types from nine distinct text inputs including the cycle text. Retain the correct counts of 24 panel executions, 78 cycle/warmup executions, and 102 context/document pairs.",
+      "protocol_amendment_needed": false
+    }
+  ],
+  "other_static_checks": {
+    "external_archive_hash_before_parsing_and_fixed_payload_pins": "passed",
+    "exact_dependency_hashes_before_candidate_load": "passed",
+    "actual_loaded_path_device_inode_and_hash_checks": "passed",
+    "counted_string_ffi_layout_and_original_utf8_scalar_utf16_checks": "passed",
+    "document_lifetime_after_context_free_and_final_cleanup": "passed",
+    "timeout_bounded_children_and_flushed_partial_reports": "passed",
+    "post_warmup_fd_rss_denominators_and_scoped_interpretation": "passed"
+  },
+  "model_free_controls": {
+    "implementation_agent_reported_tests_passed": 18,
+    "independent_rerun_executed": false,
+    "independent_rerun_blocker": "Filesystem was full; bwrap failed before the requested command began with No space left on device."
+  },
+  "native_library_loaded_by_reviewer": false,
+  "native_inference_executions_by_reviewer": 0,
+  "native_acceptance_rerun": false,
+  "grammar_qualification_rerun": false,
+  "github_actions_queries_waits_reruns": 0,
+  "completion_condition": "Review the corrected source, pass its new model-free controls, save and verify the exact source remotely, then execute the unchanged operational protocol and retain its first result."
+}

@@ -1,5 +1,19 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## W7 completion ownership — 18 November 2026
+
+Owner `owner/spacy-w7-finish-20261118` continues PR237 from `f22662cf` and
+paired Quds PR153 from `2e013f26`, preserving the consumed native and W6 panels.
+The retained Linux audit passes all 1,031 assertions and the 25 archive/installer
+controls pass locally. Focused exact-head model-free CI is added before owner
+merge; Linux packaging is not held for macOS. Next execute immutable hosted
+publication with empty-cache hash/tree/install readback, real macOS ARM64 and
+signed-app worker controls, default-OFF CrispCloud settings/provider wiring,
+separately frozen additional grammar cases, and separately gated quantization
+and optimized execution. Keep accepted F32, all failures and old evidence intact.
+Publication/other-platform/quantized/grammar claims require actual source-bound
+runs. No runtime/app release or default activation follows from preparatory work.
+
 ## PR235 post-OOM owner repair — 18 November 2026
 
 At `6dffe3029`, artifact validation and clang-format pass; current Build
@@ -83,40 +97,72 @@ and 499 documented environment entries pass locally. Main protection returns
 `Branch not protected`; applicable branch rules are empty, so required checks
 and approvals are both zero. No Actions/status query, wait or rerun is used.
 The concurrent documentation-only W6 checkpoint `5831aa02` is preserved; this
-owner closure performs no W6 work. PR236 is merged at `04e84458` from reviewed
-head `05fe9a0ce`; merged tree exactly matches that head. Scope remains frozen Linux x86-64/AVX2 with PCRE2 10.46;
+owner closure performs no W6 work. PR236 is merged at
+`04e8445823d82591120203e953365582d7ba33be` from reviewed head `05fe9a0ce`;
+the merged tree exactly matches that head. This continuation includes that
+merge and its review. Scope remains frozen Linux x86-64/AVX2 with PCRE2 10.46;
 release, app pins, mobile and model distribution remain separate.
 
-## Active work in flight — native spaCy, 17 November 2026
+## Active work in flight — native spaCy, 18 November 2026
 
 | Lane | Owner/branch | Current boundary | Next gate |
 | --- | --- | --- | --- |
-| German spaCy CPU/F32 | `feat/native-spacy-20261117`; paired Quds `feat/native-spacy-reference-20261117` | W0–W4 frozen first acceptance passes at `2176c89`; W5 optional Dart worker and manual Studio analysis pass their bounded Linux x86-64/AVX2 gates with the same native binary and original UTF-16 offsets; [W5 evidence](https://github.com/CrispStrobe/quds_office_suite/tree/e7c67f29b34f1c1909e51aa25997fc774bb8ac80/docs/validation/native-spacy-w5-20261117) | W6 incremental grammar benefit against latest deterministic Quds main; W7/platform packaging and release/distribution remain separate gates |
+| German spaCy CPU/F32 | `feat/native-spacy-w7-20261118` in both repositories | W6 acceptance/grammar evidence preserved; bounded Linux package reproduction/install and current Python/Dart operational consumers independently audited complete | Immutable hosted publication/download readback, portable dependencies and other platforms/devices; manual provider stays default off |
+
+The [W7 continuation](docs/validation/native-spacy-w7-20261118/README.md) now
+implements immutable Linux packaging and freezes actual dependency/loading/cleanup
+controls. It preserves the native/model bytes and both consumed panels.
+
+The [paired W7 local completion](docs/validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json)
+now authenticates 25 package controls, two byte-identical full-input package
+builds, immutable installation, 21 current Python controls and its 102-pair
+operational run, plus 17 compiled Dart controls and the corrected-source
+installed worker's eight operational cases. The retained evidence passes an
+independent 1,031-check Python/package audit and a separate Dart coordinate,
+source and dependency audit. These are source-bound engineering checks; neither
+consumed linguistic panel was rerun.
+
+The [complete remote reconciliation](docs/validation/native-spacy-w7-20261118/completion-20261118/source-refresh.json)
+records all 245 CrispEmbed and 191 Quds branches, 217 and 154 fetched PR heads,
+and recent PR metadata. Main `be20e497` (worksheet PR #235) is included at
+`d18efcaf`, preserving the accepted spaCy archive, implementation and previous
+receipts. Quds main is already included; all 342 sealed W6 sources match.
+The independent Office PR #154 remains outside this candidate. The updated
+[continuation instructions](docs/validation/native-spacy-w7-20261118/CONTINUE.md)
+supersede the historical ENOSPC/pending-consumer handoff. Next: immutable hosted
+publication and empty-cache consumer readback, then separately declared
+portable/dependency and platform/device qualification. Both PRs remain draft
+for that broader distribution work.
+The [concurrent completion](docs/validation/native-spacy-w7-20261118/resume-20261118/completion.json)
+and strict source mapping are preserved alongside this closure: 341 direct
+source paths plus the historical lockfile alias, and 22 frozen native files.
 
 The user requires incremental remote checkpoints and local validation without
 querying or waiting for Actions. Preserve all unrelated paths/defaults. This
 optional standalone NLP lane does not change runtime releases or app pins.
 The [W5 source refresh](docs/validation/native-spacy-20261117/resume-w5-source-snapshot.json)
 inventories all fetched branch/PR heads and independently audits the retained
-acceptance artifacts. Preserve the first acceptance result; no rerun or tuning
-on the consumed split is needed to continue Dart/editor work.
-The later Quds main refresh to `4b2b4e78` brings four commits for ODS icon sets
-and reconciled Office/German controls. No spaCy fixture or W5 source path
-changed; only `docs/PROOFING.md` overlaps. Remote merge `8d89e4f7` passes all
-29 package tests, 22 UI controls, 75 proofing regressions, the actual-native
-widget gate and static analysis with source/runtime bytes unchanged.
+acceptance artifacts. The consumed eight-case native acceptance was not rerun;
+the accepted native library and model remain unchanged throughout W6.
 
-W6 continuation is active on the same paired branches. The new
-[grammar protocol and 86-case panel](https://github.com/CrispStrobe/quds_office_suite/tree/846fc0371b23bf4a84542db7a3f24eee2d8609dd/docs/validation/native-spacy-w6-20261117)
-were published before inspecting candidate outputs. Current main remains
-`b34a132c` here and `4b2b4e78` in Quds. A fresh full branch/PR inventory found
-late Office union repairs absent from Quds main; these are preserved at
-[Quds `ec4aeefe`](https://github.com/CrispStrobe/quds_office_suite/commit/ec4aeefe1be6ce1868ee7eebf004c07b25d4108a),
-with unchanged deterministic German proofing inputs. The exact accepted native
-archive, six dependencies and five-file model bundle are restored. The work
-is a pure Dart guarded agreement experiment; it does not rebuild native code,
-reopen native acceptance, or activate grammar before a separate benefit and
-editor gate. Preserve a negative outcome if the new candidate fails.
+W6 includes Quds main `6245a695`, including the newer German phrase-completion
+and correction-formatting work. The protocol was amended for that baseline
+before qualification; the original
+[86-case panel](https://github.com/CrispStrobe/quds_office_suite/tree/846fc0371b23bf4a84542db7a3f24eee2d8609dd/docs/validation/native-spacy-w6-20261117)
+and thresholds remain unchanged. Candidate `da18e29c` and its `84b4120c` seal
+precede the [first qualification result](https://github.com/CrispStrobe/quds_office_suite/blob/3a8bca4f8f8744bbb0fbd6809a700b5768d5ceba/docs/validation/native-spacy-w6-20261117/qualification-first.json).
+It adds 17 exact corrections over the updated deterministic baseline. All 22
+corrected rechecks have no further finding: 18 preserve a compatible lexical
+reading and four conservatively abstain. Eight missed errors remain recorded;
+this authored finite panel does not establish general German grammar coverage.
+
+The [current handoff](docs/validation/native-spacy-w6-20261117/README.md) links
+73 package, 869 German, 75 editor-proofing, 36 editor-integration, one run-edit,
+ten actual-native editor and nine icon-rendering checks, plus three earlier
+browser import controls. The manual grammar provider API remains default off;
+Studio does not register it automatically. W7 must qualify target packages,
+device behavior and release/distribution separately from the bounded Linux
+x86-64/AVX2, de-DE, CPU/F32 result.
 
 
 ## Rust DAT RGB buffers and output ownership — 14 November 2026

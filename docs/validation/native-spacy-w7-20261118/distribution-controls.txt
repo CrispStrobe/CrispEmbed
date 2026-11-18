@@ -1,0 +1,30 @@
+test_archive_path_escape_and_alias_spellings_rejected (__main__.DistributionControls.test_archive_path_escape_and_alias_spellings_rejected) ... ok
+test_cache_ancestor_links_and_shared_write_permissions_rejected (__main__.DistributionControls.test_cache_ancestor_links_and_shared_write_permissions_rejected) ... ok
+test_changed_payload_rejected_even_with_valid_transport_pin (__main__.DistributionControls.test_changed_payload_rejected_even_with_valid_transport_pin) ... ok
+test_cli_requires_external_hash_and_reports_rejection (__main__.DistributionControls.test_cli_requires_external_hash_and_reports_rejection) ... ok
+test_corrupt_existing_install_is_never_repaired_or_replaced (__main__.DistributionControls.test_corrupt_existing_install_is_never_repaired_or_replaced) ... ok
+test_deterministic_build_ignores_source_paths_and_mtimes (__main__.DistributionControls.test_deterministic_build_ignores_source_paths_and_mtimes) ... ok
+test_duplicate_unlisted_and_missing_members_rejected (__main__.DistributionControls.test_duplicate_unlisted_and_missing_members_rejected) ... ok
+test_existing_empty_destination_or_file_is_not_replaced (__main__.DistributionControls.test_existing_empty_destination_or_file_is_not_replaced) ... ok
+test_external_hash_is_mandatory_and_checked_before_decompression (__main__.DistributionControls.test_external_hash_is_mandatory_and_checked_before_decompression) ... ok
+test_install_is_atomic_readonly_idempotent_and_matches_loader_layout (__main__.DistributionControls.test_install_is_atomic_readonly_idempotent_and_matches_loader_layout) ... ok
+test_installed_extra_files_directories_and_links_rejected (__main__.DistributionControls.test_installed_extra_files_directories_and_links_rejected) ... ok
+test_installed_hardlinked_or_missing_payload_rejected (__main__.DistributionControls.test_installed_hardlinked_or_missing_payload_rejected) ... ok
+test_interrupted_staging_leaves_no_visible_partial_tree (__main__.DistributionControls.test_interrupted_staging_leaves_no_visible_partial_tree) ... ok
+test_links_directories_devices_and_fifos_rejected (__main__.DistributionControls.test_links_directories_devices_and_fifos_rejected) ... ok
+test_manifest_cannot_change_pins_target_or_activation (__main__.DistributionControls.test_manifest_cannot_change_pins_target_or_activation) ... ok
+test_member_size_and_archive_expansion_are_bounded (__main__.DistributionControls.test_member_size_and_archive_expansion_are_bounded) ... ok
+test_missing_extra_and_linked_bundle_files_rejected (__main__.DistributionControls.test_missing_extra_and_linked_bundle_files_rejected) ... ok
+test_model_inputs_cannot_repin_themselves (__main__.DistributionControls.test_model_inputs_cannot_repin_themselves) ... ok
+test_native_archive_pin_checked_before_parsing (__main__.DistributionControls.test_native_archive_pin_checked_before_parsing) ... ok
+test_output_never_replaces_existing_regular_file_or_link (__main__.DistributionControls.test_output_never_replaces_existing_regular_file_or_link) ... ok
+test_racing_empty_destination_is_not_overwritten (__main__.DistributionControls.test_racing_empty_destination_is_not_overwritten) ... ok
+test_tar_hidden_metadata_and_trailing_records_rejected (__main__.DistributionControls.test_tar_hidden_metadata_and_trailing_records_rejected) ... ok
+test_truncated_concatenated_and_trailing_gzip_rejected (__main__.DistributionControls.test_truncated_concatenated_and_trailing_gzip_rejected) ... ok
+test_verify_loads_no_native_library (__main__.DistributionControls.test_verify_loads_no_native_library) ... ok
+test_wrong_tree_identity_and_unsupported_installer_host_rejected (__main__.DistributionControls.test_wrong_tree_identity_and_unsupported_installer_host_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 25 tests in 0.392s
+
+OK

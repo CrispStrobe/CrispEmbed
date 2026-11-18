@@ -1,0 +1,92 @@
+{
+  "github_actions_queries_waits_reruns_dispatches": 0,
+  "initial_validation_attempt": {
+    "cause": "The link checker checked the new concurrent-reconciliation.json link before emitting this report.",
+    "correction": "Emit the complete pending report, verify all actual link targets and JSON, then record the passing result. No source, runtime, assertion or evidence pin was relaxed.",
+    "status": "failed_before_report_write"
+  },
+  "model_builds": 0,
+  "native_executions": 0,
+  "paired_completion_sha256": "5baef224d100bc92ee28b960293496e3e26de3175eda69f69f6775738790f795",
+  "previous_documentation_review": "documentation-review.json is the preserved pre-reconciliation snapshot; hashes here describe reconciled documents.",
+  "reason": "Both continuation branches advanced during final publication. Non-forced expected-head update did not overwrite the concurrent work; both incoming heads and both independently authored documentation commits are preserved as parents of their reconciled checkpoints.",
+  "recorded_at": "2026-11-18T06:24:14.802597+00:00",
+  "repositories": {
+    "CrispStrobe/CrispEmbed": {
+      "authored_documentation_commit": "16f5234f85c2e1c7b7ae94321f1c1720eaa26b5b",
+      "current_scope_relative_links_resolved": 18,
+      "executed_source_unchanged": true,
+      "incoming_evidence": {
+        "resume-20261118/completion.json": {
+          "bytes": 6788,
+          "sha256": "371c5c5e7712094be1c79640123a78eb222a29455ed8d6d4bf424651b233e59a"
+        },
+        "resume-20261118/final-main-reconciliation.json": {
+          "bytes": 9015,
+          "sha256": "1647ee0a209d88728a3abed6342474a90823aba874a949cbad834d98f898e216"
+        },
+        "resume-20261118/independent-review.json": {
+          "bytes": 26867,
+          "sha256": "76ac42dba455a166cf189e7658ad1c70ea536e842d7004ca73ee3d63685d0978"
+        },
+        "resume-20261118/source-refresh-audit.json": {
+          "bytes": 63363,
+          "sha256": "3e044f7f8ad6fb8b209f2fdcd47fc0d825314978c5e7226df3d0258c6caccf37"
+        }
+      },
+      "incoming_head": "034cbf3ca4bdc07929add27e581880da5317d9b9",
+      "incoming_receipts_unchanged": true,
+      "incoming_tree": "90383fa10e80bb1c18572181836c8e0f1b3e8b26",
+      "reconciled_document_sha256": {
+        "HISTORY.md": "9601bbfb23d3181cbfa14e5a2166b6c4291db030ed9d9ace82f6c6fab592e120",
+        "PERFORMANCE.md": "b33bd9b111f258381a5c99554216a71bf53f5d76968f53c814519010a9e4713c",
+        "PLAN.md": "c605418aebadf20c2e3a4a980a42722344ab89acd64be56b66ddbdef66d4c135",
+        "docs/current-state-and-next-steps.md": "01c1b26eee68fa961275449709774787d32ab688fe6a61d772e8abfdcd5a8ee5",
+        "docs/next-agent-handoff.md": "bda3d085c7b96209752c4a39fde5705c20a644e3ebdc85581c2f6b748fe740b2",
+        "docs/validation/native-spacy-w7-20261118/CONTINUE.md": "a2788d41e61003f724fd7c27f2b3fd1cdc789db752bc58c8f70b948f10c5e626",
+        "docs/validation/native-spacy-w7-20261118/README.md": "ef4e36b925d908a14fb5e3af29ed72496e1c8d09d0b400fa0a1078247a420538",
+        "docs/validation/native-spacy-w7-20261118/checkpoint-status.json": "5c062bd51026eea9b4a0a59347456cf11e6da5dbf181c5969f64497237e81e00",
+        "docs/validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json": "5baef224d100bc92ee28b960293496e3e26de3175eda69f69f6775738790f795",
+        "tools/spacy/README.md": "6d03de6eeb6855709499e0483e4e306b0d2f9165adb52b6913633359e28e10a2"
+      }
+    },
+    "CrispStrobe/quds_office_suite": {
+      "authored_documentation_commit": "e71568dfaca22cea80153b1bd2fd933f93a72e50",
+      "current_scope_relative_links_resolved": 21,
+      "executed_source_unchanged": true,
+      "incoming_evidence": {
+        "resume-20261118/completion.json": {
+          "bytes": 6788,
+          "sha256": "371c5c5e7712094be1c79640123a78eb222a29455ed8d6d4bf424651b233e59a"
+        },
+        "resume-20261118/dart-consumer/corrected-source-review.json": {
+          "bytes": 2172,
+          "sha256": "026aa7f6065f32e4fdf03f276366697b3007eb4a497aa89e72fefa1bf9d25301"
+        },
+        "resume-20261118/final-main-reconciliation.json": {
+          "bytes": 9015,
+          "sha256": "1647ee0a209d88728a3abed6342474a90823aba874a949cbad834d98f898e216"
+        },
+        "resume-20261118/source-refresh-audit.json": {
+          "bytes": 63363,
+          "sha256": "3e044f7f8ad6fb8b209f2fdcd47fc0d825314978c5e7226df3d0258c6caccf37"
+        }
+      },
+      "incoming_head": "2df0e930510148084ee37646472dac380b9673d5",
+      "incoming_receipts_unchanged": true,
+      "incoming_tree": "f1e986459ef44057eb721bef7c84c1fdc0ba84e3",
+      "reconciled_document_sha256": {
+        "README.md": "2781778749374fe66a7342534f0a666dbfb98244977a4740f4d52c9957a5853f",
+        "docs/validation/native-spacy-w7-20261118/CONTINUE.md": "a2788d41e61003f724fd7c27f2b3fd1cdc789db752bc58c8f70b948f10c5e626",
+        "docs/validation/native-spacy-w7-20261118/README.md": "76032fc64ddc1d4f3206c1db417bc07c985eecf6c11617f34ab04bdd10162960",
+        "docs/validation/native-spacy-w7-20261118/checkpoint-status.json": "5c062bd51026eea9b4a0a59347456cf11e6da5dbf181c5969f64497237e81e00",
+        "docs/validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json": "5baef224d100bc92ee28b960293496e3e26de3175eda69f69f6775738790f795",
+        "packages/quds_proofing_spacy/README.md": "7a5b3bd8ed0c5766312150b2a2e8bcceeff39c9eddd6abc2b42c5ff9b07fb47c"
+      }
+    }
+  },
+  "resolution": "Reviewed authored completion presentation retained; incoming execution commands, source correction history, strict logical-source mapping, all new independent review records and Quds root README update incorporated. Incoming Quds installation link repaired from ../../../docs to ../../docs.",
+  "schema": "crispembed.quds.spacy.w7.concurrent_completion_reconciliation.v1",
+  "status": "passed",
+  "test_suites_rerun": 0
+}

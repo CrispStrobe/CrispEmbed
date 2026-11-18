@@ -1,0 +1,380 @@
+{
+  "bundle": {
+    "LICENSE": {
+      "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+      "size_bytes": 1056
+    },
+    "LICENSES_SOURCES": {
+      "sha256": "0c3ab78745569d848b7c83a486183bce42b9643561084d6d6f67eb0229c79869",
+      "size_bytes": 13470
+    },
+    "manifest.json": {
+      "sha256": "d599768375de3dc56abcca5cf1d49da0015857f9d3a10640aebb5317ef5d427e",
+      "size_bytes": 23762
+    },
+    "model.gguf": {
+      "sha256": "fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd",
+      "size_bytes": 7383104
+    },
+    "resources.json": {
+      "sha256": "b42496cc373ada57a67ed2f4c2c25f8d22f80c08db5841a7cdb91c8a6e18562a",
+      "size_bytes": 1404948
+    }
+  },
+  "ci_queried_or_waited": false,
+  "context_probe": {
+    "abi_version": 1,
+    "context_capabilities": 15,
+    "context_created_and_freed": true,
+    "inference_executed": false,
+    "native_loaded": true,
+    "text_abi_version": 1
+  },
+  "converter_sources": {
+    "convert-spacy-to-gguf.py": {
+      "sha256": "ab719cb5145a94797f14c2350f7e0da0431c5bb087581d4dc52b3d00859eeed5",
+      "size_bytes": 922
+    },
+    "requirements-reference.txt": {
+      "sha256": "e1bd56aef4aba0c45135fb2b51961c0d94c3be99a785be71a46c698cd22cc98a",
+      "size_bytes": 106951
+    },
+    "spacy_bundle.py": {
+      "sha256": "142171d33f06dfc67322e2ca813bf433953112e78222b81ed826103063ce4fb6",
+      "size_bytes": 30611
+    }
+  },
+  "elf": {
+    "architecture": "x86_64",
+    "byte_order": "little-endian",
+    "class": "ELF64",
+    "minimum_required_symbol_versions": {
+      "CXXABI": "1.3.9",
+      "GCC": "3.0",
+      "GLIBC": "2.38",
+      "GLIBCXX": "3.4.29"
+    },
+    "needed": [
+      "libpcre2-8.so.0",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "required_symbol_versions": {
+      "CXXABI": [
+        "1.3",
+        "1.3.5",
+        "1.3.7",
+        "1.3.9"
+      ],
+      "GCC": [
+        "3.0"
+      ],
+      "GLIBC": [
+        "2.2.5",
+        "2.3",
+        "2.3.2",
+        "2.7",
+        "2.14",
+        "2.17",
+        "2.27",
+        "2.29",
+        "2.32",
+        "2.33",
+        "2.34",
+        "2.38"
+      ],
+      "GLIBCXX": [
+        "3.4",
+        "3.4.9",
+        "3.4.11",
+        "3.4.14",
+        "3.4.18",
+        "3.4.20",
+        "3.4.21",
+        "3.4.29"
+      ]
+    },
+    "rpath": null,
+    "runpath": null,
+    "soname": "libcrispembed-spacy.so"
+  },
+  "evidence": [
+    {
+      "path": "bundle-files.json",
+      "sha256": "7163d6131373f27716f09c626b2b7ded366418ec2672a7d8adc495f597423f32",
+      "size_bytes": 661
+    },
+    {
+      "path": "conversion.log",
+      "sha256": "c65f19db7bf69a1031e2f925535d8664f59d8de5a0db91ba7d1f3e2911f1978c",
+      "size_bytes": 169
+    },
+    {
+      "path": "elf-summary.json",
+      "sha256": "5c5afed564a6654afd4b3e4f697c5acb030c3b85411511f430c9ba6137829c86",
+      "size_bytes": 919
+    },
+    {
+      "path": "model-wheel-download.json",
+      "sha256": "18628b17e226355ed7a424afd7f6ca7a9a34cf8f724b564e3203fc9aa1ef284b",
+      "size_bytes": 300
+    },
+    {
+      "path": "native-context-probe.json",
+      "sha256": "d7eb444c9a3d01be05c7c7fa46ed0989963b11a939fc90160ac5aac4a97c07ee",
+      "size_bytes": 171
+    },
+    {
+      "path": "native-install-files.json",
+      "sha256": "5f522fe3407f7fac5d6fc92482f299f84ab337e562c97fa1910743866c2d97b6",
+      "size_bytes": 2573
+    },
+    {
+      "path": "reference-install-public.log",
+      "sha256": "de0fb8819cc0708fc9b02a34c255a9a36a14a98d19395cc8d2f4a3a58f0c9ebb",
+      "size_bytes": 10685
+    },
+    {
+      "path": "runtime-dependencies.json",
+      "sha256": "e8ede35f8a1f547b7a3bb0c3a520cb4c4711151d281d568ffff373333994cbe7",
+      "size_bytes": 2605
+    }
+  ],
+  "grammar_qualification_rerun": false,
+  "host": {
+    "libc": [
+      "glibc",
+      "2.41"
+    ],
+    "machine": "x86_64",
+    "system": "Linux"
+  },
+  "installed_files": {
+    "include/spacy_pipeline.h": {
+      "sha256": "756c25b664b38d26d1da13264d47417d9914f8dd805c588a539fe6f3681f7e62",
+      "size_bytes": 10045
+    },
+    "lib/libcrispembed-spacy.so": {
+      "sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977",
+      "size_bytes": 1959256
+    },
+    "share/licenses/crispembed-spacy/CrispEmbed-LICENSE": {
+      "sha256": "a70d0ab5fb2dbab83d1a63071776891e6dfc7ba6e3063b3940c21274c1225a3e",
+      "size_bytes": 4739
+    },
+    "share/licenses/crispembed-spacy/THIRD_PARTY_NOTICES": {
+      "sha256": "9386f6a62a3220da9c082dfceea4a018d2a73c1a0dbd03e28e1804912cf0115f",
+      "size_bytes": 2188
+    },
+    "share/licenses/crispembed-spacy/ggml-LICENSE": {
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+      "size_bytes": 1078
+    },
+    "share/licenses/crispembed-spacy/notices/CPython-LICENSE": {
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf",
+      "size_bytes": 13936
+    },
+    "share/licenses/crispembed-spacy/notices/PCRE2-LICENCE.md": {
+      "sha256": "9cf7ac6976099a1d856826d3ef1b093bd6b84489dc6100628ac79e740cf9885a",
+      "size_bytes": 3867
+    },
+    "share/licenses/crispembed-spacy/notices/Thinc-LICENSE": {
+      "sha256": "d7192459f33a5d8c66358e2115ccbd3265478750f0b9d15f0c22e68e3ce6cc1e",
+      "size_bytes": 1123
+    },
+    "share/licenses/crispembed-spacy/notices/Unicode-15.0.0-ReadMe.txt": {
+      "sha256": "53672c0d0b5185e3cf04c8e970d544c3af81ae7c8eeba0b9cf6d355aa954ae1f",
+      "size_bytes": 635
+    },
+    "share/licenses/crispembed-spacy/notices/Unicode-LICENSE.txt": {
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+      "size_bytes": 1995
+    },
+    "share/licenses/crispembed-spacy/notices/continuation-notice-sources.json": {
+      "sha256": "2f71d905ddbb8ea162a13c89e4e1d4e1f9858fcb4f82c967911912c79c4bf62f",
+      "size_bytes": 2408
+    },
+    "share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSE": {
+      "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+      "size_bytes": 1056
+    },
+    "share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSES_SOURCES": {
+      "sha256": "0c3ab78745569d848b7c83a486183bce42b9643561084d6d6f67eb0229c79869",
+      "size_bytes": 13470
+    },
+    "share/licenses/crispembed-spacy/notices/ggml-LICENSE": {
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+      "size_bytes": 1078
+    },
+    "share/licenses/crispembed-spacy/notices/spaCy-LICENSE": {
+      "sha256": "3f4378e67708fecacd3e27651c8bc0f977cf20789e19da0d81a2840e7cf573a2",
+      "size_bytes": 1128
+    }
+  },
+  "model_wheel": {
+    "bytes": 14639490,
+    "elapsed_seconds": 11.529332749996684,
+    "sha256": "fec69fec52b1780f2d269d5af7582a5e28028738bd3190532459aeb473bfa3e7",
+    "status": "passed",
+    "url": "https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.8.0/de_core_news_sm-3.8.0-py3-none-any.whl"
+  },
+  "native_acceptance_rerun": false,
+  "native_archive": {
+    "sha256": "b0cd3ae4d47af442d32a6d2382143c36f8b019470cff7c509f97e4682b67489b",
+    "size_bytes": 825745
+  },
+  "native_library": {
+    "sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977",
+    "size_bytes": 1959256
+  },
+  "native_rebuilt": false,
+  "portability_limits": [
+    "Accepted native bytes have no RPATH/RUNPATH; PCRE2 and five system runtime dependencies resolve outside the package.",
+    "GLIBC 2.38, GLIBCXX 3.4.29 and CXXABI 1.3.9 are observed symbol requirements, not cross-distribution qualification.",
+    "The six resolved dependency hashes exactly match W6 on this Linux x86_64 host; different system builds require explicit requalification.",
+    "No other device/platform, Python application runtime, model release or production activation is qualified."
+  ],
+  "python": "3.12.14",
+  "reference_environment": {
+    "frozen_hash_lock_installed": true,
+    "options": [
+      "--no-cache-dir",
+      "--require-hashes",
+      "--only-binary=:all:"
+    ],
+    "temporary_environment_removed_after_all_five_bundle_hashes_matched": true
+  },
+  "runtime_dependencies": [
+    {
+      "bytes": 225672,
+      "matches_frozen": true,
+      "required_symbol_versions": {
+        "CXXABI": [],
+        "GCC": [],
+        "GLIBC": [],
+        "GLIBCXX": []
+      },
+      "resolved_filename": "ld-linux-x86-64.so.2",
+      "sha256": "c8438e4fde1934e61c88311633f00949ff645d5c04cdb8671fa3d78164d2f307",
+      "soname": "ld-linux-x86-64.so.2"
+    },
+    {
+      "bytes": 1995216,
+      "matches_frozen": true,
+      "required_symbol_versions": {
+        "CXXABI": [],
+        "GCC": [],
+        "GLIBC": [
+          "2.2.5",
+          "2.3",
+          "2.35"
+        ],
+        "GLIBCXX": []
+      },
+      "resolved_filename": "libc.so.6",
+      "sha256": "9792e3cbb541c8f44c7acf5f14f4022ea62998ecc787d326bed4d8b6547dfd92",
+      "soname": "libc.so.6"
+    },
+    {
+      "bytes": 182856,
+      "matches_frozen": true,
+      "required_symbol_versions": {
+        "CXXABI": [],
+        "GCC": [],
+        "GLIBC": [
+          "2.2.5",
+          "2.3",
+          "2.3.2",
+          "2.14",
+          "2.34",
+          "2.35"
+        ],
+        "GLIBCXX": []
+      },
+      "resolved_filename": "libgcc_s.so.1",
+      "sha256": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af",
+      "soname": "libgcc_s.so.1"
+    },
+    {
+      "bytes": 977112,
+      "matches_frozen": true,
+      "required_symbol_versions": {
+        "CXXABI": [],
+        "GCC": [],
+        "GLIBC": [
+          "2.2.5",
+          "2.4",
+          "2.36"
+        ],
+        "GLIBCXX": []
+      },
+      "resolved_filename": "libm.so.6",
+      "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3",
+      "soname": "libm.so.6"
+    },
+    {
+      "bytes": 711216,
+      "matches_frozen": true,
+      "required_symbol_versions": {
+        "CXXABI": [],
+        "GCC": [],
+        "GLIBC": [
+          "2.2.5",
+          "2.3",
+          "2.3.4",
+          "2.4",
+          "2.14"
+        ],
+        "GLIBCXX": []
+      },
+      "resolved_filename": "libpcre2-8.so.0.14.0",
+      "sha256": "92e9b4167f9bbc237ca8f5526d82ee99ec9f8dbd0270ef1dd0ab24e2217f48e3",
+      "soname": "libpcre2-8.so.0"
+    },
+    {
+      "bytes": 2497768,
+      "matches_frozen": true,
+      "required_symbol_versions": {
+        "CXXABI": [],
+        "GCC": [
+          "3.0",
+          "3.3",
+          "4.2.0",
+          "4.3.0"
+        ],
+        "GLIBC": [
+          "2.2.5",
+          "2.3",
+          "2.3.2",
+          "2.4",
+          "2.6",
+          "2.14",
+          "2.17",
+          "2.18",
+          "2.25",
+          "2.26",
+          "2.32",
+          "2.33",
+          "2.34",
+          "2.36",
+          "2.38"
+        ],
+        "GLIBCXX": []
+      },
+      "resolved_filename": "libstdc++.so.6.0.33",
+      "sha256": "972bb2a18b71140dab0240f8a1f68ab3fb1d56bcd4c4f824a91b70888faf5a00",
+      "soname": "libstdc++.so.6"
+    }
+  ],
+  "schema": "crispembed.spacy.w7.runtime_restoration.v1",
+  "scope": "Restore the exact accepted Linux native archive and deterministic five-file model bundle; inspect dependencies and create/free one native context without inference.",
+  "source_receipt": {
+    "commit": "20026ff49ac37391e2a1fd0947560a587f2f7332",
+    "path": "docs/validation/native-spacy-w6-20261117/runtime/runtime-restoration.json",
+    "repository": "CrispStrobe/quds_office_suite"
+  },
+  "status": "passed"
+}

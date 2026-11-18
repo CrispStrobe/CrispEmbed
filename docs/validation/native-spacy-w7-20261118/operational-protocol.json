@@ -1,0 +1,112 @@
+{
+  "cases": [
+    {
+      "id": "empty",
+      "text": "",
+      "utf8_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "unicode_emoji",
+      "text": "🧭 Über dem Hügel öffnet sich ein Café.",
+      "utf8_sha256": "f4dac63c72c92014635a069118721ce86ece25c6df2dfc7accde0e9d36afd1af"
+    },
+    {
+      "id": "embedded_nul",
+      "text": "Text\u0000zwischen zwei Markierungen.",
+      "utf8_sha256": "20c285c3ab6a58475f13ed755762b98a131ab72a7eae9bcd46563cbb17e74756"
+    },
+    {
+      "id": "multiple_sentences",
+      "text": "Die Fähre wartet. Danach gehen wir an Bord.",
+      "utf8_sha256": "98185377c958c244abf45341a9eff64ebef431c46828d73e02ad572b748688bb"
+    },
+    {
+      "id": "whitespace",
+      "text": " \t\n  \r\n",
+      "utf8_sha256": "6868545cde3d1951b25f6c13af35e542242b83565fe3fae0d44036eb30c41f2c"
+    },
+    {
+      "id": "repeated_word",
+      "text": "Wort Wort Wort, Wort.",
+      "utf8_sha256": "bb7e053cfb4b9001ee6eab7a8d4a77eb06d3612cc9026b2458352792c589a376"
+    },
+    {
+      "id": "quotation_punctuation",
+      "text": "„Maja“, sagte Timo, „packt den Koffer!“",
+      "utf8_sha256": "fc06422f677aed61104f108caad874036d44099d2fd32fccf783289cf9d0c9ae"
+    },
+    {
+      "id": "moderate_paragraph",
+      "text": "Am frühen Abend liegt der Hafen ruhig da. Eine Nachbarin zählt die bunten Boote. Hinter dem Kran fährt ein Radfahrer langsam vorbei. Morgen beginnt dort ein kleines Fest.",
+      "utf8_sha256": "92401712ce32feeaf4742085ce8b09d7c75a3686775c69a713a579291da00783"
+    }
+  ],
+  "cases_per_enabled_process": 8,
+  "child_timeout_seconds": 60,
+  "ci_queried_or_waited": false,
+  "cycle_text": "Am Kai wartet ein kleines Boot.",
+  "cycle_utf8_sha256": "3f11a7a90e51e7996efea2b614c1c791cb305582466d510b66396c1ad2204d1f",
+  "dependencies": [
+    {
+      "bytes": 225672,
+      "sha256": "c8438e4fde1934e61c88311633f00949ff645d5c04cdb8671fa3d78164d2f307",
+      "soname": "ld-linux-x86-64.so.2"
+    },
+    {
+      "bytes": 1995216,
+      "sha256": "9792e3cbb541c8f44c7acf5f14f4022ea62998ecc787d326bed4d8b6547dfd92",
+      "soname": "libc.so.6"
+    },
+    {
+      "bytes": 182856,
+      "sha256": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af",
+      "soname": "libgcc_s.so.1"
+    },
+    {
+      "bytes": 977112,
+      "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3",
+      "soname": "libm.so.6"
+    },
+    {
+      "bytes": 711216,
+      "sha256": "92e9b4167f9bbc237ca8f5526d82ee99ec9f8dbd0270ef1dd0ab24e2217f48e3",
+      "soname": "libpcre2-8.so.0"
+    },
+    {
+      "bytes": 2497768,
+      "sha256": "972bb2a18b71140dab0240f8a1f68ab3fb1d56bcd4c4f824a91b70888faf5a00",
+      "soname": "libstdc++.so.6"
+    }
+  ],
+  "disabled_fresh_processes": 1,
+  "enabled_fresh_processes": 3,
+  "fd_final_maximum": "post-warmup baseline",
+  "grammar_qualification_rerun": false,
+  "maximum_sampled_post_free_rss_growth_bytes": 33554432,
+  "measured_create_analyze_free_cycles": 25,
+  "native_acceptance_rerun": false,
+  "ownership_policy": "Free the creating context before reading the owned document; copy counted fields, free the document, then validate copied data",
+  "platform": {
+    "machine": "x86_64",
+    "required_cpu_flags": [
+      "avx",
+      "avx2",
+      "bmi2",
+      "f16c",
+      "fma",
+      "sse4_2"
+    ],
+    "system": "Linux"
+  },
+  "repeat_policy": "Exact copied token, annotation, sentence and original-coordinate equality across fresh processes and all short cycles",
+  "required_elf_symbol_floors": {
+    "CXXABI": "1.3.9",
+    "GCC": "3.0",
+    "GLIBC": "2.38",
+    "GLIBCXX": "3.4.29"
+  },
+  "resource_interpretation": "Sampled process RSS/FD/thread observations only; no universal leak or target-device budget claim",
+  "schema": "crispembed.spacy.w7.consumer_protocol.v1",
+  "scope": "Authored operational loading, source-coordinate, repeat and resource controls; no linguistic-quality comparison",
+  "warmup_create_analyze_free_cycles": 1
+}
