@@ -36,6 +36,7 @@ concurrency:
 
 jobs:
   package:
+    needs: [mobile-oracle]
     strategy:
       fail-fast: false
       # Hub publication commits are serialized: one platform at a time.
@@ -69,6 +70,11 @@ jobs:
         if: steps.select.outputs.run
         with:
           python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        if: steps.select.outputs.run
+        with:
+          name: spacy-mobile-oracle-${{ github.run_id }}
+          path: ${{ runner.temp }}/oracle
       - name: Scratch and output directories
         if: steps.select.outputs.run
         run: |
@@ -80,7 +86,7 @@ jobs:
         env:
           HF_PUBLISH_TOKEN: ${{ inputs.publish && secrets.HF_PUBLISH_TOKEN || '' }}
         run: |
-          args=(--platform '${{ matrix.platform }}')
+          args=(--platform '${{ matrix.platform }}' --oracle-dir "$RUNNER_TEMP/oracle")
           if [ '${{ inputs.publish }}' = true ]; then args+=(--publish); fi
           python -u tools/ci-heavy/spacy_w7_platform_package.py "${args[@]}"
       - name: Job summary
@@ -93,8 +99,8 @@ jobs:
           path: ${{ runner.temp }}/out
           retention-days: 14
 
+  # Original-spaCy oracle for every spacy_smoke comparison (desktop and mobile).
   mobile-oracle:
-    if: ${{ !inputs.platform || inputs.platform == 'all' || inputs.platform == 'ios' || inputs.platform == 'android' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     defaults:

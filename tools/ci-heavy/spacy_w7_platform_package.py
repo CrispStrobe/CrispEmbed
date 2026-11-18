@@ -124,6 +124,8 @@ def main():
     parser.add_argument('--card-only', action='store_true')
     parser.add_argument('--ner', action='store_true',
                         help='Convert ner.gguf canonically on CPython 3.12.14 and (with --publish) publish it')
+    parser.add_argument('--oracle-dir', type=Path,
+                        help='Original-spaCy oracle (spacy_mobile_sdk.py oracle) for the spacy_smoke comparison')
     parser.add_argument('--linux-runtime', choices=['shared', 'static'], default='shared',
                         help='Linux only: link libstdc++/libgcc dynamically (default) or statically')
     args = parser.parse_args()
@@ -285,11 +287,20 @@ def main():
             installed_bundle = installed / 'bundle'
             save()
             # Qualify the exact bytes inside the capsule, not the build tree.
+            # The Quds development fixtures contain a case directory named
+            # `nul`, a reserved Windows device name git cannot check out there;
+            # Windows relies on the decoded original-spaCy comparison below.
+            quds_parity = not windows
             oracle = scratch / 'quds-reference'
-            run('oracle-clone', ['git', 'clone', '--filter=blob:none', '--no-checkout',
-                                 'https://github.com/CrispStrobe/quds_office_suite.git', oracle])
-            run('oracle-sparse', ['git', 'sparse-checkout', 'set', 'tools/proofing/spacy'], oracle)
-            run('oracle-checkout', ['git', 'checkout', '--detach', ORACLE], oracle)
+            if quds_parity:
+                run('oracle-clone', ['git', 'clone', '--filter=blob:none', '--no-checkout',
+                                     'https://github.com/CrispStrobe/quds_office_suite.git', oracle])
+                run('oracle-sparse', ['git', 'sparse-checkout', 'set', 'tools/proofing/spacy'], oracle)
+                run('oracle-checkout', ['git', 'checkout', '--detach', ORACLE], oracle)
+            else:
+                report['quds_parity_unrun_reason'] = (
+                    "Quds development fixtures include a case directory named 'nul', a reserved Windows device "
+                    "name that cannot be checked out; decoded exactness is verified with spacy_smoke instead.")
             run('numpy-install', [sys.executable, '-m', 'pip', 'install', 'numpy==2.4.6'])
             def check(label, command):
                 with (out / f'{label}.log').open('w') as log:
@@ -313,8 +324,40 @@ def main():
                                              if k not in ('CRISPEMBED_SPACY', 'CRISPEMBED_SPACY_NER')})
             report['enable_api'] = {'returncode': enable.returncode, 'passed': enable.returncode == 0}
             assert report['enable_api']['passed'], 'Process-wide enable API controls failed'
+            # spacy_smoke (C ABI only) on copies of the installed library bytes,
+            # compared token by token and entity by entity with original spaCy.
+            if args.oracle_dir:
+                mobile = _load('spacy_mobile_sdk', ROOT / 'tools/ci-heavy/spacy_mobile_sdk.py')
+                smoke_built = next(p for p in build.rglob('spacy-smoke' + ('.exe' if windows else ''))
+                                   if p.is_file())
+                smoke_dir = scratch / 'smoke'
+                smoke_dir.mkdir()
+                smoke = smoke_dir / smoke_built.name
+                shutil.copyfile(smoke_built, smoke)
+                os.chmod(smoke, 0o755)
+                shutil.copyfile(installed_library, smoke_dir / installed_library.name)
+                assert common.digest(smoke_dir / installed_library.name) == built['library_sha256']
+                ner_dir = scratch / 'smoke-models'
+                ner_dir.mkdir()
+                _, ner_model = mobile.model_files(ner_dir)
+                texts = mobile.corpus_lines(scratch / 'smoke-texts.txt')
+                smoke_env = dict(os.environ)
+                smoke_env['LD_LIBRARY_PATH' if system == 'Linux' else 'DYLD_LIBRARY_PATH'] = str(smoke_dir)
+                smoke_out = out / 'smoke.jsonl'
+                with smoke_out.open('wb') as stdout, (out / 'smoke.log').open('w') as log:
+                    code = subprocess.run([str(smoke), *map(str, mobile.smoke_arguments(installed_bundle, ner_model,
+                                                                                          texts))],
+                                          stdout=stdout, stderr=log, env=smoke_env).returncode
+                assert code == 0, f'spacy_smoke exited {code}'
+                comparison = mobile.compare(run, out, smoke_out, args.oracle_dir, 'smoke')
+                report['original_spacy_smoke'] = comparison
+                save()
+                assert comparison['passed'], 'spacy_smoke output differs from original spaCy'
+            elif not quds_parity:
+                raise AssertionError('Windows needs --oracle-dir: the Quds parity panels cannot run there')
             report['parity'] = {}
-            for script, name in [('spacy_parity.py', 'prepared'), ('spacy_text_parity.py', 'text')]:
+            for script, name in ([('spacy_parity.py', 'prepared'), ('spacy_text_parity.py', 'text')]
+                                 if quds_parity else []):
                 code, result = check(f'{name}-parity', [ROOT / 'tests' / script, '--library', installed_library,
                                                         '--bundle', installed_bundle, '--quds-root', oracle,
                                                         '--report', out / f'{name}-parity.json'])
@@ -324,8 +367,13 @@ def main():
             save()
             assert all(item['passed'] for item in report['parity'].values()), 'Development parity failed'
             assert report['text_api']['passed'], 'Text API controls failed'
-            counts = report['parity']['text']['counts'] or {}
+            counts = report['parity']['text']['counts'] or {} if quds_parity else {}
             run_id = os.environ.get('GITHUB_RUN_ID')
+            smoke_result = report.get('original_spacy_smoke')
+            smoke_text = (f"spacy_smoke vs original spaCy: {smoke_result['exact_cases']}/{smoke_result['cases']} "
+                          f"development texts, {smoke_result['tokens']} tokens, "
+                          f"{smoke_result['entities']['matched']}/{smoke_result['entities']['oracle']} entities exact"
+                          if smoke_result else None)
             prefix_path = f'packages/{args.platform}/{source}'
             entry = {
                 'platform': args.platform, 'status': 'published', 'revision': None,
@@ -336,10 +384,13 @@ def main():
                                  f"{dependencies.get('elf_needed') or dependencies.get('pe_imports') or 'system libc++/libSystem only'}"
                                  + (f"; symbol floors {dependencies['symbol_version_floors']}"
                                     if dependencies.get('symbol_version_floors') else '')),
-                'analysis': (f"Hosted development parity on this exact library (run {run_id}): "
-                             f"{counts.get('cases')} cases, {counts.get('tokens')} tokens, "
-                             f"{counts.get('numeric_stages')} numerical stages exact; text-API controls pass. "
-                             "Component evidence only; not an app qualification."),
+                'analysis': ((f"Hosted development parity on this exact library (run {run_id}): "
+                              f"{counts.get('cases')} cases, {counts.get('tokens')} tokens, "
+                              f"{counts.get('numeric_stages')} numerical stages exact; "
+                              if quds_parity else f"Hosted run {run_id} on this exact library: ")
+                             + (f"{smoke_text}; " if smoke_text else '')
+                             + "text-API and enable-API controls pass. Component evidence only; not an app "
+                               "qualification."),
                 'grammar': 'Not qualified for this build',
                 'receipt': f'{prefix_path}/receipt.json',
             }
