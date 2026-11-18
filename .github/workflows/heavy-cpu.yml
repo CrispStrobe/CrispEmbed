@@ -49,7 +49,7 @@ on:
         required: false
         default: 'ubuntu-latest'
         type: choice
-        options: [ubuntu-latest, ubuntu-24.04-arm, macos-14]
+        options: [ubuntu-latest, ubuntu-24.04-arm, macos-14, macos-15]
       isolated_lane:
         description: 'Optional unique lane for independent inputs and artifacts; empty serializes by script'
         required: false
