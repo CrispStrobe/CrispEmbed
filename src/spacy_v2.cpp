@@ -4,6 +4,9 @@
 #include "ggml-backend.h"
 #include "ggml.h"
 #include "spacy_ggml.h"
+#ifdef CRISPEMBED_SPACY_TRF
+#include "spacy_transformer.h"
+#endif
 
 #include <algorithm>
 #include <array>
@@ -24,10 +27,7 @@ using Json = core_json_value::value;
 
 constexpr std::size_t max_tokens = 2048;
 constexpr std::size_t parser_features = 8;
-constexpr std::size_t parser_hidden = 64;
 constexpr std::size_t parser_pieces = 2;
-constexpr std::size_t parser_slot = parser_hidden * parser_pieces;
-constexpr std::size_t parser_columns = parser_features * parser_slot;
 
 void require(bool condition, const std::string & message) {
     if (!condition) throw std::invalid_argument(message);
@@ -243,6 +243,34 @@ std::map<std::string, std::string> morph_dict(const std::string & morph) {
     return result;
 }
 
+std::string base64_decode(const std::string & input) {
+    static const std::string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    require(input.size() % 4 == 0, "Invalid base64 length");
+    std::string out;
+    out.reserve(input.size() / 4 * 3);
+    for (std::size_t i = 0; i < input.size(); i += 4) {
+        std::uint32_t chunk = 0;
+        int padding = 0;
+        for (std::size_t j = 0; j < 4; ++j) {
+            const char c = input[i + j];
+            std::uint32_t value = 0;
+            if (c == '=') {
+                require(i + 4 == input.size() && j >= 2, "Invalid base64 padding");
+                ++padding;
+            } else {
+                const auto at = alphabet.find(c);
+                require(at != std::string::npos && padding == 0, "Invalid base64 character");
+                value = static_cast<std::uint32_t>(at);
+            }
+            chunk = (chunk << 6) | value;
+        }
+        out += static_cast<char>((chunk >> 16) & 0xFF);
+        if (padding < 2) out += static_cast<char>((chunk >> 8) & 0xFF);
+        if (padding < 1) out += static_cast<char>(chunk & 0xFF);
+    }
+    return out;
+}
+
 std::string ascii_lower(std::string value) {
     for (auto & c : value)
         if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
@@ -265,11 +293,18 @@ struct PipelineV2::Impl {
     std::vector<Rule> rules;
     RuleLemmatizer lemmatizer;
     std::unique_ptr<GgmlNumeric> numeric;
+#ifdef CRISPEMBED_SPACY_TRF
+    std::unique_ptr<TransformerPipeline> transformer;
+#endif
+    // Parser geometry: hidden width from the lower layer; trf parsers have no
+    // upper layer (the maxout output is the move score vector).
+    std::size_t parser_hidden = 0, parser_slot = 0, parser_columns = 0;
+    bool parser_upper = true;
     std::unique_ptr<NerModel> ner;
     std::vector<float> lower_bias, lower_pad, upper_w, upper_b;
 
     std::vector<float> parser_scores(const Matrix & cache, const std::array<std::int32_t, 8> & ids) const {
-        std::array<float, parser_slot> summed{};
+        std::vector<float> summed(parser_slot, 0.0f);
         for (std::size_t f = 0; f < parser_features; ++f) {
             const auto row = ids[f] < 0 ? 0 : static_cast<std::size_t>(ids[f]) + 1;
             require(row < cache.rows, "spaCy v2 parser feature out of range");
@@ -277,11 +312,15 @@ struct PipelineV2::Impl {
             for (std::size_t i = 0; i < parser_slot; ++i) summed[i] += source[i];
         }
         for (std::size_t i = 0; i < parser_slot; ++i) summed[i] += lower_bias[i];
-        std::array<float, parser_hidden> hidden{};
+        std::vector<float> hidden(parser_hidden);
         for (std::size_t h = 0; h < parser_hidden; ++h) {
             const float first = summed[h * parser_pieces];
             const float second = summed[h * parser_pieces + 1];
             hidden[h] = second > first ? second : first;
+        }
+        if (!parser_upper) {
+            for (const float value : hidden) require(std::isfinite(value), "Nonfinite spaCy v2 parser score");
+            return hidden;
         }
         std::vector<float> scores(parser_moves.size());
         for (std::size_t c = 0; c < scores.size(); ++c) {
@@ -480,12 +519,12 @@ PipelineV2::PipelineV2(const std::string & resources_json, std::map<std::string,
     m.language = text(member(root, "language"), "language");
     require(m.language == "en" || m.language == "fr", "Unsupported spaCy v2 language");
     m.components = strings(member(root, "component_order"), "component_order", 16);
-    const std::vector<std::string> known = { "tok2vec",    "tagger", "morphologizer", "parser", "attribute_ruler",
-                                             "lemmatizer", "ner" };
+    const std::vector<std::string> known = { "tok2vec", "transformer",     "tagger",     "morphologizer",
+                                             "parser",  "attribute_ruler", "lemmatizer", "ner" };
     for (const auto & component : m.components)
         require(std::find(known.begin(), known.end(), component) != known.end(),
                 "Unsupported spaCy v2 component " + component);
-    require(m.components.front() == "tok2vec" &&
+    require((m.components.front() == "tok2vec" || m.components.front() == "transformer") &&
                 std::find(m.components.begin(), m.components.end(), "parser") != m.components.end(),
             "spaCy v2 needs tok2vec and parser");
     const auto & labels = member(root, "labels");
@@ -526,10 +565,27 @@ PipelineV2::PipelineV2(const std::string & resources_json, std::map<std::string,
         for (const float value : values) require(std::isfinite(value), std::string("Nonfinite tensor ") + name);
         return values;
     };
-    m.lower_bias = host("parser.lower.b", parser_slot);
-    m.lower_pad = host("parser.lower.pad", parser_columns);
-    m.upper_w = host("parser.upper.W", m.parser_moves.size() * parser_hidden);
-    m.upper_b = host("parser.upper.b", m.parser_moves.size());
+    {
+        const auto found = numeric_weights.find("parser.lower.W");
+        require(found != numeric_weights.end() && found->second->ne[3] == static_cast<std::int64_t>(parser_features) &&
+                    found->second->ne[1] == static_cast<std::int64_t>(parser_pieces),
+                "Invalid spaCy v2 parser lower layer");
+        m.parser_hidden = static_cast<std::size_t>(found->second->ne[2]);
+        m.parser_slot = m.parser_hidden * parser_pieces;
+        m.parser_columns = parser_features * m.parser_slot;
+        const auto * upper = parser.get("has_upper");
+        m.parser_upper = !upper || (upper->kind == Json::bool_t && upper->b);
+    }
+    m.lower_bias = host("parser.lower.b", m.parser_slot);
+    m.lower_pad = host("parser.lower.pad", m.parser_columns);
+    if (m.parser_upper) {
+        m.upper_w = host("parser.upper.W", m.parser_moves.size() * m.parser_hidden);
+        m.upper_b = host("parser.upper.b", m.parser_moves.size());
+    } else {
+        require(m.parser_hidden == m.parser_moves.size() &&
+                    numeric_weights.find("parser.upper.W") == numeric_weights.end(),
+                "Upper-less spaCy parser must score every move");
+    }
     if (has("tagger")) {
         const auto found = numeric_weights.find("tagger.W");
         require(found != numeric_weights.end() && found->second->ne[1] == static_cast<std::int64_t>(m.tags.size()),
@@ -544,7 +600,39 @@ PipelineV2::PipelineV2(const std::string & resources_json, std::map<std::string,
         require(numeric_weights.find("morphologizer.W") == numeric_weights.end(), "Unexpected morphologizer weights");
     }
     require(numeric_weights.find("lemmatizer.W") == numeric_weights.end(), "Unexpected trainable lemmatizer weights");
-    m.numeric = std::make_unique<GgmlNumeric>(std::move(numeric_weights), backend);
+    if (m.components.front() == "transformer") {
+#ifdef CRISPEMBED_SPACY_TRF
+        const auto & spec = member(labels, "transformer");
+        require(text(member(spec, "architecture"), "architecture") == "camembert" &&
+                    text(member(spec, "piece_encoder"), "piece_encoder") == "camembert_sentencepiece" &&
+                    text(member(spec, "listener"), "listener") == "last_layer_reduce_mean",
+                "Unsupported spaCy transformer profile");
+        auto number = [&](const char * key) {
+            const auto & value = member(spec, key);
+            require(value.kind == Json::int_t && value.i > 0 && value.i < 100000, std::string("Invalid ") + key);
+            return static_cast<int>(value.i);
+        };
+        TransformerConfig config;
+        config.layers = number("layers");
+        config.width = number("width");
+        config.heads = number("heads");
+        config.intermediate = number("intermediate");
+        config.padding_idx = number("padding_idx");
+        config.max_positions = number("max_positions");
+        config.model_max_length = number("model_max_length");
+        config.window = number("window");
+        config.stride = number("stride");
+        const auto & eps = member(spec, "layer_norm_eps");
+        require(eps.is_number() && eps.number() > 0, "Invalid layer_norm_eps");
+        config.layer_norm_eps = static_cast<float>(eps.number());
+        config.sentencepiece_model = base64_decode(text(member(spec, "sentencepiece_model_base64"), "spm model"));
+        m.transformer = std::make_unique<TransformerPipeline>(std::move(config), std::move(numeric_weights), backend);
+#else
+        throw std::invalid_argument("This build has no spaCy transformer support (CRISPEMBED_SPACY_TRF=OFF)");
+#endif
+    } else {
+        m.numeric = std::make_unique<GgmlNumeric>(std::move(numeric_weights), backend);
+    }
     if (has("ner")) {
         const auto ner_moves = strings(member(member(labels, "ner"), "moves"), "ner moves", 1024);
         m.ner = std::make_unique<NerModel>(std::move(ner_weights), backend, ner_moves);
@@ -577,7 +665,12 @@ PipelineV2::Output PipelineV2::run(const std::vector<LexicalToken> & tokens, con
         features.push_back(token.features);
         is_space.push_back(token.is_space);
     }
+#ifdef CRISPEMBED_SPACY_TRF
+    const auto numeric = m.transformer ? m.transformer->run(tokens, trace, cancelled)
+                                       : m.numeric->run(features, max_tokens, trace, cancelled);
+#else
     const auto numeric = m.numeric->run(features, max_tokens, trace, cancelled);
+#endif
     auto & annotations = output.annotations.tokens;
     annotations.resize(n);
     for (const auto & component : m.components) {
