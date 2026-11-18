@@ -37,6 +37,10 @@ if(NOT EXISTS "${CRISPEMBED_ROOT}/ggml/CMakeLists.txt")
 endif()
 add_subdirectory("${CRISPEMBED_ROOT}/ggml" "${CMAKE_CURRENT_BINARY_DIR}/ggml" EXCLUDE_FROM_ALL)
 find_package(Threads REQUIRED)
+if(WIN32)
+    # <windows.h> (src/core/gguf_loader.cpp) must not define min/max macros.
+    add_compile_definitions(NOMINMAX)
+endif()
 find_path(SPACY_PCRE2_INCLUDE_DIR NAMES pcre2.h REQUIRED)
 find_library(SPACY_PCRE2_LIBRARY NAMES pcre2-8 REQUIRED)
 # A static PCRE2 on Windows must be consumed with PCRE2_STATIC (no dllimport).
