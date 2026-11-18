@@ -65,7 +65,8 @@ def main():
             record["versions"] = {"wrapper": str(version.PYPDFIUM_INFO),
                                   "pdfium": str(version.PDFIUM_INFO),
                                   "flags": list(version.PDFIUM_INFO.flags)}
-            binaries = sorted(Path(raw.__file__).parent.glob("*pdfium*.so"))
+            binaries = sorted({p.resolve() for pattern in ("*pdfium*.so", "*pdfium*.dylib", "*pdfium*.dll")
+                               for p in Path(raw.__file__).parent.glob(pattern)})
             record["binary_sha256"] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in binaries}
             if len(binaries) != 1:
                 raise RuntimeError("Expected exactly one identifiable PDFium shared library")

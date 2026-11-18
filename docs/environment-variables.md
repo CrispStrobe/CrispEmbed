@@ -17,6 +17,20 @@ need it, then run `python tools/list_env_vars.py --write`. See the
 
 ## Semantics
 
+Document cleanup correctness and binary PDF storage are enabled by default.
+Ruled-photo perspective rectification is explicitly requested with cleanup
+`deskew_consensus=2`, or enabled for diagnostics with
+`CRISPEMBED_SCAN_RULE_GEOMETRY=1`. It fits bounded horizontal/vertical line
+families and retains the full frame. Weak, sparse or excessive geometry falls
+back to the existing consensus rotation; ordinary mode 1 stays unchanged.
+`CRISPEMBED_SCAN_CENTERED_WHITEN=0` replays the old trailing morphological
+window; `CRISPEMBED_SCAN_PRESERVE_RULES=0` replays median despeckling that can
+erase one-pixel lines. `CRISPEMBED_PDF_PACK_BINARY=0` retains 8-bit RGB PDF
+rasters instead of lossless, row-aligned 1-bit DeviceGray for images containing
+only opaque black/white after alpha compositing. All three accept the false
+spellings below and retain the former paths for paired checks. Packing never
+thresholds grayscale or color pixels. The bounded deskew gate remains opt-in.
+
 | Kind | Reader | Unset | `=` (empty) | `=0` / `false` / `off` / `no` | Any other non-empty value |
 |---|---|---|---|---|---|
 | `on` | `core_env::on` | off | off | off | on |
@@ -316,7 +330,7 @@ operator candidate has no decoded-quality or release qualification.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-499 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+503 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -1108,6 +1122,12 @@ operator candidate has no decoded-quality or release qualification.
 | `CRISPEMBED_DEBUG_ALLOW_OCR_Q4` | value | unset | string | debug | `src/ocr_pipeline.cpp` |  |
 | `CRISPEMBED_OCR_PIPELINE_BENCH` | on | off | bool | debug | `src/ocr_pipeline.cpp` |  |
 
+### ocr_render
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_PDF_PACK_BINARY` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/ocr_render.cpp` |  |
+
 ### oxr_document_api
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
@@ -1322,7 +1342,10 @@ operator candidate has no decoded-quality or release qualification.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_SCAN_BOUNDED_DESKEW` | on | off | bool | default-off experimental / opt-in | `src/scan_cleanup.cpp` | Avoid materializing a full-resolution float grayscale copy on the camera RGB path: the analysis buffer itself is bounded, not just Hough. |
+| `CRISPEMBED_SCAN_CENTERED_WHITEN` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/scan_cleanup.cpp` |  |
 | `CRISPEMBED_SCAN_CLEANUP_BENCH` | on | off | bool | debug | `src/scan_cleanup.cpp` |  |
+| `CRISPEMBED_SCAN_PRESERVE_RULES` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/scan_cleanup.cpp` |  |
+| `CRISPEMBED_SCAN_RULE_GEOMETRY` | on | off | bool | default-off experimental / opt-in | `src/scan_cleanup.cpp` |  |
 
 ### scunet_denoise
 

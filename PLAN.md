@@ -1,5 +1,76 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## PR235 post-OOM owner repair — 18 November 2026
+
+At `6dffe3029`, artifact validation and clang-format pass; current Build
+[44188032296](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44188032296)
+fails Static guards in the synthetic Unlimited-OCR-2 cosine probe. Build result
+correctly rejects the resulting selected-build skips. The Ubuntu 26.04 image
+uses Python 3.14.4, outside pinned NumPy 2.2.6's supported Python range.
+Select Python 3.12 explicitly before installing that unchanged NumPy pin;
+retain all assertions, fixture values, recipes and runtime sources. Python
+3.12/NumPy 2.2.6 passes the unchanged probe locally, as do 54 routing controls.
+The [initial evidence](tests/results/worksheet-cleanup-pr235-build-repair.json)
+preserves the actual failure and attribution limit. Main `04e84458` is already
+an ancestor. Pending: exact-head hosted checks, owner merge, then merged-main
+verification. No local build, model work, release, app pin or default change.
+
+PR236 is already merged at `04e8445823d82591120203e953365582d7ba33be`
+from head `05fe9a0ceaa80d529c5dca11f186a23b1bf52ecf`. Read-only local
+reverification authenticates all 22 frozen source files, 15 archive files,
+protocol and first-result hashes. The consumed split is not rerun. Its scope
+remains Linux x86-64/AVX2 with PCRE2 10.46; W6, mobile and distribution stay
+separate. No PR236 Actions queries, waits or reruns are used.
+
+## PR235/PR236 owner closure — 17 November 2026
+
+Bounded ownership covers only worksheet PR235 and native spaCy PR236. Existing
+OCR/benchmark and ASR/Pix2Struct lanes remain with their owners. PR235 starts
+at `0eca8e35`, base `b34a132c`: 41 passing, two failing and two skipped checks.
+The blocking veraPDF failure in [43718649913](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43718649913)
+is five one-point-wide PDF/A fixture pages, below the three-point minimum.
+Keep the one-pixel raster and unchanged pixel assertions, use valid page points,
+and render at the original raster dimensions. Preserve non-blocking reader-limit
+failures and all worksheet/renderer evidence. Apply pinned clang-format 18.1.8;
+the 188 violations are inherited from `src/lighton4b_physical_f16_attention.cpp`,
+`src/lighton4b_physical_rope.h` and `tests/test_lighton4b_physical_rope.cpp`.
+Its formatting repair preserves every C++ token/comment, gates and algorithms;
+historical source-pinned protocols are unchanged and remain historical evidence.
+Exact-head hosted checks and merged-tree verification remain the closure gates.
+No release, app pin or model distribution is authorized.
+
+PR236 retains its separately frozen Linux x86-64/AVX2 acceptance. Local artifact
+and source validation only; no Actions query, wait or rerun, no held-out replay
+or new model matrix. Main protection and applicable branch rules report no
+required checks. PR236 is owner-merged at `04e8445823d82591120203e953365582d7ba33be`
+from head `05fe9a0ce`; merged tree `26f1d71e8d0f8da9e411e52f31bef03439f86fac`
+exactly matches the reviewed head.
+W6, other platforms/mobile and distribution remain outside this closure.
+
+## Worksheet cleanup and binary PDF — 15 November 2026
+
+Owner: `fix/worksheet-cleanup-20261115`, based on `b34a132c6`. The user requested
+the complete cleanup/export correction after a six-page photographic worksheet
+audit. Scope: centered closing with retained legacy replay, one-pixel rule
+preservation during despeckling, exact-rank edge percentile selection, and
+lossless binary PDF rasters. Synthetic reference morphology, thin-rule/dust,
+odd-width PDF reader and existing OCR/PDF controls are acceptance gates. A bounded
+component build at `6ffeaa41d` passes 39 cleanup checks, 70 native renderer checks,
+photo geometry, and the new independent odd-width PDF pixel test. Private replay
+matches all six released legacy images exactly; all candidate PDFs decode to the
+prepared pixels. Hosted Linux/macOS full builds remain pending. No learned model,
+bounded-deskew default promotion or app runtime repin is included. CrispSorter
+has a coordinated model-free preparation preset using its existing native API.
+
+The follow-up straightness review adds explicitly requested ruled-photo geometry
+(`deskew_consensus=2`), with bounded line-family detection, robust fitting,
+edge-pixel refinement and full-frame projective sampling. Mode 1 stays unchanged;
+older libraries treat mode 2 as ordinary consensus. Three independently generated
+camera/shear grids pass the strict 0.35-degree horizontal/vertical line check;
+aligned, blank and unsupported horizontal-only pages are unchanged. Private page
+replay is perspective-corrected and every 1-bit PDF raster matches its prepared
+image. This corrects planar perspective, not arbitrary curved-paper deformation.
+
 ## PR236 owner merge review — 17 November 2026
 
 The [retained-evidence review](docs/validation/native-spacy-20261117/owner-merge-review.json)
@@ -12,8 +83,8 @@ and 499 documented environment entries pass locally. Main protection returns
 `Branch not protected`; applicable branch rules are empty, so required checks
 and approvals are both zero. No Actions/status query, wait or rerun is used.
 The concurrent documentation-only W6 checkpoint `5831aa02` is preserved; this
-owner closure performs no W6 work. Undraft and exact-head owner merge are the
-remaining actions. Scope remains frozen Linux x86-64/AVX2 with PCRE2 10.46;
+owner closure performs no W6 work. PR236 is merged at `04e84458` from reviewed
+head `05fe9a0ce`; merged tree exactly matches that head. Scope remains frozen Linux x86-64/AVX2 with PCRE2 10.46;
 release, app pins, mobile and model distribution remain separate.
 
 ## Active work in flight — native spaCy, 17 November 2026

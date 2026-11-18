@@ -1,0 +1,80 @@
+name: Worksheet cleanup and binary PDF
+
+on:
+  push:
+    branches: [fix/worksheet-cleanup-20261115]
+  pull_request:
+    paths:
+      - 'src/scan_cleanup.*'
+      - 'src/ocr_render.*'
+      - 'tests/test_scan_cleanup.cpp'
+      - 'tests/test_ocr_render_artifacts.py'
+      - '.github/workflows/worksheet-cleanup.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worksheet-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Configure and build affected native targets
+        run: |
+          cmake -S . -B build-worksheet -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_METAL=OFF -DGGML_BLAS=OFF
+          cmake --build build-worksheet --parallel 3 --target crispembed-shared crispembed-cli test-scan-cleanup test-ocr-render test-ocr-photo
+      - name: Correctness controls
+        run: |
+          mkdir -p build-worksheet/artifacts
+          ./build-worksheet/test-scan-cleanup | tee build-worksheet/artifacts/scan.txt
+          ./build-worksheet/test-ocr-render | tee build-worksheet/artifacts/render.txt
+          ./build-worksheet/test-ocr-photo self | tee build-worksheet/artifacts/photo.json
+          python tests/test_env_vars_documented.py
+      - name: Independent camera homography and no-warp controls
+        run: |
+          python -m pip install 'numpy==2.2.6' 'opencv-python-headless==4.12.0.88'
+          if [ "${{ runner.os }}" = "macOS" ]; then library=build-worksheet/libcrispembed.dylib; else library=build-worksheet/libcrispembed.so; fi
+          python tests/test_scan_rule_geometry.py --library "$library" --artifacts build-worksheet/artifacts/geometry
+      - name: Retain exact native libraries for local private-image replay
+        if: success()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, shutil, subprocess
+          root = Path('build-worksheet')
+          target = root / 'artifacts' / 'runtime'
+          target.mkdir(parents=True, exist_ok=True)
+          for path in root.rglob('*'):
+              if 'artifacts' in path.parts or not path.is_file():
+                  continue
+              if path.name.startswith('lib') and ('.dylib' in path.name or '.so' in path.name):
+                  shutil.copy2(path, target / path.name)
+          shutil.copy2(root / 'crispembed', target / 'crispembed')
+          identity = {'source': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+                      'files': {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in target.iterdir()}}
+          (target.parent / 'identity.json').write_text(json.dumps(identity, indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: worksheet-native-${{ matrix.os }}
+          path: build-worksheet/artifacts
+          retention-days: 14
