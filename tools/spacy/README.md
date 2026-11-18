@@ -101,17 +101,22 @@ python3 -B tools/spacy/distribution.py install \
   --cache /path/to/private-cache
 ```
 
-The preserved candidate archive is 7,808,129 bytes. A second complete build-byte
-comparison remains pending, although fixture determinism controls passed.
-The generated archive is not a hosted model/native release.
+The package is 7,808,129 bytes. Two fresh full-input builds are byte-identical
+and match the saved original SHA-256. Atomic installation and full installed
+tree verification pass. The native library was restored, not rebuilt.
 
-The corrected Python operational driver and the paired Dart worker driver are
-saved source-only checkpoints: their current tests/compilation and actual
-operational runs were blocked by workspace exhaustion. Follow the
-[continuation instructions](../../docs/validation/native-spacy-w7-20261118/CONTINUE.md)
-before using them. Earlier 18-control evidence applies only to the earlier Python
-source, not its reconstructed/corrected checkpoint. No application/default or
-accepted native/model changes accompany these developer tools.
+The current Python consumer passes 21 controls and its first four-process
+operational run: 102 owned context/document pairs, exact repeated annotations,
+100 KiB maximum sampled RSS growth and no final descriptor growth. The paired
+Dart consumer passes 17 controls and the actual installed-worker panel. Its
+initial source-label truncation is preserved and independently mapped; the
+corrected-source run passes with 38 correctly named source/configuration pins.
+See the [local completion and exact limits](../../docs/validation/native-spacy-w7-20261118/README.md).
+
+The [continuation instructions](../../docs/validation/native-spacy-w7-20261118/CONTINUE.md)
+now identify hosted publication/readback and additional target qualification as
+the remaining work. The package is not a hosted model/native release. No
+application/default or accepted native/model changes accompany these tools.
 
 ## Contract and reference evidence
 

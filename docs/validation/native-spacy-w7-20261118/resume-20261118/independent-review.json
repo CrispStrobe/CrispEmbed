@@ -1,0 +1,551 @@
+{
+  "archive_sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+  "checks_completed": 615,
+  "dart_corrected": {
+    "additional_control_requests": 5,
+    "all_six_dependency_identities_before_and_after_exact": true,
+    "cancellation_scope": "Synchronous caller cancellation after dispatch; physical compute start/interruption is not observed.",
+    "declared_metadata_redactions_only": true,
+    "driver_sha256": "cecbc3a4c52dc8880c9eae7add5a925b0c74660e9d1ba1aee7aaae0ffe02cdf6",
+    "elapsed_seconds": 2.4863879680633545,
+    "model_free_controls": 17,
+    "nonzero_utf16_origin": 10,
+    "original_first_raw_and_public_reports_unchanged": true,
+    "public_report_sha256": "10f56d4dca10291e7b7bd7db5f9761749bebfc5652057036ace726dfefb58a68",
+    "qualified_unique_case_count_not_increased": true,
+    "raw_log_sha256": "9f3b5e01f2ad4439db9c54002ff9981436143fba25d8836ec58989a0a0f2d512",
+    "raw_report_sha256": "71a758b47c925ca6b9add1b99bbc0052d81259366ea8a2f2721fa6945c6b3db5",
+    "raw_report_size_bytes": 79558,
+    "redacted_metadata_paths": [
+      "/dependency_preflight/0/path",
+      "/dependency_preflight/1/path",
+      "/dependency_preflight/2/path",
+      "/dependency_preflight/3/path",
+      "/dependency_preflight/4/path",
+      "/dependency_preflight/5/path",
+      "/mapped_dependencies/0/path",
+      "/mapped_dependencies/1/path",
+      "/mapped_dependencies/2/path",
+      "/mapped_dependencies/3/path",
+      "/mapped_dependencies/4/path",
+      "/mapped_dependencies/5/path",
+      "/dependencies_after/0/path",
+      "/dependencies_after/1/path",
+      "/dependencies_after/2/path",
+      "/dependencies_after/3/path",
+      "/dependencies_after/4/path",
+      "/dependencies_after/5/path"
+    ],
+    "repository_library_blobs_verified_at_published_commit": 14,
+    "same_eight_case_payloads_equal_to_original_except_timing": true,
+    "sentences": 12,
+    "shutdown_seconds": 0.005279,
+    "source_bound_request_repeat_disposal_assertion_limits": "Same explicit limits as dart_first; separate request/repeat/disposal snapshot payloads are not present in the report.",
+    "source_commit": "71e87486489200f7e259594d2967bba8c0682143",
+    "source_labels_and_hashes_exact": 38,
+    "source_path_controls": 5,
+    "startup_seconds": 0.380894,
+    "status": "passed",
+    "successful_returned_analyses_including_two_repeats": 10,
+    "tokens": 75,
+    "unchanged_non_driver_source_hashes": 37
+  },
+  "dart_first": {
+    "actual_native_call_count_not_inferred_from_cancelled_request": true,
+    "additional_control_requests": 5,
+    "all_original_byte_scalar_utf16_and_nonzero_origin_ranges_verified": true,
+    "cancellation_scope": "Synchronous caller cancellation after dispatch; physical compute start/interruption is not observed.",
+    "exposed_annotations_and_sentences_match_first_python_process": true,
+    "operational_cases": 8,
+    "process_elapsed_seconds": 2.740773916244507,
+    "public_serialization": [
+      {
+        "ensure_ascii": true,
+        "indent": 2,
+        "sort_keys": true
+      }
+    ],
+    "raw_log_sha256": "369d41dd3384e2ffae00b47c7be925284f03edb3011f325e341fa8eccbcf08f9",
+    "raw_report_sha256": "d7862a476ba7e1db9d5b638a5c3cb51ba345d41e64ad42ddd6692b9247afdbf8",
+    "raw_report_size_bytes": 79531,
+    "redacted_metadata_paths": [
+      "/dependency_preflight/0/path",
+      "/dependency_preflight/1/path",
+      "/dependency_preflight/2/path",
+      "/dependency_preflight/3/path",
+      "/dependency_preflight/4/path",
+      "/dependency_preflight/5/path",
+      "/mapped_dependencies/0/path",
+      "/mapped_dependencies/1/path",
+      "/mapped_dependencies/2/path",
+      "/mapped_dependencies/3/path",
+      "/mapped_dependencies/4/path",
+      "/mapped_dependencies/5/path",
+      "/dependencies_after/0/path",
+      "/dependencies_after/1/path",
+      "/dependencies_after/2/path",
+      "/dependencies_after/3/path",
+      "/dependencies_after/4/path",
+      "/dependencies_after/5/path"
+    ],
+    "redaction_matches_declared_transformation": true,
+    "repeat_and_disposal_checks": "Initial same-worker/reopened-worker annotationSnapshot includes sentence_end, and both equality assertions pass. Disposal waits twice, rejects further analysis, and copied result JSON remains stable; token collection mutation throws. Repeated raw output payloads and before/after copied snapshots are not retained separately.",
+    "report_sha256": "81c425de85cf8d17893e118b8d352471e460edb94b448fb229026de7f8e92fa2",
+    "request_snapshot_checks": "Driver validateResult requires result.request.sameSnapshot(input) for all eight cases and both repeats; worker also checks its pending request and runtime identity. The result JSON omits the request, so this is an executed source-bound assertion, not independent raw-snapshot revalidation.",
+    "sentences": 12,
+    "shutdown_seconds": 0.007826,
+    "six_frozen_dependency_identities_before_and_after_match": true,
+    "source_hashes_before_after_exact": 38,
+    "source_hashes_independently_mapped_and_rehashed": 38,
+    "source_label_aliases": [
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/quds_proofing_spacy.dart",
+        "reported_label": "quds_proofing_spacy/lib/uds_proofing_spacy.dart",
+        "sha256": "d2ec35f73260fc3bee0d86726aecb9478665355258f0722e77055f09b5e8eb19",
+        "unique_mapping": true
+      },
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/quds_proofing_spacy_grammar.dart",
+        "reported_label": "quds_proofing_spacy/lib/uds_proofing_spacy_grammar.dart",
+        "sha256": "7fda24553f7af314f7e0d3af862c1460c73c0cd8726b4b86021da1044238fa9d",
+        "unique_mapping": true
+      },
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/quds_proofing_spacy_native.dart",
+        "reported_label": "quds_proofing_spacy/lib/uds_proofing_spacy_native.dart",
+        "sha256": "b4d68e940536d8272680f21057f1a7695eb78d8a02c338320b2376c6a159a002",
+        "unique_mapping": true
+      },
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/src/analysis.dart",
+        "reported_label": "quds_proofing_spacy/lib/rc/analysis.dart",
+        "sha256": "65d0577b9ff41e498df5a8606b85a6058623a3bc5591e1efb05a74b5b97c0464",
+        "unique_mapping": true
+      },
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/src/backend.dart",
+        "reported_label": "quds_proofing_spacy/lib/rc/backend.dart",
+        "sha256": "4b3cf6561ec8811d8a85a48a7025efda7714ad0a088add42fc065a738993a732",
+        "unique_mapping": true
+      },
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/src/bundle.dart",
+        "reported_label": "quds_proofing_spacy/lib/rc/bundle.dart",
+        "sha256": "970ec6672efada2bcbacd7223804b8cf8d504ec647aec0c289ee43e5c1f802cb",
+        "unique_mapping": true
+      },
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/src/grammar_planner.dart",
+        "reported_label": "quds_proofing_spacy/lib/rc/grammar_planner.dart",
+        "sha256": "898ff9f67a4acc20e825968f422c9fd1ae1def654ce63ef2942ba0e0cf317314",
+        "unique_mapping": true
+      },
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/src/grammar_provider.dart",
+        "reported_label": "quds_proofing_spacy/lib/rc/grammar_provider.dart",
+        "sha256": "892f2a06a7964834dd9c4752f7250ca25da72b5c6fb698b5f266bcb5542eddc3",
+        "unique_mapping": true
+      },
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/src/native_backend.dart",
+        "reported_label": "quds_proofing_spacy/lib/rc/native_backend.dart",
+        "sha256": "fe15180d48d19b0e79874615708106a88d6f948a026eaef61d26f39961ce9f1b",
+        "unique_mapping": true
+      },
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/src/native_backend_unsupported.dart",
+        "reported_label": "quds_proofing_spacy/lib/rc/native_backend_unsupported.dart",
+        "sha256": "ff38d1a0fd5fa93c2157649fdd064dd73830047497359ed2d51d7a07ff2814ae",
+        "unique_mapping": true
+      },
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/src/source_text.dart",
+        "reported_label": "quds_proofing_spacy/lib/rc/source_text.dart",
+        "sha256": "fd2f2fdda8e608d32bf3b4a05c10b8777a106495cf97cbfafd3b05dd5e559330",
+        "unique_mapping": true
+      },
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/src/transport.dart",
+        "reported_label": "quds_proofing_spacy/lib/rc/transport.dart",
+        "sha256": "78b38b82fcec385d0d2d96d5861f0e2b0333b8af58bc542dd6d5cc23677f6305",
+        "unique_mapping": true
+      },
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/src/worker_native.dart",
+        "reported_label": "quds_proofing_spacy/lib/rc/worker_native.dart",
+        "sha256": "4d63dcc14292025493cbab07b839a26fefb66c6e5d4a2558c4fd01e74d46da80",
+        "unique_mapping": true
+      },
+      {
+        "actual_repository_path": "packages/quds_proofing_spacy/lib/src/worker_unsupported.dart",
+        "reported_label": "quds_proofing_spacy/lib/rc/worker_unsupported.dart",
+        "sha256": "074c3ad98e4a873ec5d55535b3c1a404da4eb557068437a3b4eb9a622d1e3078",
+        "unique_mapping": true
+      }
+    ],
+    "startup_seconds": 0.44464,
+    "static_worker_bounds": {
+      "external_process_timeout_seconds": 300,
+      "maximum_pending_requests": 3,
+      "maximum_text_utf16_units": 1048576,
+      "one_physical_in_flight_slot": true,
+      "request_timeout_seconds": 60,
+      "startup_timeout_seconds": 60
+    },
+    "status": "original_execution_passed_historical_source_label_defect_preserved",
+    "successful_returned_analyses_including_two_repeats": 10,
+    "tokens": 75
+  },
+  "evidence": {
+    "CrispEmbed": [
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/0-disabled.json",
+        "sha256": "71981354142ea2cc0b7580074c984f376ff08eb6fd6a7041731b1fcd5a3ddbad",
+        "size_bytes": 6691
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/0-disabled.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/0-disabled.stdout.txt",
+        "sha256": "6c538b54900a8a7b7451804df0580f2d138c2eab4fc94940e81b8f5e8a8d680c",
+        "size_bytes": 37
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/1-enabled.json",
+        "sha256": "7dc5b1326392918bb42e7d733c0f66dd4301e0bf7bf0544feea8ff79f167f610",
+        "size_bytes": 92866
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/1-enabled.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/1-enabled.stdout.txt",
+        "sha256": "6c538b54900a8a7b7451804df0580f2d138c2eab4fc94940e81b8f5e8a8d680c",
+        "size_bytes": 37
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/2-enabled.json",
+        "sha256": "31570f9f4c4386171d7992d9dfef75d1ff7a923d73a28f2fda3414edc951e7cf",
+        "size_bytes": 92870
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/2-enabled.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/2-enabled.stdout.txt",
+        "sha256": "6c538b54900a8a7b7451804df0580f2d138c2eab4fc94940e81b8f5e8a8d680c",
+        "size_bytes": 37
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/3-enabled.json",
+        "sha256": "1b4c7148a53b320faac2567cdbdab8bcdf42036d081870ba06cfd055b2489614",
+        "size_bytes": 92868
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/3-enabled.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/3-enabled.stdout.txt",
+        "sha256": "6c538b54900a8a7b7451804df0580f2d138c2eab4fc94940e81b8f5e8a8d680c",
+        "size_bytes": 37
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-execution.json",
+        "sha256": "8c0e2192e512c5bb4b328d82829ad47f992333608d050cd69fd87a353154e265",
+        "size_bytes": 2968
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-launch.json",
+        "sha256": "a39cf4c73d09ea59d9f0b5173fc2d6300b67d28c88c751152e3f28066b7c6e93",
+        "size_bytes": 1655
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-retained-audit.json",
+        "sha256": "d1a579468d4fbb942e14861a671d979078cf9783d3f83265317db84fee0b1a0b",
+        "size_bytes": 6313
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first.json",
+        "sha256": "8274bfdb36a3181846f9e460b23f6b81b049f202ba0204d4956e4e9f3c18fc87",
+        "size_bytes": 331153
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first.stdout.txt",
+        "sha256": "0b148a7ad6efb36229c431e45326e4f23ca922d316c12f15f0b2cf0953d406af",
+        "size_bytes": 433
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/source-refresh-audit.json",
+        "sha256": "3e044f7f8ad6fb8b209f2fdcd47fc0d825314978c5e7226df3d0258c6caccf37",
+        "size_bytes": 63363
+      }
+    ],
+    "quds_office_suite": [
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/dart-consumer/first.json",
+        "sha256": "81c425de85cf8d17893e118b8d352471e460edb94b448fb229026de7f8e92fa2",
+        "size_bytes": 79657
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/dart-consumer/first-execution.json",
+        "sha256": "13effb5d076c9077b0405272e6fcceb63365d623f0001d623510ce5ee70d21b6",
+        "size_bytes": 2133
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/dart-consumer/first.log",
+        "sha256": "341c460421981634255ef326503515b665c85e73a7376779cc9897096707f3f6",
+        "size_bytes": 163
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/dart-consumer/corrected-source.json",
+        "sha256": "10f56d4dca10291e7b7bd7db5f9761749bebfc5652057036ace726dfefb58a68",
+        "size_bytes": 79684
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/dart-consumer/corrected-source-execution.json",
+        "sha256": "3b1af7b48ac1a8050b6d80180c867b8b3395757dd495e84e60c54a73b4e1ea23",
+        "size_bytes": 2577
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/dart-consumer/corrected-source.log",
+        "sha256": "fefa5614b05d623b6deb63a5bc71ea85488ac9a2f12870f67fa85f9dc10d140e",
+        "size_bytes": 174
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/dart-consumer/corrected-source-review.json",
+        "sha256": "026aa7f6065f32e4fdf03f276366697b3007eb4a497aa89e72fefa1bf9d25301",
+        "size_bytes": 2172
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/dart-source-labels/controls.json",
+        "sha256": "c0e0782311d0065635d41648421eba73109b45d5421a5cc893c28fe0ef74176e",
+        "size_bytes": 6639
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/dart-source-labels/self-test.log",
+        "sha256": "de3b0a716848d95827bee785691e7d59667bad861246a162d8e51be040f7ab65",
+        "size_bytes": 4187
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/dart-source-labels/current-source-inventory.json",
+        "sha256": "b92568acabe39fbe3bc97434a75b6c7dd4e4cda7387563e674e9ae56b014b193",
+        "size_bytes": 4118
+      },
+      {
+        "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/dart-source-labels/independent-review.json",
+        "sha256": "c8ab4e581b6eac14a814194b3d284e730878cdc44b44259b1dc7d72f38a54985",
+        "size_bytes": 877
+      },
+      {
+        "path": "docs/validation/native-spacy-w6-20261117/source-restoration.json",
+        "sha256": "0a1026599c4603ba3bbd2ae7760ac53392246b882ec99e5a4d1bfd32b709de05",
+        "size_bytes": 1216
+      }
+    ]
+  },
+  "findings": [
+    {
+      "affected_labels": 14,
+      "cause": "collect() slices at root.path.length + 1 even when Directory.fromUri retains a trailing slash. All 14 Quds library labels lose their first relative-path character; dependency File.parent roots are unaffected.",
+      "id": "dart_source_inventory_drops_first_relative_character",
+      "impact": "Original report source labels are not literal repository paths. Their SHA-256 values map uniquely to the exact launched source and match before/after; native results and package/source bytes are not changed.",
+      "required_action": "Completed: original artifacts retained, root/path separator normalization and five source-path controls saved remotely, and one separately named current-source operational execution passed.",
+      "resolution": {
+        "commit": "71e87486489200f7e259594d2967bba8c0682143",
+        "corrected_operational_report_sha256": "10f56d4dca10291e7b7bd7db5f9761749bebfc5652057036ace726dfefb58a68",
+        "driver_sha256": "cecbc3a4c52dc8880c9eae7add5a925b0c74660e9d1ba1aee7aaae0ffe02cdf6",
+        "model_free_controls": 17,
+        "native_or_model_source_changed": false,
+        "new_source_path_controls": 5,
+        "original_reports_unchanged": true,
+        "same_original_eight_operational_inputs_repeated": true
+      },
+      "severity": "provenance_metadata",
+      "source_path": "packages/quds_proofing_spacy/tool/consume_distribution.dart",
+      "status": "resolved_in_published_source_and_separately_validated"
+    }
+  ],
+  "frozen_protocol_sha256": "60f85df220bb05ff467c6036ce465c841cff3480103720d5139af0644cfd3934",
+  "github_actions_queries_waits_reruns_dispatches": 0,
+  "grammar_qualification_rerun": false,
+  "limitations": [
+    "Operational stability and correct ownership on this bounded Linux x86-64/AVX2 candidate are not additional linguistic quality qualification.",
+    "Python resource values are post-free sampled RSS/FD/thread observations for25 cycles per enabled process, not a leak proof or device benchmark.",
+    "Dart exercises a real owned worker with caller cancellation; it does not observe physical compute start or prove prompt interruption of native compute.",
+    "Dart reports mapped dependency paths and file hashes; Python additionally records mapped inode/device equality.",
+    "Dart request and repeat/disposal assertions are source-bound execution evidence; omitted raw snapshot payloads cannot be independently recomputed from first.json.",
+    "No Flutter typing/UI behavior, other platform/device, immutable hosted distribution/download readback or production activation was qualified.",
+    "The original Dart raw report/log remain outside ordinary Git; exact hashes and a reproducible metadata-only public transformation are recorded."
+  ],
+  "native_acceptance_rerun": false,
+  "native_inference_executed_by_review": false,
+  "native_library_sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977",
+  "package": {
+    "all_indexed_files_rehashed": true,
+    "archive_size_bytes": 7808129,
+    "evidence_index_sha256": "efc0c6b17b7be1d1ef800f6f341ef90624fa0138da7397243cd88e7f8f9cd0ae",
+    "installed_manifest_rehashed": true,
+    "installed_payload_count": 20,
+    "no_native_rebuild": true,
+    "two_complete_real_input_archives_equal": true
+  },
+  "python": {
+    "all_raw_child_fields_match_aggregated_report": true,
+    "denominators_recomputed": {
+      "contexts_created": 102,
+      "contexts_freed": 102,
+      "cycle_calls_including_warmup": 78,
+      "cycle_sentences_including_warmup": 78,
+      "cycle_tokens_including_warmup": 546,
+      "documents_created": 102,
+      "documents_freed": 102,
+      "panel_calls": 24,
+      "panel_sentences": 36,
+      "panel_tokens": 225
+    },
+    "driver_native_load": false,
+    "elapsed_seconds": 11.651112450000028,
+    "full_case_and_warmup_annotations_revalidated": 27,
+    "full_panel_and_warmup_annotations_exact_across_processes": true,
+    "measured_cycles_retaining_hashes_and_resources": 75,
+    "nonempty_analyze_calls": 99,
+    "raw_children_verified": [
+      {
+        "elapsed_seconds": 0.19435380099980648,
+        "index": 0,
+        "mode": "disabled",
+        "native_loaded_but_context_and_inference_refused": true,
+        "report": "first-children/0-disabled.json",
+        "report_sha256": "71981354142ea2cc0b7580074c984f376ff08eb6fd6a7041731b1fcd5a3ddbad"
+      },
+      {
+        "cycle_calls_including_warmup": 26,
+        "elapsed_seconds": 3.6094431290000557,
+        "final_file_descriptors": 3,
+        "index": 1,
+        "initial_file_descriptors": 3,
+        "maximum_sampled_rss_growth_bytes": 102400,
+        "mode": "enabled",
+        "ownership": {
+          "contexts_created": 34,
+          "contexts_freed": 34,
+          "documents_created": 34,
+          "documents_freed": 34
+        },
+        "panel_cases": 8,
+        "report": "first-children/1-enabled.json",
+        "report_sha256": "7dc5b1326392918bb42e7d733c0f66dd4301e0bf7bf0544feea8ff79f167f610",
+        "sampled_thread_counts": [
+          1
+        ]
+      },
+      {
+        "cycle_calls_including_warmup": 26,
+        "elapsed_seconds": 3.509148750000122,
+        "final_file_descriptors": 3,
+        "index": 2,
+        "initial_file_descriptors": 3,
+        "maximum_sampled_rss_growth_bytes": 102400,
+        "mode": "enabled",
+        "ownership": {
+          "contexts_created": 34,
+          "contexts_freed": 34,
+          "documents_created": 34,
+          "documents_freed": 34
+        },
+        "panel_cases": 8,
+        "report": "first-children/2-enabled.json",
+        "report_sha256": "31570f9f4c4386171d7992d9dfef75d1ff7a923d73a28f2fda3414edc951e7cf",
+        "sampled_thread_counts": [
+          1
+        ]
+      },
+      {
+        "cycle_calls_including_warmup": 26,
+        "elapsed_seconds": 4.042545345000008,
+        "final_file_descriptors": 3,
+        "index": 3,
+        "initial_file_descriptors": 3,
+        "maximum_sampled_rss_growth_bytes": 102400,
+        "mode": "enabled",
+        "ownership": {
+          "contexts_created": 34,
+          "contexts_freed": 34,
+          "documents_created": 34,
+          "documents_freed": 34
+        },
+        "panel_cases": 8,
+        "report": "first-children/3-enabled.json",
+        "report_sha256": "1b4c7148a53b320faac2567cdbdab8bcdf42036d081870ba06cfd055b2489614",
+        "sampled_thread_counts": [
+          1
+        ]
+      }
+    ],
+    "repeated_cycle_hashes_match_recomputed_warmup_hashes": true,
+    "report_sha256": "8274bfdb36a3181846f9e460b23f6b81b049f202ba0204d4956e4e9f3c18fc87",
+    "source_and_protocol_equal_to_launched_commit": true,
+    "source_coordinate_partition_sentence_graphs_valid": true,
+    "status": "passed",
+    "unique_texts_including_empty_and_cycle": 9
+  },
+  "schema": "crispembed.quds.spacy.w7.independent_operational_review.v1",
+  "scope": "Independent retained-report, byte, source and static-control audit; no tests, model inference or consumed panels rerun.",
+  "sealed_w6": {
+    "all342_logical_source_identities_preserved": true,
+    "candidate_commit": "da18e29c20e2d42036cee911e85ff8bb22c328ae",
+    "changed_paths": [],
+    "direct_candidate_and_current_git_blobs_equal": true,
+    "direct_git_blob_count": 341,
+    "logical_sealed_source_count": 342,
+    "logical_to_published_artifact": [
+      {
+        "candidate_and_current_blob": "bafa332db4f09903cbd975e0f9b48fe12df35b6d",
+        "logical_path": "pubspec.lock",
+        "original_w5_commit": "e7c67f29b34f1c1909e51aa25997fc774bb8ac80",
+        "published_artifact_bytes_verified": true,
+        "published_path": "docs/validation/native-spacy-w5-20261117/workspace-pubspec.lock",
+        "root_logical_path_absent_by_policy": true,
+        "sha256": "344190a0224b9e6dcc2161cbfb1be3b7a9569a3a03a809f42801d99f9052e130",
+        "size_bytes": 22686
+      }
+    ],
+    "mapped_artifact_sha256_checks": 1,
+    "mapped_git_artifact_count": 1,
+    "materialized_direct_file_sha256_checks": 18,
+    "method": "Require explicit existence of all341 direct source paths in both Git trees; compare blobs. Resolve pubspec.lock only through the already-published source-restoration mapping, compare the mapped artifact blob and rehash its full bytes against the seal, original W5 commit and current tree. Missing/missing is not accepted as proof.",
+    "reviewed_quds_head": "a6143772f048644187080ee6a1a44c070802af15",
+    "seal_sha256": "b4b3370548ac6ea09a7943d93dcf140f09378bbdd242030147104dd276a11494",
+    "source_restoration_receipt_sha256": "0a1026599c4603ba3bbd2ae7760ac53392246b882ec99e5a4d1bfd32b709de05"
+  },
+  "source_checkpoints": {
+    "CrispEmbed": "a71c3ce5326346310289db70953f5e300d9c1aaf",
+    "quds_office_suite": "99fd56590f8b4203409148af1a954538451e6890",
+    "quds_office_suite_corrected": "71e87486489200f7e259594d2967bba8c0682143"
+  },
+  "source_refresh_amendment": {
+    "direct_paths": 341,
+    "logical_sources": 342,
+    "mapped_artifacts": 1,
+    "original_inventory_unchanged": true,
+    "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/source-refresh-audit.json",
+    "sha256": "3e044f7f8ad6fb8b209f2fdcd47fc0d825314978c5e7226df3d0258c6caccf37"
+  },
+  "status": "passed_bounded_python_and_corrected_dart_operational_closure",
+  "tests_rerun": false,
+  "unresolved_actionable_findings": []
+}

@@ -1,5 +1,18 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
+## Native spaCy local W7 checkpoint — 18 November 2026
+
+The [Linux package and installed-consumer gates](validation/native-spacy-w7-20261118/README.md)
+are complete on `feat/native-spacy-w7-20261118` in CrispEmbed and Quds. Exact
+native/model/dependency restoration, deterministic package reproduction,
+immutable installation, 25 package controls, 21 Python controls and 17 Dart
+controls pass. Actual Python and owned Quds-worker execution is retained and
+independently audited; both consumed linguistic panels and all 342 sealed W6
+logical source pins remain unchanged. Follow the [current continuation](validation/native-spacy-w7-20261118/CONTINUE.md)
+for immutable hosted publication/readback and separately declared target/device
+qualification. The manual provider stays off by default. This lane uses local
+validation and incremental remote checkpoints without any Actions query or wait.
+
 ## Current portfolio checkpoint — 12 November 2026
 
 This dated checkpoint supersedes conflicting status claims in the older sections

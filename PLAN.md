@@ -1,5 +1,13 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Latest spaCy integration — 18 November 2026
+
+The local W7 package and consumer gates are complete. [Final reconciliation](docs/validation/native-spacy-w7-20261118/resume-20261118/final-main-reconciliation.json)
+includes current main `be20e497` and its worksheet PR235 history while retaining
+all 22 frozen spaCy source hashes and the exact tested consumer sources. The
+dated worksheet owner records below remain historical; this continuation does
+not query or wait on Actions or claim a new worksheet validation result.
+
 ## PR235 post-OOM owner repair — 18 November 2026
 
 At `6dffe3029`, artifact validation and clang-format pass; current Build
@@ -101,11 +109,15 @@ controls. It preserves the native/model bytes and both consumed panels.
 
 The [18 November fresh-workspace continuation](docs/validation/native-spacy-w7-20261118/resume-20261118/source-refresh.json)
 has fetched all available origin branch and PR heads in both repositories;
-both current mains are already included and all 342 sealed W6 source blobs
+both current mains are already included and all 342 sealed W6 logical source pins
 remain unchanged. The corrected Python consumer now passes its 21 controls,
 and its printed protocol matches the frozen bytes. Exact-input package
-reproduction and the first Python/Dart operational consumers are in progress;
-these checks do not rerun either consumed linguistic panel.
+reproduction and the first Python consumer now pass. The corrected Dart
+consumer passes 17 controls and actual worker execution; its initial source-label
+defect and original result remain preserved. The [paired completion](docs/validation/native-spacy-w7-20261118/resume-20261118/completion.json)
+closes the local Linux package/consumer gates. Immutable hosted publication,
+empty-cache readback and separate platform/device qualification remain open.
+These checks do not rerun either consumed linguistic panel.
 
 The later [remote reconciliation](docs/validation/native-spacy-w7-20261118/completion-20261118/source-refresh.json)
 recovers the newer passing package, Python and Dart receipts from both W7
@@ -113,9 +125,11 @@ branches before any further work. All 245 CrispEmbed and 191 Quds branches,
 available PR heads and recent PR metadata are refreshed. Main `be20e497`
 (worksheet PR #235) is integrated into this branch; the accepted spaCy archive,
 consumer/converter sources and prior evidence are unchanged. Quds already
-contains its current main. Independent retained-evidence audits are in progress;
-the old filesystem-exhaustion handoff is historical and will be reconciled with
-the verified results. GitHub Actions are not queried or awaited.
+contains its current main. The subsequent package/Python audit at `24aba65a`
+and Dart audit at `ef22a83b` are retained alongside the paired completion and
+independent review. The old filesystem-exhaustion handoff is historical; the
+local package and consumer gates are complete. GitHub Actions are not queried
+or awaited.
 
 The user requires incremental remote checkpoints and local validation without
 querying or waiting for Actions. Preserve all unrelated paths/defaults. This

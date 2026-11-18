@@ -1,3 +1,24 @@
+## 18 November 2026 — local spaCy package and installed consumers
+
+The [W7 continuation](docs/validation/native-spacy-w7-20261118/README.md)
+completes the local Linux x86-64/AVX2 package gates using the unchanged accepted
+native/model bytes and six qualified external dependency builds. Current
+controls pass 25 package, 21 Python consumer and 17 Dart cases. Two complete
+package builds are byte-identical and match the saved original hash; immutable
+installation and full installed-tree verification pass.
+
+The first Python operational run passes four fresh children and 102 owned
+context/document pairs, with exact repeated annotations, maximum sampled RSS
+growth 102,400 bytes and zero final descriptor growth. The actual Quds worker
+passes eight operational cases / 75 tokens / 12 sentences and five additional
+worker requests. Review added loader-override rejection and repaired 14
+truncated source labels; the original result is preserved and the corrected
+source is separately executed and audited. All 342 sealed W6 logical source pins
+remain unchanged. No consumed linguistic panel was rerun and no general quality,
+device, compute-interruption, UI, release or production activation claim follows.
+Source and first outcomes were saved incrementally before subsequent steps,
+with remote Git tree verification and no Actions queries or waits.
+
 ## 15 November 2026 — Worksheet cleanup component validation
 
 The straightness follow-up replaces the single-angle assumption for explicitly

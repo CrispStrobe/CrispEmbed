@@ -1,0 +1,241 @@
+{
+  "conflict_resolution": {
+    "HISTORY.md": "Retain the full new spaCy entry followed by the full incoming worksheet entry.",
+    "PLAN.md": "Retain the spaCy continuation's complete PR236 identity and all incoming worksheet owner sections; both sides record the same completed PR236 merge."
+  },
+  "frozen_native_sources": [
+    {
+      "matches_frozen": true,
+      "path": "src/core/env_gate.h",
+      "sha256": "2370e31636ea25bc1e5ca63e1e606f4cd3c07c65e0f4d1347b2ec6daf57eaa0e"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/core/gguf_loader.cpp",
+      "sha256": "04b2c87b90f80fef04713c0572f3a7e823ba1c22e7c89ebc925a3d1ea56a6a8a"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/core/gguf_loader.h",
+      "sha256": "d191f61843db3aaf4a9a653c29debb70fbd8f1e2f2d47d63e85966e737a08936"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/core/json.h",
+      "sha256": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/core/json_value.h",
+      "sha256": "f6af418a13cc5285f977fd29c5644d7fc2cf957f5c4b6d31a3bf0c33243dacf4"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/core/sha256.h",
+      "sha256": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/spacy_decode.cpp",
+      "sha256": "9e0701faea26b6eae1e89c6bf829b2129135371ab3b051effaa088a28ca021fc"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/spacy_decode.h",
+      "sha256": "b4441442893d85cc12a3957c5853951deac7e7793e4bd20fb8501f87ce6189da"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/spacy_lexical.cpp",
+      "sha256": "48170ac748f1697855ae526b16fe5d7a6d1b147b1edbf26e076ef99deacf8c2c"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/spacy_lexical.h",
+      "sha256": "92233750306fd516acc3695531aff2dfec7a1d4d1f77c85a182017ed89ab26f4"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/spacy_lexical_data.h",
+      "sha256": "0972867a8dd92355ee4895f9f00c1437a3135b1e21e02e96edbce56fc5c9ffe4"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/spacy_numeric.cpp",
+      "sha256": "664ab23f4169706d1a79299ff062d381889bc207fd7addccd047d4d1587fa9d0"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/spacy_numeric.h",
+      "sha256": "399b16063d02705ecae36eeed77a6533a716c6c267445547ba4d0d0aa8cf2ae7"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/spacy_pipeline.cpp",
+      "sha256": "9725a3e16ed04ccb2fe34fc6d2a10390427303bf1b6391d20aa53260ce3bcde1"
+    },
+    {
+      "matches_frozen": true,
+      "path": "src/spacy_pipeline.h",
+      "sha256": "756c25b664b38d26d1da13264d47417d9914f8dd805c588a539fe6f3681f7e62"
+    },
+    {
+      "matches_frozen": true,
+      "path": "tests/spacy_acceptance.py",
+      "sha256": "e8c7c9b0cdf30c8c35ac26ce93a7867fcaa8a931f14d589497e48d1b242226f0"
+    },
+    {
+      "matches_frozen": true,
+      "path": "tests/spacy_parity.py",
+      "sha256": "e83495dadcf199e068259e1cca30e65256bf76263a405bc6299765779fd77e32"
+    },
+    {
+      "matches_frozen": true,
+      "path": "tests/spacy_text_parity.py",
+      "sha256": "f5fc6c84cc9d850c78f2f5102484811ee43d4f3d40ba74e2ec97b6833a13d6a9"
+    },
+    {
+      "matches_frozen": true,
+      "path": "tests/test_spacy_text_api.py",
+      "sha256": "d1e4599baeec25adf99369d28671321bf2e647203bfa42b652ddfb82accf185b"
+    },
+    {
+      "matches_frozen": true,
+      "path": "tools/spacy/CMakeLists.txt",
+      "sha256": "cf126a32da8b8c7b0736cd3bc1770e26d0106309e28057e219a464a45c0f6684"
+    },
+    {
+      "matches_frozen": true,
+      "path": "tools/spacy/generate_lexical_data.py",
+      "sha256": "c636699860954ac4f4c43a4056c93688a60e51b0bdad319e210ef983f0e23f4f"
+    },
+    {
+      "matches_frozen": true,
+      "path": "tools/spacy/requirements-reference.txt",
+      "sha256": "e1bd56aef4aba0c45135fb2b51961c0d94c3be99a785be71a46c698cd22cc98a"
+    }
+  ],
+  "frozen_source_count": 22,
+  "ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "github_actions_queries_waits_reruns_dispatches": 0,
+  "grammar_qualification_rerun": false,
+  "incoming_changed_paths": [
+    ".github/workflows/build.yml",
+    ".github/workflows/worksheet-cleanup.yml",
+    "HISTORY.md",
+    "PERFORMANCE.md",
+    "PLAN.md",
+    "VERSION",
+    "crispembed-sys/Cargo.toml",
+    "crispembed/Cargo.toml",
+    "docs/environment-variables.md",
+    "flutter/crispembed/pubspec.yaml",
+    "python/crispembed/__init__.py",
+    "python/pyproject.toml",
+    "src/crispembed.h",
+    "src/lighton4b_physical_f16_attention.cpp",
+    "src/lighton4b_physical_rope.h",
+    "src/ocr_render.cpp",
+    "src/scan_cleanup.cpp",
+    "src/scan_cleanup.h",
+    "tests/ocr_render_reader_probe.py",
+    "tests/results/worksheet-cleanup-pr235-build-repair.json",
+    "tests/test_lighton4b_physical_rope.cpp",
+    "tests/test_ocr_render_artifacts.py",
+    "tests/test_scan_cleanup.cpp",
+    "tests/test_scan_rule_geometry.py"
+  ],
+  "incoming_commits": [
+    {
+      "sha": "be20e49797c68c4a9fcc765d2f3b719257b48580",
+      "subject": "Merge pull request #235: worksheet cleanup and lossless binary PDF export"
+    },
+    {
+      "sha": "7ab522d619a567cb4fe3af9d14a40e6f94a5b4e5",
+      "subject": "docs: record actual local Python 3.13 probe environment"
+    },
+    {
+      "sha": "4b67823d506b685353eee734d6676aa0a5c0d578",
+      "subject": "fix(ci): pin supported Python for NumPy static guard"
+    },
+    {
+      "sha": "6dffe3029cad4f3a8c1d84f1baa11bf68857f3a9",
+      "subject": "Merge main into worksheet cleanup; preserve frozen spaCy evidence"
+    },
+    {
+      "sha": "3fc8f7e93c5fe06bfea4c8e0faee5164b8f56c32",
+      "subject": "style: fix remaining inherited physical RoPE formatting"
+    },
+    {
+      "sha": "4540ddccf79aa229d212316668da964c04973223",
+      "subject": "fix: validate binary PDF fixtures at legal PDF/A page sizes"
+    },
+    {
+      "sha": "0eca8e35d5d675d6fef106a6316db38355c6841a",
+      "subject": "fix: rectify ruled photo perspective before binarization"
+    },
+    {
+      "sha": "2a17de773c41abaae4410161748fa78fb0aa8a6b",
+      "subject": "docs: record actual worksheet before and after evidence"
+    },
+    {
+      "sha": "6ffeaa41d95e7a0dfcd3343a8f61c115343a49ae",
+      "subject": "test: replay descending gradient in legacy whitening control"
+    },
+    {
+      "sha": "fe47a36915491fef2cd39844d23dca45ec10238b",
+      "subject": "fix: normalize invalid whitening window sizes"
+    },
+    {
+      "sha": "166f4a4da4188a46fc833a5eec387bd1964cee79",
+      "subject": "test: validate packed rasters with independent PDF/A reader"
+    },
+    {
+      "sha": "23d032a04cd3bf8c43fa97aba9cb9b2b38f2b24c",
+      "subject": "style: format worksheet cleanup changes"
+    },
+    {
+      "sha": "925c4a5c50bbd3a2f8bd2d34655c8e58a2a0c0dd",
+      "subject": "fix: preserve worksheet rules and pack binary PDF rasters"
+    }
+  ],
+  "incoming_pr": 235,
+  "incoming_source_files_retained_exactly": [
+    ".github/workflows/build.yml",
+    ".github/workflows/worksheet-cleanup.yml",
+    "VERSION",
+    "crispembed-sys/Cargo.toml",
+    "crispembed/Cargo.toml",
+    "docs/environment-variables.md",
+    "flutter/crispembed/pubspec.yaml",
+    "python/crispembed/__init__.py",
+    "python/pyproject.toml",
+    "src/crispembed.h",
+    "src/lighton4b_physical_f16_attention.cpp",
+    "src/lighton4b_physical_rope.h",
+    "src/ocr_render.cpp",
+    "src/scan_cleanup.cpp",
+    "src/scan_cleanup.h",
+    "tests/ocr_render_reader_probe.py",
+    "tests/results/worksheet-cleanup-pr235-build-repair.json",
+    "tests/test_lighton4b_physical_rope.cpp",
+    "tests/test_ocr_render_artifacts.py",
+    "tests/test_scan_cleanup.cpp",
+    "tests/test_scan_rule_geometry.py"
+  ],
+  "initial_main": "04e8445823d82591120203e953365582d7ba33be",
+  "integrated_main": "be20e49797c68c4a9fcc765d2f3b719257b48580",
+  "interpretation": "Preserve incoming main history and changes. Existing operational evidence remains tied to unchanged consumer/package/native inputs; this source audit performs no native run and claims no new worksheet evidence.",
+  "native_acceptance_rerun": false,
+  "native_binary_rebuilt": false,
+  "quds_main": "482e08176dea6bd8f5fc80d1c0064d96b712db43",
+  "schema": "crispembed.quds.spacy.w7.final_main_reconciliation.v1",
+  "status": "current_main_integrated_with_frozen_spacy_and_consumer_sources_unchanged",
+  "tested_consumer_source_hashes_unchanged": {
+    "docs/validation/native-spacy-w7-20261118/operational-protocol.json": "60f85df220bb05ff467c6036ce465c841cff3480103720d5139af0644cfd3934",
+    "tests/test_spacy_distribution_consumer.py": "c9d127ef2b9144b66ffcfa4c6ed4aa6348c345315e0380cb0628285d2e08bfa2",
+    "tools/spacy/distribution.py": "327f68ea67e0179caf017477054aafab322b84b9e7c6f998da8eee5aa95402d5",
+    "tools/spacy/distribution_consumer.py": "a9241a3c701ab7c4a03381f9a98df18fe47f047dd2b8cbebc6be71d3a3477172"
+  },
+  "worksheet_requalification_performed_here": false
+}

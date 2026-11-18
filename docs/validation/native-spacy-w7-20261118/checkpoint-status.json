@@ -1,118 +1,190 @@
 {
-  "schema": "crispembed.quds.spacy.w7.continuation_status.v1",
-  "recorded_date": "2026-11-18",
-  "status": "package_controls_passed_consumer_execution_blocked_by_unavailable_local_runtime",
+  "app_defaults_native_source_model_and_consumed_panels_changed": false,
+  "blocker": null,
   "branch": "feat/native-spacy-w7-20261118",
-  "source_checkpoints": {
-    "CrispEmbed": {
-      "commit": "d1d9985e143206e8f8e930cf23b947fd71f9c451",
-      "tree": "090d24f92d8e9c6a1696433dbd52e7059d416dc9",
-      "package_implementation_commit": "c0f9837c2af318a10f907531b41e3269757efe64",
-      "base_main": "04e8445823d82591120203e953365582d7ba33be"
-    },
-    "quds_office_suite": {
-      "commit": "2e57784093fd2d1f44fe27edb31077d4163693f2",
-      "tree": "296e1dec41848d098af72898a7c1ee46052e83b0",
-      "current_main_merge": "13747281fb25b5c55c549255595c75a7ca0854ef",
-      "base_main": "482e08176dea6bd8f5fc80d1c0064d96b712db43"
-    }
-  },
-  "preceding_w6": {
-    "paired_completion_commit": "93560df6e4e8a592535216ca94b883f5934a915c",
-    "quds_completion_commit": "20026ff49ac37391e2a1fd0947560a587f2f7332",
-    "sealed_source_blobs_unchanged": 342,
-    "native_acceptance_and_grammar_qualification": "consumed; preserved without rerunning"
-  },
   "completed": {
     "branches_and_pr_heads_fetched_and_inventoried": true,
-    "relevant_current_main_integrated": true,
+    "concurrent_remote_audits_preserved": [
+      {
+        "audit_path": "docs/validation/native-spacy-w7-20261118/completion-20261118/python-package-audit.json",
+        "audit_sha256": "f4fd970e19f0844a3ec9bd7f81b18875f7bf170d15ed6255f386de9660949357",
+        "preserved_commit": "24aba65adc3633366fe4b3cf20818ca2965dfefd",
+        "repository": "CrispStrobe/CrispEmbed"
+      },
+      {
+        "audit_path": "docs/validation/native-spacy-w7-20261118/completion-20261118/dart-audit.json",
+        "audit_sha256": "a147c4c639b66963d6bf5fc20268f4c0da27d3235540d1cfa10b9661d1b42571",
+        "preserved_commit": "ef22a83b6aef4aa4383f14415c42c7aba67f4873",
+        "repository": "CrispStrobe/quds_office_suite"
+      }
+    ],
+    "current_dart_consumer_compilation_and_self_test": {
+      "controls": 17,
+      "passed": true,
+      "receipt": "resume-20261118/dart-source-labels/controls.json",
+      "repository": "CrispStrobe/quds_office_suite"
+    },
+    "current_dart_installed_worker_run": {
+      "additional_worker_requests": 5,
+      "corrected_source_execution_passed": true,
+      "correctly_named_quds_library_entries": 14,
+      "driver_sha256": "cecbc3a4c52dc8880c9eae7add5a925b0c74660e9d1ba1aee7aaae0ffe02cdf6",
+      "initial_execution_preserved": true,
+      "mapped_external_dependency_entries": 6,
+      "operational_cases": 8,
+      "public_report_sha256": "10f56d4dca10291e7b7bd7db5f9761749bebfc5652057036ace726dfefb58a68",
+      "report": "docs/validation/native-spacy-w7-20261118/resume-20261118/dart-consumer/corrected-source.json",
+      "result_commit": "a6143772f048644187080ee6a1a44c070802af15",
+      "scope": "Actual owned Quds worker with checked nonzero UTF-16 origins, exact saved outputs and executed repeat/cancellation/disposal assertions; no Flutter observation or native compute-interruption measurement.",
+      "sentence_count": 12,
+      "source_commit": "71e87486489200f7e259594d2967bba8c0682143",
+      "source_configuration_entries": 38,
+      "token_count": 75
+    },
+    "current_python_consumer_21_controls": {
+      "passed": true,
+      "receipt": "resume-20261118/python-controls/initial-receipt.json",
+      "repository": "CrispStrobe/CrispEmbed"
+    },
+    "current_python_consumer_first_operational_run": {
+      "annotations_exact_across_processes_and_cycles": true,
+      "case_types": 8,
+      "context_document_pairs_created_and_freed": 102,
+      "cycle_and_warmup_executions": 78,
+      "disabled_children": 1,
+      "distinct_texts_including_cycle": 9,
+      "enabled_children": 3,
+      "final_fd_growth": 0,
+      "first_execution_passed": true,
+      "fresh_children": 4,
+      "maximum_sampled_rss_growth_bytes": 102400,
+      "panel_executions": 24,
+      "report": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first.json",
+      "report_sha256": "8274bfdb36a3181846f9e460b23f6b81b049f202ba0204d4956e4e9f3c18fc87",
+      "result_commit": "482786cce5450e5e9532f5917e2007bbe1c120db",
+      "rss_growth_budget_bytes": 33554432,
+      "source_commit": "a71c3ce5326346310289db70953f5e300d9c1aaf"
+    },
+    "dart_consumer_static_review": "actual Quds API and JSON schemas checked; checked typed readers and explicit annotation comparison saved",
+    "final_main_reconciliation": {
+      "commit": "be20e49797c68c4a9fcc765d2f3b719257b48580",
+      "frozen_spacy_sources_verified": 22,
+      "receipt": "resume-20261118/final-main-reconciliation.json"
+    },
     "package_model_free_controls": {
-      "passed": 25,
       "failed": 0,
-      "source_sha256": "327f68ea67e0179caf017477054aafab322b84b9e7c6f998da8eee5aa95402d5",
-      "receipt": "distribution-controls.txt"
-    },
-    "real_input_package_build": {
-      "passed": true,
-      "sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
-      "bytes": 7808129,
-      "payload_files": 20,
-      "receipt": "distribution-build.json"
-    },
-    "real_input_atomic_install_and_full_tree_verification": {
-      "passed": true,
-      "receipt": "distribution-install.json",
-      "native_library_loaded": false
-    },
-    "runtime_restoration": {
-      "passed": true,
-      "native_files": 15,
-      "model_files": 5,
-      "qualified_system_dependencies": 6,
-      "context_create_free": 1,
-      "inference_executions": 0,
-      "receipt": "runtime-restoration.json"
+      "passed": 25,
+      "receipt": "distribution-controls.txt",
+      "source_sha256": "327f68ea67e0179caf017477054aafab322b84b9e7c6f998da8eee5aa95402d5"
     },
     "python_consumer_static_review": "two findings corrected; independent remote rereview accepted source",
-    "dart_consumer_static_review": "actual Quds API and JSON schemas checked; checked typed readers and explicit annotation comparison saved"
+    "real_input_atomic_install_and_full_tree_verification": {
+      "native_library_loaded": false,
+      "passed": true,
+      "receipt": "distribution-install.json"
+    },
+    "real_input_package_build": {
+      "bytes": 7808129,
+      "passed": true,
+      "payload_files": 20,
+      "receipt": "distribution-build.json",
+      "sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01"
+    },
+    "relevant_current_main_integrated": true,
+    "runtime_restoration": {
+      "context_create_free": 1,
+      "inference_executions": 0,
+      "model_files": 5,
+      "native_files": 15,
+      "passed": true,
+      "qualified_system_dependencies": 6,
+      "receipt": "runtime-restoration.json"
+    },
+    "second_full_real_input_package_build_byte_comparison": {
+      "passed": true,
+      "receipt": "resume-20261118/package/distribution-byte-comparison.json",
+      "repository": "CrispStrobe/CrispEmbed"
+    }
   },
+  "github_actions_queries_waits_reruns_dispatches": 0,
+  "local_completion": "resume-20261118/completion.json",
   "pending": {
-    "current_python_consumer_21_controls": "not executed",
-    "current_python_consumer_first_operational_run": "not executed",
-    "current_dart_consumer_compilation_and_self_test": "not executed",
-    "current_dart_installed_worker_run": "not executed",
-    "second_full_real_input_package_build_byte_comparison": "not executed; fixture determinism is covered by passing package tests",
     "hosted_distribution_upload_and_consumer_download_readback": "not performed",
     "other_platforms_and_devices": "unqualified",
     "production_activation": "separate decision"
   },
-  "protocol": {
-    "path": "operational-protocol.json",
-    "sha256": "60f85df220bb05ff467c6036ce465c841cff3480103720d5139af0644cfd3934",
-    "first_remote_freeze": "c0f9837c2af318a10f907531b41e3269757efe64",
-    "case_types": 8,
-    "distinct_texts_including_cycle": 9,
-    "enabled_processes": 3,
-    "disabled_processes": 1,
-    "context_document_pairs_if_completed": 102,
-    "changed": false
+  "preceding_w6": {
+    "documented_lockfile_artifacts_preserved": 1,
+    "native_acceptance_and_grammar_qualification": "consumed; preserved without rerunning",
+    "paired_completion_commit": "93560df6e4e8a592535216ca94b883f5934a915c",
+    "quds_completion_commit": "20026ff49ac37391e2a1fd0947560a587f2f7332",
+    "sealed_logical_sources_preserved": 342,
+    "sealed_source_blobs_unchanged": 341
   },
   "preservation": {
-    "source_and_available_package_restoration_evidence": "saved on the remote branches",
-    "latest_consumer_files": "source-only recovery checkpoints; local checkouts may lag these remote commits",
-    "python_reconstruction": "Reconstructed from authored tool-call text after local commands failed; no claim of identity with the earlier local source. Earlier 18-pass evidence applies only to the earlier hashes.",
-    "unavailable_raw_receipts": "Full original Python preflight/control and Dart SDK restoration/review logs could not all be reread after ENOSPC. Consumer checkpoints retain observed metadata and available hashes, not replacement raw evidence.",
+    "current_resume": "Fresh source, controls, deterministic package and actual consumer results saved incrementally on both remote branches; each complete remote Git tree checked against local source/evidence.",
+    "fresh_dart_raw_public_scope": "Initial and corrected Dart public reports preserve complete annotations; only declared host metadata paths and JSON key ordering differ from privately retained raw captures. Raw/public digests and the exact transformation are recorded.",
     "generated_package_and_model_weights": "Not uploaded to ordinary Git; retain or reconstruct from pinned remote native archive, official model wheel and tracked converter/hash lock.",
+    "latest_consumer_files": "Current Python and corrected Dart source compiled/tested and operationally executed; exact source/result identities in resume-20261118/completion.json.",
     "native_archive": {
-      "repository": "CrispStrobe/CrispEmbed",
       "commit": "93560df6e4e8a592535216ca94b883f5934a915c",
       "path": "docs/validation/native-spacy-20261117/acceptance-candidate-linux-x86_64.tar.gz",
+      "repository": "CrispStrobe/CrispEmbed",
       "sha256": "b0cd3ae4d47af442d32a6d2382143c36f8b019470cff7c509f97e4682b67489b"
-    }
+    },
+    "python_reconstruction": "Reconstructed from authored tool-call text after local commands failed; no claim of identity with the earlier local source. Earlier 18-pass evidence applies only to the earlier hashes.",
+    "sealed_source_inventory_audit": "341 direct Git paths plus the documented historical pubspec.lock artifact preserve all 342 logical source pins; see resume-20261118/source-refresh-audit.json.",
+    "source_and_available_package_restoration_evidence": "saved on the remote branches",
+    "unavailable_raw_receipts": "Full original Python preflight/control and Dart SDK restoration/review logs could not all be reread after ENOSPC. Consumer checkpoints retain observed metadata and available hashes, not replacement raw evidence."
   },
-  "blocker": {
+  "prior_execution_blocker": {
+    "cleanup_escalation": "Narrow task-owned cleanup outside the sandbox was rejected before execution because sandbox approvals are disabled.",
     "kind": "local runtime unavailable after observed filesystem exhaustion",
+    "latest_read_only_probe": {
+      "error": "Failed to create unified exec process: exec-server rejected request (-32603): No such file or directory (os error 2)",
+      "executed": false,
+      "intended_check": "Current working directory and available filesystem bytes",
+      "interpretation": "The command did not start. Current workspace mounting, file contents and free capacity cannot be verified; this error alone does not establish deletion.",
+      "observed_at": "2026-11-18 05:44:28 UTC",
+      "remote_source_and_handoff_readback": "Both repositories verified independently before this probe"
+    },
+    "local_commands_and_edits_unavailable": true,
+    "no_unrelated_files_deleted": true,
     "observed_error": "bwrap: Can't create file WORKSPACE/.git: No space left on device",
     "path_redacted": true,
-    "local_commands_and_edits_unavailable": true,
     "prior_task_owned_cleanup": "Approximately 440 MB reclaimed from the temporary converter environment, redundant fetched Git blobs and downloaded model wheel before later exhaustion.",
-    "cleanup_escalation": "Narrow task-owned cleanup outside the sandbox was rejected before execution because sandbox approvals are disabled.",
-    "no_unrelated_files_deleted": true,
-    "required_recovery": "Restore a functioning writable execution workspace with capacity. Fetch the saved remote branches; preserve and compare any recoverable old local differences.",
-    "latest_read_only_probe": {
-      "observed_at": "2026-11-18 05:44:28 UTC",
-      "intended_check": "Current working directory and available filesystem bytes",
-      "executed": false,
-      "error": "Failed to create unified exec process: exec-server rejected request (-32603): No such file or directory (os error 2)",
-      "interpretation": "The command did not start. Current workspace mounting, file contents and free capacity cannot be verified; this error alone does not establish deletion.",
-      "remote_source_and_handoff_readback": "Both repositories verified independently before this probe"
-    }
+    "required_recovery": "Restore a functioning writable execution workspace with capacity. Fetch the saved remote branches; preserve and compare any recoverable old local differences."
   },
-  "github_actions_queries_waits_reruns_dispatches": 0,
-  "app_defaults_native_source_model_and_consumed_panels_changed": false,
-  "resume_document": "CONTINUE.md",
+  "protocol": {
+    "case_types": 8,
+    "changed": false,
+    "context_document_pairs_if_completed": 102,
+    "disabled_processes": 1,
+    "distinct_texts_including_cycle": 9,
+    "enabled_processes": 3,
+    "first_remote_freeze": "c0f9837c2af318a10f907531b41e3269757efe64",
+    "path": "operational-protocol.json",
+    "sha256": "60f85df220bb05ff467c6036ce465c841cff3480103720d5139af0644cfd3934"
+  },
   "pull_requests": {
     "CrispEmbed": "https://github.com/CrispStrobe/CrispEmbed/pull/237",
     "quds_office_suite": "https://github.com/CrispStrobe/quds_office_suite/pull/153"
-  }
+  },
+  "recorded_date": "2026-11-18",
+  "resume_document": "CONTINUE.md",
+  "schema": "crispembed.quds.spacy.w7.continuation_status.v1",
+  "source_checkpoints": {
+    "CrispEmbed": {
+      "base_main": "be20e49797c68c4a9fcc765d2f3b719257b48580",
+      "consumer_source": "a71c3ce5326346310289db70953f5e300d9c1aaf",
+      "initial_base_main": "04e8445823d82591120203e953365582d7ba33be",
+      "result_commit": "482786cce5450e5e9532f5917e2007bbe1c120db"
+    },
+    "quds_office_suite": {
+      "base_main": "482e08176dea6bd8f5fc80d1c0064d96b712db43",
+      "consumer_source": "71e87486489200f7e259594d2967bba8c0682143",
+      "result_commit": "a6143772f048644187080ee6a1a44c070802af15"
+    }
+  },
+  "status": "local_linux_package_and_installed_consumer_gates_complete"
 }

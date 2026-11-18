@@ -1,5 +1,18 @@
 # Executable next-agent handoff
 
+## Native spaCy local W7 checkpoint — 18 November 2026
+
+The [Linux package and installed-consumer gates](validation/native-spacy-w7-20261118/README.md)
+are complete on `feat/native-spacy-w7-20261118` in CrispEmbed and Quds. Exact
+native/model/dependency restoration, deterministic package reproduction,
+immutable installation, 25 package controls, 21 Python controls and 17 Dart
+controls pass. Actual Python and owned Quds-worker execution is retained and
+independently audited; both consumed linguistic panels and all 342 sealed W6
+logical source pins remain unchanged. Follow the [current continuation](validation/native-spacy-w7-20261118/CONTINUE.md)
+for immutable hosted publication/readback and separately declared target/device
+qualification. The manual provider stays off by default. This lane uses local
+validation and incremental remote checkpoints without any Actions query or wait.
+
 ## Source-aligned fixed raw audit — 13 November 2026
 
 The [independent artifact audit](lighton4b-source-aligned-fixed-audit.md) passes at candidate `f8bffd1217fa41a958047d88dafb782a4b1cd989`. All six receipt-first arms close; all three aligned ON outputs match their quantized source IDs/text, reach EOS and pass the unchanged provisional source floors. Receipt improves from 468 to 465 generated IDs and 25/19 to 24/18 character/word edits; book654 and inventory248 remain exact. All 581 current artifacts and 5,023 current/reused/baseline vocabulary rows were rehashed remotely, including the tested runtime, retained quantized model and metadata preflight executable.
