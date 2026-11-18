@@ -55,6 +55,20 @@ def pipeline(source):
             "Quantization file type does not match the storage precision");
     Profile profile{};
     profile.quantized = candidate;''')
+    source = replace_once(source, '''        require(reader.u32() == shape.size(), "Incorrect spaCy tensor rank");
+        size_t elements = 1;
+        for (auto dimension = shape.rbegin(); dimension != shape.rend(); ++dimension) {
+            require(reader.u64() == *dimension, "Incorrect spaCy tensor shape");
+            elements *= *dimension; // dimensions are fixed by the closed profile
+        }''', '''        const size_t rank = reader.u32();
+        require(rank == shape.size() || (candidate && shape.front() == 1 && rank + 1 == shape.size()),
+                "Incorrect spaCy tensor rank");
+        size_t elements = 1;
+        size_t axis = 0;
+        for (auto dimension = shape.rbegin(); dimension != shape.rend(); ++dimension, ++axis) {
+            if (axis < rank) require(reader.u64() == *dimension, "Incorrect spaCy tensor shape");
+            elements *= *dimension;
+        }''')
     source = replace_once(source, '        require(reader.u32() == GGML_TYPE_F32, "Only F32 spaCy tensors are admitted");\n        const uint64_t offset = reader.u64();\n        const size_t tensor_bytes = elements * sizeof(float);',
         '''        const uint32_t raw_type = reader.u32();
         require(raw_type == GGML_TYPE_F32 || (candidate && raw_type == static_cast<uint32_t>(requested)),

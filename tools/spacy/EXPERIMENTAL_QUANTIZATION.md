@@ -19,6 +19,10 @@ The existing `crispembed-quantize` implementation is compiled in isolation.
 The private source overlay prevents its generic convolution flattening from
 changing spaCy's rank-four parser tensor shape. All other quantizer behavior
 is preserved and both original/generated sources and binary hashes are saved.
+The GGUF writer canonically omits a leading unit axis from `parser.lower.pad`.
+Only the experimental profile admits that exact shape-equivalent rank; every
+non-unit dimension and the loaded four-dimensional shape remain fixed. The
+initial hosted F16 attempt's rank-admission rejection is retained separately.
 
 `quantized_parity.py` first calls the unchanged F32 bundle/reference validator.
 Its explicit candidate admission adapter replaces only the independently
