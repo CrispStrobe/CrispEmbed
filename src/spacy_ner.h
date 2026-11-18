@@ -24,9 +24,9 @@ namespace crispembed {
 namespace spacy {
 
 struct Entity {
-    std::uint32_t start = 0;  // first token
-    std::uint32_t end = 0;    // one past the last token
-    std::uint32_t label = 0;  // index into NerModel::labels()
+    std::uint32_t start = 0; // first token
+    std::uint32_t end = 0;   // one past the last token
+    std::uint32_t label = 0; // index into NerModel::labels()
 };
 
 class NerModel {
@@ -38,7 +38,7 @@ public:
     NerModel(const NerModel &) = delete;
     NerModel & operator=(const NerModel &) = delete;
 
-    static const std::vector<std::string> & labels();  // LOC, PER, ORG, MISC
+    static const std::vector<std::string> & labels(); // LOC, PER, ORG, MISC
 
     // features use columns 0-3 (NORM..SHAPE) and 5 (IS_SPACE); sentence_starts
     // are the parser's final boundaries (token 0 is always a start).

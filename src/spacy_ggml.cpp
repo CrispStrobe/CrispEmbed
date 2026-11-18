@@ -75,7 +75,8 @@ Matrix to_matrix(std::vector<float> values, std::size_t rows, std::size_t column
 
 GgmlNumeric::GgmlNumeric(std::map<std::string, ggml_tensor *> weights, ggml_backend_t backend)
     : weights_(std::move(weights)), backend_(backend) {
-    if (!backend_ || !ggml_backend_is_cpu(backend_)) throw std::invalid_argument("spaCy ggml engine requires a CPU backend");
+    if (!backend_ || !ggml_backend_is_cpu(backend_))
+        throw std::invalid_argument("spaCy ggml engine requires a CPU backend");
     allocator_ = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend_));
     if (!allocator_) throw std::bad_alloc();
 }
@@ -124,7 +125,8 @@ NumericOutput GgmlNumeric::run(const std::vector<FeatureRow> & features, std::si
         w = ggml_reshape_2d(ctx, w, w->ne[0], width * pieces);
         ggml_tensor * affine = ggml_mul_mat(ctx, w, input);
         affine = ggml_add(ctx, affine, ggml_reshape_1d(ctx, weight(weights + "b"), width * pieces));
-        stage(prefix + ".affine", affine, { stage_rows, static_cast<std::size_t>(width), static_cast<std::size_t>(pieces) });
+        stage(prefix + ".affine", affine,
+              { stage_rows, static_cast<std::size_t>(width), static_cast<std::size_t>(pieces) });
         ggml_tensor * maximum = ggml_pool_1d(ctx, affine, GGML_OP_POOL_MAX, pieces, pieces, 0);
         stage(prefix + ".maxout", maximum, { stage_rows, static_cast<std::size_t>(width) });
         return maximum;
@@ -143,7 +145,8 @@ NumericOutput GgmlNumeric::run(const std::vector<FeatureRow> & features, std::si
     for (int64_t feature = 0; feature < features_count; ++feature) {
         index_inputs[feature] = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 4 * n);
         ggml_set_input(index_inputs[feature]);
-        ggml_tensor * gathered = ggml_get_rows(ctx, weight("embed." + std::to_string(feature) + ".E"), index_inputs[feature]);
+        ggml_tensor * gathered =
+            ggml_get_rows(ctx, weight("embed." + std::to_string(feature) + ".E"), index_inputs[feature]);
         ggml_tensor * sum = nullptr;
         for (int64_t key = 0; key < 4; ++key) {
             ggml_tensor * view = ggml_view_2d(ctx, gathered, width, n, gathered->nb[1] * 4, gathered->nb[1] * key);
@@ -174,7 +177,8 @@ NumericOutput GgmlNumeric::run(const std::vector<FeatureRow> & features, std::si
         encoded = ggml_add(ctx, encoded, delta);
         stage(prefix + ".residual", encoded, { padded_rows, static_cast<std::size_t>(width) });
     }
-    ggml_tensor * tok2vec = ggml_cont(ctx, ggml_view_2d(ctx, encoded, width, n, encoded->nb[1], encoded->nb[1] * padding));
+    ggml_tensor * tok2vec =
+        ggml_cont(ctx, ggml_view_2d(ctx, encoded, width, n, encoded->nb[1], encoded->nb[1] * padding));
     ggml_set_output(tok2vec);
     auto head = [&](const char * name) {
         ggml_tensor * scores = ggml_add(ctx, ggml_mul_mat(ctx, weight(std::string(name) + ".W"), tok2vec),
@@ -225,7 +229,8 @@ NumericOutput GgmlNumeric::run(const std::vector<FeatureRow> & features, std::si
     output.parser_cache.data.resize(output.parser_cache.rows * output.parser_cache.cols);
     ggml_backend_tensor_get(weight("parser.lower.pad"), output.parser_cache.data.data(), 0,
                             static_cast<std::size_t>(parser_columns) * sizeof(float));
-    std::memcpy(output.parser_cache.data.data() + parser_columns, lower_values.data(), lower_values.size() * sizeof(float));
+    std::memcpy(output.parser_cache.data.data() + parser_columns, lower_values.data(),
+                lower_values.size() * sizeof(float));
 
     if (trace) {
         for (const auto & item : stages) {
@@ -237,10 +242,11 @@ NumericOutput GgmlNumeric::run(const std::vector<FeatureRow> & features, std::si
         trace("morphologizer.scores", output.morphologizer.view());
         trace("lemmatizer.scores", output.lemmatizer.view());
         const auto reduced_values = read(reduced);
-        trace("parser.reduce", TensorView{ { rows, static_cast<std::size_t>(reduced->ne[0]) }, reduced_values.data(),
+        trace("parser.reduce", TensorView{ { rows, static_cast<std::size_t>(reduced->ne[0]) },
+                                           reduced_values.data(),
                                            reduced_values.size() });
-        trace("parser.lower_cache", TensorView{ { rows + 1, 8, 64, 2 }, output.parser_cache.data.data(),
-                                                output.parser_cache.data.size() });
+        trace("parser.lower_cache",
+              TensorView{ { rows + 1, 8, 64, 2 }, output.parser_cache.data.data(), output.parser_cache.data.size() });
     }
     check_cancelled(cancelled);
     return output;

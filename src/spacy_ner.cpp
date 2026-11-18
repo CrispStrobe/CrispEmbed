@@ -23,8 +23,8 @@ constexpr int64_t padding = 4;
 constexpr std::size_t state_features = 3;
 constexpr std::size_t hidden = 64;
 constexpr std::size_t hidden_pieces = 2;
-constexpr std::size_t slot = hidden * hidden_pieces;              // 128 per state feature
-constexpr std::size_t cache_columns = state_features * slot;      // 384
+constexpr std::size_t slot = hidden * hidden_pieces;         // 128 per state feature
+constexpr std::size_t cache_columns = state_features * slot; // 384
 constexpr std::size_t classes = 18;
 constexpr std::size_t entity_labels = 4;
 constexpr std::size_t embedding_rows[features_count] = { 5000, 1000, 2500, 2500 };
@@ -144,9 +144,9 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
         concatenated = concatenated ? ggml_concat(ctx, concatenated, sum, 0) : sum;
     }
     ggml_tensor * w_mix = weight("ner.embed.mix.W");
-    ggml_tensor * mixed = ggml_add(ctx, ggml_mul_mat(ctx, ggml_reshape_2d(ctx, w_mix, w_mix->ne[0], width * pieces),
-                                                     concatenated),
-                                   ggml_reshape_1d(ctx, weight("ner.embed.mix.b"), width * pieces));
+    ggml_tensor * mixed =
+        ggml_add(ctx, ggml_mul_mat(ctx, ggml_reshape_2d(ctx, w_mix, w_mix->ne[0], width * pieces), concatenated),
+                 ggml_reshape_1d(ctx, weight("ner.embed.mix.b"), width * pieces));
     mixed = ggml_pool_1d(ctx, mixed, GGML_OP_POOL_MAX, pieces, pieces, 0);
     mixed = ggml_add(ctx, ggml_mul(ctx, ggml_norm(ctx, mixed, layer_norm_epsilon), weight("ner.embed.norm.G")),
                      weight("ner.embed.norm.b"));
@@ -162,7 +162,8 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
         }
         encoded = ggml_add(ctx, encoded, maxout_norm(window, "ner.encoder." + std::to_string(layer) + "."));
     }
-    ggml_tensor * tok2vec = ggml_cont(ctx, ggml_view_2d(ctx, encoded, width, n, encoded->nb[1], encoded->nb[1] * padding));
+    ggml_tensor * tok2vec =
+        ggml_cont(ctx, ggml_view_2d(ctx, encoded, width, n, encoded->nb[1], encoded->nb[1] * padding));
     ggml_set_output(tok2vec);
     ggml_tensor * reduced = ggml_add(ctx, ggml_mul_mat(ctx, weight("ner.reduce.W"), tok2vec), weight("ner.reduce.b"));
     ggml_set_output(reduced);
@@ -198,8 +199,8 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
         trace("ner.tok2vec.output", TensorView{ { count, static_cast<std::size_t>(width) }, t2v.data(), t2v.size() });
         const auto red = read(reduced);
         trace("ner.reduce", TensorView{ { count, hidden }, red.data(), red.size() });
-        trace("ner.lower_cache", TensorView{ { count + 1, state_features, hidden, hidden_pieces }, cache.data(),
-                                             cache.size() });
+        trace("ner.lower_cache",
+              TensorView{ { count + 1, state_features, hidden, hidden_pieces }, cache.data(), cache.size() });
     }
 
     // Greedy BILUO transitions (no preset entities, beam width 1).
@@ -214,15 +215,14 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
         const std::size_t remaining = count - b0;
         const bool next_starts_sentence = b0 + 1 < count && sentence_starts[b0 + 1] != 0;
         const bool is_space = features[b0][5] != 0;
-        const std::array<std::int32_t, state_features> ids = {
-            static_cast<std::int32_t>(b0), open ? static_cast<std::int32_t>(current.start) : -1,
-            open ? static_cast<std::int32_t>(b0) - 1 : -1
-        };
+        const std::array<std::int32_t, state_features> ids = { static_cast<std::int32_t>(b0),
+                                                               open ? static_cast<std::int32_t>(current.start) : -1,
+                                                               open ? static_cast<std::int32_t>(b0) - 1 : -1 };
         summed.fill(0.0f);
         for (std::size_t f = 0; f < state_features; ++f) {
-            const float * source = ids[f] < 0 ? lower_pad_.data() + f * slot
-                                              : cache.data() + (static_cast<std::size_t>(ids[f]) + 1) * cache_columns +
-                                                    f * slot;
+            const float * source =
+                ids[f] < 0 ? lower_pad_.data() + f * slot
+                           : cache.data() + (static_cast<std::size_t>(ids[f]) + 1) * cache_columns + f * slot;
             for (std::size_t i = 0; i < slot; ++i) summed[i] += source[i];
         }
         for (std::size_t i = 0; i < slot; ++i) summed[i] += lower_bias_[i];
@@ -244,12 +244,24 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
             const auto label = static_cast<std::uint32_t>(c % entity_labels);
             bool ok = false;
             switch (move_of(c)) {
-            case BEGIN: ok = !open && remaining >= 2 && !next_starts_sentence && !is_space; break;
-            case IN: ok = open && remaining >= 2 && current.label == label && !next_starts_sentence; break;
-            case LAST: ok = open && current.label == label; break;
-            case UNIT: ok = !open && !is_space; break;
-            case UNIT_BLOCKED: ok = false; break;
-            case OUT: ok = !open; break;
+            case BEGIN:
+                ok = !open && remaining >= 2 && !next_starts_sentence && !is_space;
+                break;
+            case IN:
+                ok = open && remaining >= 2 && current.label == label && !next_starts_sentence;
+                break;
+            case LAST:
+                ok = open && current.label == label;
+                break;
+            case UNIT:
+                ok = !open && !is_space;
+                break;
+            case UNIT_BLOCKED:
+                ok = false;
+                break;
+            case OUT:
+                ok = !open;
+                break;
             }
             valid[c] = ok ? 1.0f : 0.0f;
             if (ok && (best < 0 || scores[c] > scores[static_cast<std::size_t>(best)])) best = static_cast<int>(c);

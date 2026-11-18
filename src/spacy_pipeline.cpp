@@ -44,16 +44,21 @@ constexpr const char * k_quant_policy = "spacy-matrices-v1";
 // Biases, LayerNorm and the per-step parser tensors (lower.b, lower.pad,
 // upper.*) always stay F32 so that parser state scoring is unchanged.
 bool quantizable_tensor(const std::string & name) {
-    static const std::set<std::string> names = {
-        "embed.0.E", "embed.1.E", "embed.2.E", "embed.3.E", "embed.4.E", "embed.5.E", "embed.mix.W",
-        "encoder.0.maxout.W", "encoder.1.maxout.W", "encoder.2.maxout.W", "encoder.3.maxout.W",
-        "tagger.W", "morphologizer.W", "lemmatizer.W", "parser.reduce.W", "parser.lower.W" };
+    static const std::set<std::string> names = { "embed.0.E",          "embed.1.E",          "embed.2.E",
+                                                 "embed.3.E",          "embed.4.E",          "embed.5.E",
+                                                 "embed.mix.W",        "encoder.0.maxout.W", "encoder.1.maxout.W",
+                                                 "encoder.2.maxout.W", "encoder.3.maxout.W", "tagger.W",
+                                                 "morphologizer.W",    "lemmatizer.W",       "parser.reduce.W",
+                                                 "parser.lower.W" };
     return names.count(name) != 0;
 }
 
 const std::map<std::string, ggml_type> & quant_precisions() {
-    static const std::map<std::string, ggml_type> precisions = {
-        { "f16", GGML_TYPE_F16 }, { "bf16", GGML_TYPE_BF16 }, { "q8_0", GGML_TYPE_Q8_0 }, { "q5_0", GGML_TYPE_Q5_0 }, { "q4_0", GGML_TYPE_Q4_0 } };
+    static const std::map<std::string, ggml_type> precisions = { { "f16", GGML_TYPE_F16 },
+                                                                 { "bf16", GGML_TYPE_BF16 },
+                                                                 { "q8_0", GGML_TYPE_Q8_0 },
+                                                                 { "q5_0", GGML_TYPE_Q5_0 },
+                                                                 { "q4_0", GGML_TYPE_Q4_0 } };
     return precisions;
 }
 
@@ -209,8 +214,8 @@ Profile preflight(const std::vector<uint8_t> & bytes) {
         { "spacy.feature_order", "NORM,PREFIX,SUFFIX,SHAPE,SPACY,IS_SPACE" }
     };
     const std::map<std::string, std::string> quant_strings = {
-        { "spacy.quantization.policy", k_quant_policy },
-        { "spacy.quantization.source_gguf_sha256", k_f32_model_sha } };
+        { "spacy.quantization.policy", k_quant_policy }, { "spacy.quantization.source_gguf_sha256", k_f32_model_sha }
+    };
     Profile profile{};
     const std::map<std::string, uint32_t> integers = { { "spacy.format_version", 1 },
                                                        { "spacy.width", 96 },
@@ -319,7 +324,7 @@ Profile preflight(const std::vector<uint8_t> & bytes) {
                 require(std::isfinite(value), "Nonfinite spaCy tensor");
             }
         } else {
-            (void) dequantized_f32(bytes.data() + begin, extent);
+            (void)dequantized_f32(bytes.data() + begin, extent);
         }
         for (size_t i = extent.bytes; i < aligned(extent.bytes); ++i) {
             require(bytes[begin + i] == 0, "Nonzero GGUF tensor padding");
@@ -569,8 +574,8 @@ crispembed_spacy_context * crispembed_spacy_create(const char * model_path, cons
     return nullptr;
 }
 
-int crispembed_spacy_attach_ner(crispembed_spacy_context * context, const char * ner_path,
-                                const char * expected_sha256, char * error, size_t error_capacity) {
+int crispembed_spacy_attach_ner(crispembed_spacy_context * context, const char * ner_path, const char * expected_sha256,
+                                char * error, size_t error_capacity) {
     error_text(error, error_capacity, "");
     if (!context || (error_capacity && !error) || !ner_path || !*ner_path || !valid_sha(expected_sha256) ||
         !context->lexical || !context->decoder) {
@@ -598,11 +603,13 @@ int crispembed_spacy_attach_ner(crispembed_spacy_context * context, const char *
             { "spacy.component", "ner" },
             { "spacy.feature_order", "NORM,PREFIX,SUFFIX,SHAPE" },
             { "spacy.precision", "f32" },
-            { "spacy.ner.classes",
-              "B-LOC,B-PER,B-ORG,B-MISC,I-LOC,I-PER,I-ORG,I-MISC,L-LOC,L-PER,L-ORG,L-MISC,U-LOC,U-PER,U-ORG,U-MISC,U-,O" }
+            { "spacy.ner.classes", "B-LOC,B-PER,B-ORG,B-MISC,I-LOC,I-PER,I-ORG,I-MISC,L-LOC,L-PER,L-ORG,L-MISC,U-LOC,U-"
+                                   "PER,U-ORG,U-MISC,U-,O" }
         };
-        const std::map<std::string, uint32_t> integers = { { "spacy.format_version", 1 }, { "spacy.width", 96 },
-                                                           { "spacy.encoder_depth", 4 }, { "spacy.encoder_padding", 4 } };
+        const std::map<std::string, uint32_t> integers = { { "spacy.format_version", 1 },
+                                                           { "spacy.width", 96 },
+                                                           { "spacy.encoder_depth", 4 },
+                                                           { "spacy.encoder_padding", 4 } };
         require(gguf_get_n_kv(meta.get()) == static_cast<int64_t>(strings.size() + integers.size() + 1),
                 "Unexpected spaCy NER GGUF metadata inventory");
         for (const auto & item : strings) {
@@ -622,15 +629,21 @@ int crispembed_spacy_attach_ner(crispembed_spacy_context * context, const char *
                     gguf_get_val_f32(meta.get(), epsilon) == 1e-8f,
                 "Unsupported spaCy NER layer-norm epsilon");
         // Original C row-major shapes; ggml ne[] is reversed.
-        std::map<std::string, std::vector<int64_t>> shapes = {
-            { "ner.embed.0.E", { 5000, 96 } }, { "ner.embed.1.E", { 1000, 96 } },
-            { "ner.embed.2.E", { 2500, 96 } }, { "ner.embed.3.E", { 2500, 96 } },
-            { "ner.embed.mix.W", { 96, 3, 384 } }, { "ner.embed.mix.b", { 96, 3 } },
-            { "ner.embed.norm.G", { 96 } }, { "ner.embed.norm.b", { 96 } },
-            { "ner.reduce.W", { 64, 96 } }, { "ner.reduce.b", { 64 } },
-            { "ner.lower.W", { 3, 64, 2, 64 } }, { "ner.lower.b", { 64, 2 } }, { "ner.lower.pad", { 1, 3, 64, 2 } },
-            { "ner.upper.W", { 18, 64 } }, { "ner.upper.b", { 18 } }
-        };
+        std::map<std::string, std::vector<int64_t>> shapes = { { "ner.embed.0.E", { 5000, 96 } },
+                                                               { "ner.embed.1.E", { 1000, 96 } },
+                                                               { "ner.embed.2.E", { 2500, 96 } },
+                                                               { "ner.embed.3.E", { 2500, 96 } },
+                                                               { "ner.embed.mix.W", { 96, 3, 384 } },
+                                                               { "ner.embed.mix.b", { 96, 3 } },
+                                                               { "ner.embed.norm.G", { 96 } },
+                                                               { "ner.embed.norm.b", { 96 } },
+                                                               { "ner.reduce.W", { 64, 96 } },
+                                                               { "ner.reduce.b", { 64 } },
+                                                               { "ner.lower.W", { 3, 64, 2, 64 } },
+                                                               { "ner.lower.b", { 64, 2 } },
+                                                               { "ner.lower.pad", { 1, 3, 64, 2 } },
+                                                               { "ner.upper.W", { 18, 64 } },
+                                                               { "ner.upper.b", { 18 } } };
         for (int layer = 0; layer < 4; ++layer) {
             const auto prefix = "ner.encoder." + std::to_string(layer);
             shapes[prefix + ".maxout.W"] = { 96, 3, 288 };
@@ -815,7 +828,8 @@ int crispembed_spacy_analyze_utf8(crispembed_spacy_context * context, const char
         if (context->ner) {
             std::vector<uint8_t> starts;
             starts.reserve(owned->tokens.size());
-            for (const auto & annotation : owned->annotations.tokens) starts.push_back(annotation.is_sent_start ? 1 : 0);
+            for (const auto & annotation : owned->annotations.tokens)
+                starts.push_back(annotation.is_sent_start ? 1 : 0);
             owned->entities = context->ner->run(features, starts, sink, cancelled);
         }
         check_cancel(cancelled);

@@ -182,8 +182,7 @@ CRISPEMBED_SPACY_API int crispembed_spacy_document_token(const crispembed_spacy_
 // Subsequent analyze calls also decode entities; tokenize/forward calls and
 // existing token views are unchanged. Attaching twice is rejected.
 CRISPEMBED_SPACY_API int crispembed_spacy_attach_ner(crispembed_spacy_context * context, const char * ner_path,
-                                                     const char * expected_sha256, char * error,
-                                                     size_t error_capacity);
+                                                     const char * expected_sha256, char * error, size_t error_capacity);
 
 // Entity spans use the same offsets as token views; token_end and the
 // *_end offsets are exclusive. label is one of LOC, PER, ORG, MISC.
