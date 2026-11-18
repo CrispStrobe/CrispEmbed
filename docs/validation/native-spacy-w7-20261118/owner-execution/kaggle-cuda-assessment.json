@@ -380,5 +380,105 @@
     "violating_elements": 0,
     "bit_exact": false,
     "passed": true
+  },
+  "independent_first_raw_capture_reader": {
+    "receipt_sha256": "3469e275a4894230fb58e09fc328450eaa945a8c4f80bce2453f533069d2a0a3",
+    "mode": "PURE_CAPTURE_READER; no native library/model load/build/forward",
+    "source_comparator_sha256": "e83495dadcf199e068259e1cca30e65256bf76263a405bc6299765779fd77e32",
+    "reference_source": "dcf2ec9b4d6fba05fa5eec2634c6654266332cc9",
+    "reference_split": "development",
+    "case": "single",
+    "kernel_id": 145760385,
+    "version": 1,
+    "profiles": {
+      "f32": {
+        "capture_payload_sha256": "f7bd48ed1078c384da6a59e4ed41b4ed4ec2d546dbc64cb7a33bb4bb1ee9f818",
+        "capture_payload_bytes": 151708,
+        "stage_payload_sha256": "30243a31ead35aa26147555b425b0ab5044056452eeca954cdccbbe2a9018216",
+        "raw_readback_matches_report": true,
+        "stage": {
+          "stage": "tok2vec.embed.concat",
+          "shape": [
+            1,
+            576
+          ],
+          "elements": 576,
+          "max_reference_magnitude": 1.0125958919525146,
+          "max_candidate_magnitude": 1.0125958919525146,
+          "max_absolute_error": 0.0,
+          "mean_absolute_error": 0.0,
+          "max_relative_error_nonzero_reference": 0.0,
+          "violating_elements": 0,
+          "bit_exact": true,
+          "passed": true
+        }
+      },
+      "f16": {
+        "capture_payload_sha256": "819d9b13b8244d0e668ae4751b8f00a70a5078a398c5854620e441394aa44d5e",
+        "capture_payload_bytes": 151708,
+        "stage_payload_sha256": "02dca8f11416a4f41d2f1dc4007fad15623fbbb666fe8de9cd44f761007691c9",
+        "raw_readback_matches_report": true,
+        "stage": {
+          "stage": "tok2vec.embed.concat",
+          "shape": [
+            1,
+            576
+          ],
+          "elements": 576,
+          "max_reference_magnitude": 1.0125958919525146,
+          "max_candidate_magnitude": 1.012786865234375,
+          "max_absolute_error": 0.00036913156509399414,
+          "mean_absolute_error": 3.038117291806783e-05,
+          "max_relative_error_nonzero_reference": 0.4143646408839779,
+          "violating_elements": 3,
+          "bit_exact": false,
+          "passed": false
+        }
+      },
+      "q8_0": {
+        "capture_payload_sha256": "88174d851db153562f90e6ab682d64091af779e1e1100fd8dad88aa2940edb8c",
+        "capture_payload_bytes": 151708,
+        "stage_payload_sha256": "6925651511ba927a0e2e4048f383a0dfe0951a2ce6a9ec1ba87aeb63b3ba0f61",
+        "raw_readback_matches_report": true,
+        "stage": {
+          "stage": "tok2vec.embed.concat",
+          "shape": [
+            1,
+            576
+          ],
+          "elements": 576,
+          "max_reference_magnitude": 1.0125958919525146,
+          "max_candidate_magnitude": 1.0140190124511719,
+          "max_absolute_error": 0.005678743124008179,
+          "mean_absolute_error": 0.0008512374054892765,
+          "max_relative_error_nonzero_reference": 2.773480662983425,
+          "violating_elements": 410,
+          "bit_exact": false,
+          "passed": false
+        }
+      },
+      "q4_0": {
+        "capture_payload_sha256": "7aeee55c30a880e6219895ba619ca7eef35f19ff908c934779d6213d2ad13a56",
+        "capture_payload_bytes": 151708,
+        "stage_payload_sha256": "6925651511ba927a0e2e4048f383a0dfe0951a2ce6a9ec1ba87aeb63b3ba0f61",
+        "raw_readback_matches_report": true,
+        "stage": {
+          "stage": "tok2vec.embed.concat",
+          "shape": [
+            1,
+            576
+          ],
+          "elements": 576,
+          "max_reference_magnitude": 1.0125958919525146,
+          "max_candidate_magnitude": 1.0140190124511719,
+          "max_absolute_error": 0.005678743124008179,
+          "mean_absolute_error": 0.0008512374054892765,
+          "max_relative_error_nonzero_reference": 2.773480662983425,
+          "violating_elements": 410,
+          "bit_exact": false,
+          "passed": false
+        }
+      }
+    }
   }
 }
