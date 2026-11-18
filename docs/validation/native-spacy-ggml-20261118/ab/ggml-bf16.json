@@ -1,0 +1,48 @@
+{
+ "label": "ggml-bf16",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_QUANT=1",
+  "CRISPEMBED_SPACY_GGML=1"
+ ],
+ "model": "<scratch>/q/bf16.gguf",
+ "model_sha256": "4692f103ee7e1305654cb456f07a11c219254eea23ebf41f49e4610c57210e1d",
+ "model_bytes": 3722304,
+ "load_ms": 230.843,
+ "cases": 60,
+ "tokens": 835,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 60,
+ "agreement": {
+  "tag": 1.0,
+  "pos": 1.0,
+  "morph": 1.0,
+  "lemma": 1.0,
+  "dep": 1.0,
+  "head": 1.0,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 0,
+  "pos": 0,
+  "morph": 0,
+  "lemma": 0,
+  "dep": 0,
+  "head": 0,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 902.039,
+  "long_doc_tokens": 835,
+  "long_doc_ms_median": 714.43,
+  "long_doc_tokens_per_s": 1168.8
+ },
+ "max_abs_drift_vs_reference": {
+  "tok2vec.output": 0.03731369972229004,
+  "tagger.scores": 0.08221435546875,
+  "morphologizer.scores": 0.08347892761230469,
+  "lemmatizer.scores": 0.09935379028320312,
+  "parser.lower_cache": 0.104034423828125
+ },
+ "differences": []
+}

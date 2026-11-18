@@ -1,0 +1,192 @@
+{
+ "label": "scalar-q5_0",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_QUANT=1"
+ ],
+ "model": "<scratch>/q/q5_0.gguf",
+ "model_sha256": "ade336da9f8daac50fa3cc4d4ba2ce96c329517a47b2de686964d102f1b4a88c",
+ "model_bytes": 1319936,
+ "load_ms": 126.736,
+ "cases": 60,
+ "tokens": 835,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 46,
+ "agreement": {
+  "tag": 0.996407,
+  "pos": 0.996407,
+  "morph": 0.991617,
+  "lemma": 0.998802,
+  "dep": 0.997605,
+  "head": 0.997605,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 3,
+  "pos": 3,
+  "morph": 7,
+  "lemma": 1,
+  "dep": 2,
+  "head": 2,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 769.077,
+  "long_doc_tokens": 835,
+  "long_doc_ms_median": 613.517,
+  "long_doc_tokens_per_s": 1361.0
+ },
+ "max_abs_drift_vs_reference": {
+  "tok2vec.output": 0.563814640045166,
+  "tagger.scores": 1.5107090473175049,
+  "morphologizer.scores": 1.5586919784545898,
+  "lemmatizer.scores": 1.9209280014038086,
+  "parser.lower_cache": 1.5804991722106934
+ },
+ "differences": [
+  {
+   "case": 1,
+   "token": 12,
+   "text": "meine",
+   "field": "morph",
+   "oracle": "Case=Nom|Gender=Fem|Number=Sing|Poss=Yes|PronType=Prs",
+   "native": "Case=Acc|Gender=Fem|Number=Sing|Poss=Yes|PronType=Prs"
+  },
+  {
+   "case": 2,
+   "token": 11,
+   "text": "um",
+   "field": "head",
+   "oracle": 15,
+   "native": 9
+  },
+  {
+   "case": 2,
+   "token": 12,
+   "text": "18:30",
+   "field": "tag",
+   "oracle": "NE",
+   "native": "FM"
+  },
+  {
+   "case": 3,
+   "token": 6,
+   "text": "Kraft",
+   "field": "morph",
+   "oracle": "Case=Dat|Gender=Fem|Number=Sing",
+   "native": "Case=Acc|Gender=Fem|Number=Sing"
+  },
+  {
+   "case": 6,
+   "token": 11,
+   "text": "wenig",
+   "field": "dep",
+   "oracle": "mo",
+   "native": "sb"
+  },
+  {
+   "case": 7,
+   "token": 0,
+   "text": "Bitte",
+   "field": "pos",
+   "oracle": "PART",
+   "native": "ADV"
+  },
+  {
+   "case": 11,
+   "token": 9,
+   "text": "verlegt",
+   "field": "tag",
+   "oracle": "VVPP",
+   "native": "VVFIN"
+  },
+  {
+   "case": 16,
+   "token": 0,
+   "text": "Kannst",
+   "field": "tag",
+   "oracle": "VVFIN",
+   "native": "NE"
+  },
+  {
+   "case": 26,
+   "token": 3,
+   "text": "gewusst",
+   "field": "lemma",
+   "oracle": "Gewusst",
+   "native": "gewusst"
+  },
+  {
+   "case": 30,
+   "token": 6,
+   "text": "3:1",
+   "field": "pos",
+   "oracle": "ADV",
+   "native": "NUM"
+  },
+  {
+   "case": 37,
+   "token": 8,
+   "text": "am",
+   "field": "dep",
+   "oracle": "mo",
+   "native": "mnr"
+  },
+  {
+   "case": 37,
+   "token": 8,
+   "text": "am",
+   "field": "head",
+   "oracle": 5,
+   "native": 7
+  },
+  {
+   "case": 46,
+   "token": 4,
+   "text": "sie",
+   "field": "morph",
+   "oracle": "Case=Nom|Gender=Fem|Number=Sing|Person=3|PronType=Prs",
+   "native": "Case=Nom|Gender=Masc|Number=Plur|Person=3|PronType=Prs"
+  },
+  {
+   "case": 51,
+   "token": 6,
+   "text": "die",
+   "field": "morph",
+   "oracle": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+   "native": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art"
+  },
+  {
+   "case": 55,
+   "token": 3,
+   "text": "roch",
+   "field": "pos",
+   "oracle": "VERB",
+   "native": "ADV"
+  },
+  {
+   "case": 55,
+   "token": 3,
+   "text": "roch",
+   "field": "morph",
+   "oracle": "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin",
+   "native": ""
+  },
+  {
+   "case": 58,
+   "token": 2,
+   "text": "mussten",
+   "field": "morph",
+   "oracle": "Mood=Ind|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+   "native": "Mood=Sub|Number=Plur|Person=3|Tense=Past|VerbForm=Fin"
+  },
+  {
+   "case": 58,
+   "token": 7,
+   "text": "Sommerferien",
+   "field": "morph",
+   "oracle": "Case=Acc|Number=Plur",
+   "native": "Case=Acc|Gender=Fem|Number=Sing"
+  }
+ ]
+}

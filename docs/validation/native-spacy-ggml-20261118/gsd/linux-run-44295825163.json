@@ -1,0 +1,335 @@
+{
+  "schema": "crispembed.spacy.ggml-default-ab.v1",
+  "source": "9965aa7675d0ac889a988b36d4b5b138f1bef328",
+  "scope": "Linux x86-64/AVX2 A/B of the ggml+SGEMM default vs the scalar reference engine",
+  "consumed_native_or_grammar_heldout_replayed": false,
+  "stage": "complete",
+  "passed": true,
+  "libraries_sha256": {
+    "default": "09aa6402e3067d6943cd24c6d430536f0be5e51f8e92615ebca788a6558dccf9",
+    "sgemm-off": "5530a2c9da887bae26e6681951eb0de0e078c7edfdeaedca83b4c351dcf3dc97"
+  },
+  "cpu": "AMD EPYC 7763 64-Core Processor",
+  "compiler": "c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "development_gates": {
+    "ggml-default": {
+      "spacy_parity.py": {
+        "exit_code": 0,
+        "passed": true,
+        "counts": {
+          "cases": 16,
+          "classifier_decisions": 339,
+          "float_elements": 1406553,
+          "parser_states": 244,
+          "tokens": 113,
+          "trace_stages": 1201
+        }
+      },
+      "spacy_text_parity.py": {
+        "exit_code": 0,
+        "passed": true,
+        "counts": {
+          "cases": 16,
+          "classifier_decisions": 339,
+          "float_elements": 1406553,
+          "numeric_stages": 1201,
+          "parser_steps": 244,
+          "sentences": 22,
+          "tokens": 113
+        }
+      },
+      "test_spacy_text_api.py": {
+        "exit_code": 0,
+        "passed": true,
+        "counts": null
+      }
+    },
+    "scalar": {
+      "spacy_parity.py": {
+        "exit_code": 0,
+        "passed": true,
+        "counts": {
+          "cases": 16,
+          "classifier_decisions": 339,
+          "float_elements": 1406553,
+          "parser_states": 244,
+          "tokens": 113,
+          "trace_stages": 1201
+        }
+      },
+      "spacy_text_parity.py": {
+        "exit_code": 0,
+        "passed": true,
+        "counts": {
+          "cases": 16,
+          "classifier_decisions": 339,
+          "float_elements": 1406553,
+          "numeric_stages": 1201,
+          "parser_steps": 244,
+          "sentences": 22,
+          "tokens": 113
+        }
+      },
+      "test_spacy_text_api.py": {
+        "exit_code": 0,
+        "passed": true,
+        "counts": null
+      }
+    }
+  },
+  "f16_sha256": "8712cdf3840e837cb94994e359a37e124b7010fc2e675983a202e0a1d76439bb",
+  "gsd_ab": {
+    "scalar-f32": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1776,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 20310.491,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 1065.449,
+        "long_doc_tokens_per_s": 1682.9
+      },
+      "differences": []
+    },
+    "ggml-sgemm-f32": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1776,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 2876.364,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 165.712,
+        "long_doc_tokens_per_s": 10820.0
+      },
+      "differences": []
+    },
+    "ggml-sgemm-f32-t4": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1776,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 3100.153,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 145.785,
+        "long_doc_tokens_per_s": 12298.9
+      },
+      "differences": []
+    },
+    "ggml-nosgemm-f32": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1776,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 3421.413,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 193.027,
+        "long_doc_tokens_per_s": 9288.9
+      },
+      "differences": []
+    },
+    "scalar-f16": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1773,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 20330.247,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 1065.224,
+        "long_doc_tokens_per_s": 1683.2
+      },
+      "differences": [
+        {
+          "case": 154,
+          "token": 21,
+          "text": "Salbe",
+          "field": "lemma",
+          "oracle": "Salbe",
+          "native": "Salb"
+        },
+        {
+          "case": 1020,
+          "token": 4,
+          "text": "um",
+          "field": "head",
+          "oracle": 3,
+          "native": 11
+        },
+        {
+          "case": 1152,
+          "token": 4,
+          "text": "auf",
+          "field": "dep",
+          "oracle": "op",
+          "native": "mo"
+        }
+      ]
+    },
+    "ggml-sgemm-f16": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1773,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 4487.986,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 249.567,
+        "long_doc_tokens_per_s": 7184.4
+      },
+      "differences": [
+        {
+          "case": 154,
+          "token": 21,
+          "text": "Salbe",
+          "field": "lemma",
+          "oracle": "Salbe",
+          "native": "Salb"
+        },
+        {
+          "case": 1020,
+          "token": 4,
+          "text": "um",
+          "field": "head",
+          "oracle": 3,
+          "native": 11
+        },
+        {
+          "case": 1152,
+          "token": 4,
+          "text": "auf",
+          "field": "dep",
+          "oracle": "op",
+          "native": "mo"
+        }
+      ]
+    },
+    "ggml-sgemm-f16-upcast": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1773,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 2873.926,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 166.219,
+        "long_doc_tokens_per_s": 10787.0
+      },
+      "differences": [
+        {
+          "case": 154,
+          "token": 21,
+          "text": "Salbe",
+          "field": "lemma",
+          "oracle": "Salbe",
+          "native": "Salb"
+        },
+        {
+          "case": 1020,
+          "token": 4,
+          "text": "um",
+          "field": "head",
+          "oracle": 3,
+          "native": 11
+        },
+        {
+          "case": 1152,
+          "token": 4,
+          "text": "auf",
+          "field": "dep",
+          "oracle": "op",
+          "native": "mo"
+        }
+      ]
+    }
+  },
+  "original_spacy_with_f16_weights": {
+    "schema": "crispembed.spacy.quant_oracle_replay.v1",
+    "gguf": "/mnt/heavy/scratch/spacy-ggml-default/f16.gguf",
+    "types": [
+      "F16",
+      "F32"
+    ],
+    "replay_flips": 3,
+    "replay_flipped_cases": 3,
+    "flips": [
+      {
+        "case": 154,
+        "token": 21,
+        "text": "Salbe",
+        "field": "lemma",
+        "oracle": "Salbe",
+        "replay": "Salb"
+      },
+      {
+        "case": 1020,
+        "token": 4,
+        "text": "um",
+        "field": "head",
+        "oracle": 3,
+        "replay": 11
+      },
+      {
+        "case": 1152,
+        "token": 4,
+        "text": "auf",
+        "field": "dep",
+        "oracle": "op",
+        "replay": "mo"
+      }
+    ],
+    "native_flips": 3,
+    "shared_flips": 3,
+    "native_only": [],
+    "replay_only": []
+  },
+  "ner_sha256": "1b65fce5864703d971880cf038a67f2ffd1ef99cad2cd49f9dc122d7882cdaa1",
+  "ner_ab": {
+    "ner-ggml-default": {
+      "attached": true,
+      "cases": 1776,
+      "exact_entity_cases": 1776,
+      "oracle_entities": 1758,
+      "native_entities": 1758,
+      "matched_entities": 1758,
+      "timing": {
+        "without_ner_corpus_ms_median": 2934.249,
+        "with_ner_corpus_ms_median": 3941.575,
+        "tokens": 28139,
+        "ner_overhead_fraction": 0.3433
+      },
+      "differences": []
+    },
+    "ner-scalar-main": {
+      "attached": true,
+      "cases": 1776,
+      "exact_entity_cases": 1776,
+      "oracle_entities": 1758,
+      "native_entities": 1758,
+      "matched_entities": 1758,
+      "timing": {
+        "without_ner_corpus_ms_median": 20350.809,
+        "with_ner_corpus_ms_median": 21418.111,
+        "tokens": 28139,
+        "ner_overhead_fraction": 0.0524
+      },
+      "differences": []
+    }
+  },
+  "ner_exact": true,
+  "corpus": {
+    "sentences": 1776,
+    "oracle_sha256": "b480415b0f060a88c3c23f1f566503bd58b86897970b1c29fe30fcf4907e0bc0"
+  },
+  "default_candidate_exact": true
+}
