@@ -1,0 +1,28 @@
+{
+  "schema": "crispembed.spacy.w7.coverage.freeze.v1",
+  "quds_commit": "2e013f26c7d4db54ecabe2c955117cbce5379408",
+  "panel_sha256": "92338ceb27d2877a6b0cfbfd1218440f53db6509d80571f85d34cfb0d0118ecd",
+  "counts": {
+    "error": 40,
+    "valid": 40,
+    "guard": 12,
+    "unsupported": 4
+  },
+  "old_W6_input_overlap": 0,
+  "original_W6_historical": {
+    "baseline_exact_errors": 5,
+    "combined_exact_errors": 22,
+    "errors": 30,
+    "misses": 8,
+    "rerun": false
+  },
+  "scoring": "Unchanged evaluate_grammar.dart arm, merge and summarize code; isolated copy changes only protocol path, own-source hash inventory and run labels. No scoring or tolerance adjustment.",
+  "source_evaluator_sha256": "ae2ef1b2c81b4bba313ca7e9245d691b7e2d30d43b1b81c3736cfb654e47ffc2",
+  "new_files_sha256": {
+    "evaluate_w7_coverage.dart": "06c8da5439fca5f6aa0821067e65ac1eeee7468c624b1760640b664b4891d1e3",
+    "panel.json": "92338ceb27d2877a6b0cfbfd1218440f53db6509d80571f85d34cfb0d0118ecd",
+    "protocol.json": "dbb4059d218d0c87555ca6b87dcaed589a1ad3a393c5cedc072ba2342a6e03d7"
+  },
+  "first_execution": "UNRUN",
+  "scope": "Linux x86-64 AVX2 accepted F32 binary; finite coverage, not broad grammar qualification."
+}
