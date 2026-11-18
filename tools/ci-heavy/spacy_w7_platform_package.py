@@ -111,6 +111,10 @@ def current_hub_catalog(tracked):
                                     timeout=60) as response:
             remote = json.load(response)
         if remote.get('schema') == tracked['schema']:
+            # Cross-links to separately published language bundles are owned by
+            # the tracked catalog; the Hub copy only supplies package history.
+            if tracked.get('language_bundles'):
+                remote['language_bundles'] = tracked['language_bundles']
             return remote
     except Exception:  # first publication or unreachable: use the tracked catalog
         pass

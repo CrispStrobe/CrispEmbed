@@ -1,0 +1,194 @@
+# Native spaCy v2 language bundles (tools/ci-heavy/spacy_v2_bundle.py).
+#
+# build (Linux x86-64, CPython 3.12.14): convert the pinned official wheel in
+# the hash-locked reference environment, check every tracked pin, write the
+# original-spaCy oracle; publish=true (main only) commits bundle/* to the
+# language repository and reads every file back from the immutable revision.
+# consume (one real runner per desktop platform): bundle + the newest published
+# v2-capable library capsule, both authenticated; admission controls and a
+# ctypes-only analysis compared with original spaCy. Never writes to the Hub.
+# card: bundle-catalog.json + README.md listing every consumer result (failed
+# ones included); published only with publish=true.
+# Pushes to spacy-language-dev/** are dry runs (nothing uploaded).
+name: spaCy language bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: 'Pipeline (or both)'
+        required: true
+        default: 'both'
+        type: choice
+        options: [both, en_core_web_sm, fr_core_news_sm]
+      publish:
+        description: 'Publish to the Hub (main only)'
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches: ['spacy-language-dev/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spacy-language-bundle-${{ github.ref }}-${{ inputs.model || 'both' }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        model: [en_core_web_sm, fr_core_news_sm]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Select model
+        id: select
+        run: |
+          want='${{ inputs.model || 'both' }}'
+          if [ "$want" = both ] || [ "$want" = '${{ matrix.model }}' ]; then echo "run=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.select.outputs.run
+      - uses: actions/setup-python@v5
+        if: steps.select.outputs.run
+        with:
+          python-version: '3.12.14'
+      - name: Convert, pin-check, oracle${{ inputs.publish && ', publish' || ' (dry run)' }}
+        if: steps.select.outputs.run
+        env:
+          HF_PUBLISH_TOKEN: ${{ inputs.publish && secrets.HF_PUBLISH_TOKEN || '' }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/scratch" "$RUNNER_TEMP/out"
+          export HEAVY_SCRATCH="$RUNNER_TEMP/scratch" HEAVY_OUT="$RUNNER_TEMP/out"
+          args=(build --model '${{ matrix.model }}')
+          if [ '${{ inputs.publish }}' = true ]; then args+=(--publish); fi
+          python -u tools/ci-heavy/spacy_v2_bundle.py "${args[@]}"
+      - name: Job summary
+        if: always() && steps.select.outputs.run
+        run: if [ -f "$RUNNER_TEMP/out/summary.md" ]; then cat "$RUNNER_TEMP/out/summary.md" >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.select.outputs.run
+        with:
+          name: spacy-v2-build-${{ matrix.model }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/out
+          retention-days: 14
+
+  consume:
+    needs: [build]
+    strategy:
+      fail-fast: false
+      matrix:
+        model: [en_core_web_sm, fr_core_news_sm]
+        target:
+          - platform: linux-x86_64
+            runner: ubuntu-22.04
+          - platform: linux-arm64
+            runner: ubuntu-22.04-arm
+          - platform: macos-arm64
+            runner: macos-15
+          - platform: windows-x86_64
+            runner: windows-2022
+    runs-on: ${{ matrix.target.runner }}
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Select model
+        id: select
+        run: |
+          want='${{ inputs.model || 'both' }}'
+          if [ "$want" = both ] || [ "$want" = '${{ matrix.model }}' ]; then echo "run=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.select.outputs.run
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        if: steps.select.outputs.run
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        if: steps.select.outputs.run
+        with:
+          name: spacy-v2-build-${{ matrix.model }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/build
+      - name: Published library + bundle, controls and analysis vs original spaCy
+        if: steps.select.outputs.run
+        run: |
+          mkdir -p "$RUNNER_TEMP/scratch" "$RUNNER_TEMP/out"
+          export HEAVY_SCRATCH="$RUNNER_TEMP/scratch" HEAVY_OUT="$RUNNER_TEMP/out"
+          python -u tools/ci-heavy/spacy_v2_bundle.py consume --model '${{ matrix.model }}' \
+            --platform '${{ matrix.target.platform }}' --build-dir "$RUNNER_TEMP/build"
+      - name: Job summary
+        if: always() && steps.select.outputs.run
+        run: if [ -f "$RUNNER_TEMP/out/summary.md" ]; then cat "$RUNNER_TEMP/out/summary.md" >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.select.outputs.run
+        with:
+          name: spacy-v2-consume-${{ matrix.model }}-${{ matrix.target.platform }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/out/consume.json
+            ${{ runner.temp }}/out/compare.json
+            ${{ runner.temp }}/out/*.log
+            ${{ runner.temp }}/out/summary.md
+          retention-days: 14
+
+  card:
+    needs: [build, consume]
+    if: ${{ always() && needs.build.result == 'success' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        model: [en_core_web_sm, fr_core_news_sm]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Select model
+        id: select
+        run: |
+          want='${{ inputs.model || 'both' }}'
+          if [ "$want" = both ] || [ "$want" = '${{ matrix.model }}' ]; then echo "run=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.select.outputs.run
+      - uses: actions/setup-python@v5
+        if: steps.select.outputs.run
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        if: steps.select.outputs.run
+        with:
+          name: spacy-v2-build-${{ matrix.model }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/build
+      - uses: actions/download-artifact@v4
+        if: steps.select.outputs.run
+        with:
+          pattern: spacy-v2-consume-${{ matrix.model }}-*-${{ github.run_id }}
+          path: ${{ runner.temp }}/consume
+      - name: Render${{ inputs.publish && ' and publish' || '' }} model card
+        if: steps.select.outputs.run
+        env:
+          HF_PUBLISH_TOKEN: ${{ inputs.publish && secrets.HF_PUBLISH_TOKEN || '' }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/scratch" "$RUNNER_TEMP/out"
+          export HEAVY_SCRATCH="$RUNNER_TEMP/scratch" HEAVY_OUT="$RUNNER_TEMP/out"
+          args=(card --model '${{ matrix.model }}' --build-dir "$RUNNER_TEMP/build" --consume-dir "$RUNNER_TEMP/consume")
+          if [ '${{ inputs.publish }}' = true ]; then args+=(--publish); fi
+          python -u tools/ci-heavy/spacy_v2_bundle.py "${args[@]}"
+      - name: Job summary
+        if: always() && steps.select.outputs.run
+        run: if [ -f "$RUNNER_TEMP/out/summary.md" ]; then cat "$RUNNER_TEMP/out/summary.md" >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.select.outputs.run
+        with:
+          name: spacy-v2-card-${{ matrix.model }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/out
+          retention-days: 14
