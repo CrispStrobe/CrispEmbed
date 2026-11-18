@@ -32,6 +32,10 @@ on:
         type: choice
         options: [native, avx2]
         default: native
+      pcs_weight_replay:
+        description: 'Replay the immutable stored PCS weights in the original graph; no native rebuild'
+        type: boolean
+        default: false
       pcs_matmul:
         description: 'Test same stored weights with F32 matrix materialization (no production change)'
         type: boolean
@@ -425,6 +429,7 @@ jobs:
           git rev-parse HEAD > pcs-evidence/source.txt
           git submodule status > pcs-evidence/submodules.txt
       - name: Native Release compile and link both drivers
+        if: inputs.pcs_weight_replay != true
         run: |
           profile=()
           if [ '${{ inputs.pcs_profile }}' = avx2 ]; then
@@ -438,6 +443,7 @@ jobs:
           cmake --build build --target "${targets[@]}" -j2 \
             > pcs-evidence/build.stdout 2> pcs-evidence/build.stderr
       - name: Original gate and required neutrality before capture analysis
+        if: inputs.pcs_weight_replay != true
         run: python tools/pcs_capture_run.py
       - name: Same-weight matrix attribution and layer captures
         if: always() && inputs.pcs_matmul == true
@@ -447,6 +453,11 @@ jobs:
         run: |
           python -m pip install numpy onnx onnxruntime sentencepiece gguf
           env -u HF_TOKEN -u HUGGING_FACE_HUB_TOKEN python tools/pcs_reference_capture.py
+      - name: Original-graph same-weight replay
+        if: always() && inputs.pcs_weight_replay == true
+        run: |
+          python -m pip install numpy onnx onnxruntime sentencepiece gguf pyyaml
+          env -u HF_TOKEN -u HUGGING_FACE_HUB_TOKEN python tools/pcs_weight_replay.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -460,4 +471,7 @@ jobs:
             pcs-reference-evidence/*.json
             pcs-reference-evidence/*.npz
             pcs-reference-evidence/*.txt
+            pcs-weight-replay/*.json
+            pcs-weight-replay/*.npz
+            pcs-weight-replay/*.py
           retention-days: 90
