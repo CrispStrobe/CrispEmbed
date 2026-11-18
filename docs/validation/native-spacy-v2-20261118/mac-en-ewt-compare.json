@@ -1,0 +1,10 @@
+{
+ "cases": 2077,
+ "exact_cases": 2077,
+ "tokens": 25531,
+ "differences": [],
+ "entities": {
+  "oracle": 1876,
+  "matched": 1876
+ }
+}

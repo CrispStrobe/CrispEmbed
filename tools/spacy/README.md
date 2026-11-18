@@ -245,6 +245,14 @@ Analyses then also return LOC/PER/ORG/MISC spans through
 (token range plus byte/scalar/UTF-16 offsets), and the context reports
 capability bit 16. Tokenization, token views and existing trace stages are unchanged.
 
+English and French (`en_core_web_sm`, `fr_core_news_sm` 3.8.0) use the
+version-2 profile: convert with `models/convert-spacy-pipeline-to-gguf.py
+--wheel WHEEL --output DIR` and open `DIR/model.gguf` + `DIR/resources.json`
+with `crispembed_spacy_create_with_resources()` (hashes from `manifest.json`).
+Analysis and entities work as above; the prepared numeric API is German-only.
+Both match original spaCy exactly on their UD test texts; see the
+[v2 audit](../../docs/validation/native-spacy-v2-20261118/README.md).
+
 Input bounds are 1 MiB and 2,048 tokens, with no truncation. Malformed UTF-8 and
 over-limit input fail. Empty text returns an explicit empty owned document.
 The parser allows at most `8*n+32` transitions; edit trees have depth/visit and
