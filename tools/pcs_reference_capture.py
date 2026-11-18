@@ -57,7 +57,12 @@ def main():
             for x in n.input:
                 walk(x)
     walk(cap)
+    # Extended stage inventory for the earliest differing encoder operation.
+    capture.extend(n.output[0] for n in graph.graph.node if n.op_type == 'LayerNormalization')
     capture = list(dict.fromkeys(capture))
+    head_weights = {x.name: onnx.numpy_helper.to_array(x) for x in graph.graph.initializer
+                    if '_cap_head' in x.name or '_seg_head' in x.name}
+    np.savez(out / 'original-head-weights.npz', **head_weights)
     (out / 'capture-names.json').write_text(json.dumps(capture, indent=2))
     for name in capture:
         graph.graph.output.append(helper.make_tensor_value_info(name, TensorProto.FLOAT, None))

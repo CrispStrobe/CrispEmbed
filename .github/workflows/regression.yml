@@ -32,6 +32,10 @@ on:
         type: choice
         options: [native, avx2]
         default: native
+      pcs_matmul:
+        description: 'Test same stored weights with F32 matrix materialization (no production change)'
+        type: boolean
+        default: false
       pcs_reference:
         description: 'Also compare the pinned original ONNX classifier inputs'
         type: boolean
@@ -429,10 +433,15 @@ jobs:
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release "${profile[@]}" \
             -DCRISPEMBED_BUILD_PCS_CAPTURE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             > pcs-evidence/configure.stdout 2> pcs-evidence/configure.stderr
-          cmake --build build --target punct-ab punct-ab-capture -j2 \
+          targets=(punct-ab punct-ab-capture)
+          if [ '${{ inputs.pcs_matmul }}' = true ]; then targets+=(punct-ab-matmul-control); fi
+          cmake --build build --target "${targets[@]}" -j2 \
             > pcs-evidence/build.stdout 2> pcs-evidence/build.stderr
       - name: Original gate and required neutrality before capture analysis
         run: python tools/pcs_capture_run.py
+      - name: Same-weight matrix attribution and layer captures
+        if: always() && inputs.pcs_matmul == true
+        run: python tools/pcs_matmul_run.py
       - name: Immutable original PCS graph and same-input head attribution
         if: always() && inputs.pcs_reference == true
         run: |

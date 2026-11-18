@@ -1734,3 +1734,8 @@ operator candidate has no decoded-quality or release qualification.
 | `VIT_EMBED_FORCE_CPU` | value | unset | int | tuning / config | `src/vit_embed.cpp` | Load weights — prefer GPU backend when available |
 
 <!-- END GENERATED: tools/list_env_vars.py -->
+
+`PCS_GATE_F32_MATMUL` is a default-off, test-driver-only same-weight matrix
+attribution control in `punct-ab-matmul-control`. It materializes quantized PCS
+matrix operands as F32 before multiplication to isolate additional activation
+rounding; it does not modify the stored model or production PCS.

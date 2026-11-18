@@ -904,6 +904,16 @@ if(CRISPEMBED_BUILD_PCS_CAPTURE)
     target_include_directories(punct-ab-capture PRIVATE src tests)
     target_link_libraries(punct-ab-capture PRIVATE crispembed)
     crispembed_apply_arch_flags(punct-ab-capture)
+    set(PCS_CONTROL_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/pcs_matmul_control.cpp")
+    add_custom_command(OUTPUT "${PCS_CONTROL_SOURCE}"
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/pcs_matmul_control.py"
+            "${PCS_CAPTURE_SOURCE}" "${PCS_CONTROL_SOURCE}"
+        DEPENDS "${PCS_CAPTURE_SOURCE}" tools/pcs_matmul_control.py
+        VERBATIM)
+    add_executable(punct-ab-matmul-control EXCLUDE_FROM_ALL tests/punct_ab.cpp "${PCS_CONTROL_SOURCE}")
+    target_include_directories(punct-ab-matmul-control PRIVATE src tests)
+    target_link_libraries(punct-ab-matmul-control PRIVATE crispembed)
+    crispembed_apply_arch_flags(punct-ab-matmul-control)
 endif()
 
 # Live (needs a GGUF): dump the token ids the shipping runtime produces, for
