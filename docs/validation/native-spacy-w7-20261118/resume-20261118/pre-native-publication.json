@@ -1,0 +1,26 @@
+{
+  "branch": "feat/native-spacy-w7-20261118",
+  "branch_updates": "Non-forced updates with expected prior head; one stale head rejected and incoming documentation integrated before retry",
+  "checkpoints": {
+    "CrispStrobe/CrispEmbed": {
+      "commit": "a71c3ce5326346310289db70953f5e300d9c1aaf",
+      "earlier_control_checkpoint": "d680a32e3be3595533337a82be59dc50b49e2e8f",
+      "preserved_incoming_handoff": "b847053d8c19a38540b47f072945aa28fdce549a",
+      "tree": "37fb6ca35db0211739ef228b9aa6a3dee19664f6"
+    },
+    "CrispStrobe/quds_office_suite": {
+      "commit": "99fd56590f8b4203409148af1a954538451e6890",
+      "earlier_source_refresh_checkpoint": "5413645da5647d00c762a6877e9100f0be31c713",
+      "preserved_incoming_handoff": "225eeb921856b8728caf7254c91badf541d3e683",
+      "tree": "07c11ad23baa9a2fdd02d417a6764f73717974f0"
+    }
+  },
+  "github_actions_queries_waits_reruns_dispatches": 0,
+  "grammar_qualification_rerun": false,
+  "local_history": "Local commit histories retained under backup branches before aligning equivalent trees",
+  "native_acceptance_rerun": false,
+  "schema": "crispembed.quds.spacy.w7.pre_native_publication.v1",
+  "status": "both_remote_complete_git_trees_verified_before_first_operational_execution",
+  "transport": "Authenticated GitHub connection; direct Git push lacked local credentials",
+  "verification": "Fetched each published remote branch; complete remote tree IDs equal local checked source/evidence trees before execution"
+}
