@@ -43,7 +43,16 @@ find_library(SPACY_PCRE2_LIBRARY NAMES pcre2-8 REQUIRED)
 # Other platforms ignore the define; their builds are unchanged.
 option(SPACY_PCRE2_STATIC "SPACY_PCRE2_LIBRARY is a static PCRE2 (Windows needs PCRE2_STATIC)" OFF)
 
-add_library(crispembed-spacy SHARED
+# CRISPEMBED_SPACY_STATIC (default OFF) builds a static library for targets
+# that must link the runtime into a signed app (iOS). Desktop/Android capsules
+# keep the shared library.
+option(CRISPEMBED_SPACY_STATIC "Build crispembed-spacy as a static library" OFF)
+if(CRISPEMBED_SPACY_STATIC)
+    set(_spacy_library_kind STATIC)
+else()
+    set(_spacy_library_kind SHARED)
+endif()
+add_library(crispembed-spacy ${_spacy_library_kind}
     "${CRISPEMBED_ROOT}/src/spacy_pipeline.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_numeric.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_ggml.cpp"
@@ -54,7 +63,11 @@ add_library(crispembed-spacy SHARED
 target_include_directories(crispembed-spacy PUBLIC "${CRISPEMBED_ROOT}/src")
 target_include_directories(crispembed-spacy PRIVATE "${SPACY_PCRE2_INCLUDE_DIR}")
 target_link_libraries(crispembed-spacy PRIVATE ggml ggml-cpu Threads::Threads "${SPACY_PCRE2_LIBRARY}")
-target_compile_definitions(crispembed-spacy PRIVATE CRISPEMBED_SPACY_BUILD PUBLIC CRISPEMBED_SPACY_SHARED)
+if(CRISPEMBED_SPACY_STATIC)
+    target_compile_definitions(crispembed-spacy PRIVATE CRISPEMBED_SPACY_BUILD)
+else()
+    target_compile_definitions(crispembed-spacy PRIVATE CRISPEMBED_SPACY_BUILD PUBLIC CRISPEMBED_SPACY_SHARED)
+endif()
 if(SPACY_PCRE2_STATIC)
     target_compile_definitions(crispembed-spacy PRIVATE PCRE2_STATIC)
 endif()
@@ -106,6 +119,10 @@ if(BUILD_TESTING)
         endif()
     endforeach()
 endif()
+
+# C-ABI-only analysis runner for hosts without Python (simulators/emulators).
+add_executable(spacy-smoke "${CMAKE_CURRENT_LIST_DIR}/spacy_smoke.cpp")
+target_link_libraries(spacy-smoke PRIVATE crispembed-spacy)
 
 install(TARGETS crispembed-spacy LIBRARY DESTINATION lib RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
 install(FILES "${CRISPEMBED_ROOT}/src/spacy_pipeline.h" DESTINATION include)

@@ -53,8 +53,9 @@ def render(catalog: dict) -> str:
         "embedded `distribution.json`. Install by staging privately and publishing the "
         "content-addressed directory with one no-replace rename "
         "(`tools/spacy/distribution.py` for v1, `tools/spacy/platform_distribution.py` for v2).",
-        "- The native library refuses work unless `CRISPEMBED_SPACY=1` is set by the host after an "
-        "explicit opt-in. Nothing downloads at analysis time.",
+        "- The native library refuses work until the host enables it after an explicit opt-in: "
+        "`crispembed_spacy_set_enabled(CRISPEMBED_SPACY_ENABLE_ANALYSIS)` (no environment change) or "
+        "`CRISPEMBED_SPACY=1`. Nothing downloads at analysis time.",
         "",
         f"## Model bundle (revision `{bundle['revision']}`)",
         "",
@@ -94,6 +95,23 @@ def render(catalog: dict) -> str:
             if not receipt.startswith('https://') and p.get('revision'):
                 receipt = f"{resolve}/{p['revision']}/{receipt}"
             lines.append(f"- {p['platform']}: {receipt}")
+    sdks = catalog.get("sdks") or []
+    if sdks:
+        lines += [
+            "",
+            "## Mobile SDKs",
+            "",
+            "Mobile apps must ship native code inside the signed app; only model files may be "
+            "downloaded at run time. These archives are build inputs for app developers.",
+            "",
+            "| Target | Archive (revision) | Contents | Verification | Manual grammar |",
+            "| --- | --- | --- | --- | --- |",
+        ]
+        for sdk in sdks:
+            link = (f"[`{sdk['path']}`]({resolve}/{sdk['revision']}/{sdk['path']}) "
+                    f"({_short(sdk['revision'])}; {sdk['bytes']:,} B; SHA-256 `{sdk['sha256']}`)")
+            lines.append(f"| {sdk['target']} | {link} | {sdk['contents']} | {sdk['verification']} | "
+                         f"{sdk['grammar']} |")
     ner = catalog.get("ner")
     if ner:
         lines += ["", "## Optional NER model", "", f"Status: {ner['status']}. {ner.get('qualification', '')}", ""]
@@ -123,6 +141,7 @@ def render(catalog: dict) -> str:
         "- `distribution.json`, `artifacts.json`, `operational-protocol.json`: the frozen Linux v1 "
         "profile, its artifact pins and the operational consumer protocol.",
         "- `packages/<platform>/<source commit>/`: v2 platform capsules with their publication receipt.",
+        "- `sdk/<target>/<source commit>/`: mobile SDK archives with their verification receipt.",
         "- `retained-w7-evidence/`, `macos-candidates/`, `quantization-attempts/`: retained evidence; "
         "not installable products.",
         "",
