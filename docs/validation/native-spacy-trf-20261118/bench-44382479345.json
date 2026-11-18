@@ -1,0 +1,149 @@
+{
+  "schema": "crispembed.spacy.trf_bench.v1",
+  "source": "a7358065f5548afe71c04d7b24379fc0db94fce8",
+  "run": "44382479345",
+  "platform": "Linux-7.0.0-1017-azure-aarch64-with-glibc2.39",
+  "cpu_count": 4,
+  "native": {
+    "sentences/fused=0/blas=0/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 92.64,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=0/blas=0/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 31.38,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=0/blas=1/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 54.71,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=0/blas=1/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 109.99,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=1/blas=0/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 92.66,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=1/blas=0/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 31.17,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=1/blas=1/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 55.15,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=1/blas=1/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 125.61,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "documents/fused=0/blas=0/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 113.11,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=0/blas=0/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 35.14,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=0/blas=1/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 38.31,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=0/blas=1/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 61.02,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=1/blas=0/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 112.16,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=1/blas=0/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 34.42,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=1/blas=1/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 37.82,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=1/blas=1/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 35.84,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    }
+  },
+  "pytorch": {
+    "sentences": {
+      "threads_1": {
+        "seconds": 40.711758170999985,
+        "tokens": 9786
+      },
+      "threads_4": {
+        "seconds": 36.634008853999944,
+        "tokens": 9786
+      }
+    },
+    "documents": {
+      "threads_1": {
+        "seconds": 19.539237420000063,
+        "tokens": 9786
+      },
+      "threads_4": {
+        "seconds": 17.224861745,
+        "tokens": 9786
+      }
+    }
+  },
+  "reference_versions": "{\"spacy\": \"3.8.18\", \"spacy-curated-transformers\": \"0.3.1\", \"curated-transformers\": \"0.1.1\", \"curated-tokenizers\": \"0.0.10\", \"torch\": \"2.15.0\"}",
+  "model_gguf": {
+    "sha256": "a2a1c5feeae7549cf018558f848d005aa0faeb7dd68b4e6f2bafbd54506cd337",
+    "size_bytes": 441135136
+  },
+  "all_exact": true
+}

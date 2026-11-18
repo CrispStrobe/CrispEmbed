@@ -84,7 +84,8 @@ target_include_directories(crispembed-spacy PRIVATE "${SPACY_PCRE2_INCLUDE_DIR}"
 target_link_libraries(crispembed-spacy PRIVATE ggml ggml-cpu Threads::Threads "${SPACY_PCRE2_LIBRARY}")
 # CRISPEMBED_SPACY_TRF (default OFF): spaCy transformer pipelines (e.g.
 # fr_dep_news_trf). Links the reference SentencePiece C++ library, the same
-# implementation spaCy's curated-tokenizers wraps, from a pinned release.
+# implementation spaCy's curated-tokenizers wraps, from a pinned release
+# (v0.2.1: v0.2.0 lacks <cstdint> and fails with GCC 15).
 option(CRISPEMBED_SPACY_TRF "Build spaCy transformer pipeline support (SentencePiece)" OFF)
 if(CRISPEMBED_SPACY_TRF)
     include(FetchContent)
@@ -92,12 +93,12 @@ if(CRISPEMBED_SPACY_TRF)
     set(SPM_ENABLE_TCMALLOC OFF CACHE BOOL "" FORCE)
     set(SPM_BUILD_TEST OFF CACHE BOOL "" FORCE)
     FetchContent_Declare(sentencepiece
-        URL https://github.com/google/sentencepiece/archive/refs/tags/v0.2.0.tar.gz
-        URL_HASH SHA256=9970f0a0afee1648890293321665e5b2efa04eaec9f1671fcf8048f456f5bb86)
+        URL https://github.com/google/sentencepiece/archive/refs/tags/v0.2.1.tar.gz
+        URL_HASH SHA256=c1a59e9259c9653ad0ade653dadff074cd31f0a6ff2a11316f67bee4189a8f1b)
     FetchContent_GetProperties(sentencepiece)
     if(NOT sentencepiece_POPULATED)
         FetchContent_Populate(sentencepiece)
-        # SentencePiece 0.2.0 declares cmake_minimum_required(3.1); CMake 4 needs a floor.
+        # Older SentencePiece releases declare cmake_minimum_required < 3.5; CMake 4 needs a floor.
         set(_spacy_policy_minimum "${CMAKE_POLICY_VERSION_MINIMUM}")
         set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
         add_subdirectory(${sentencepiece_SOURCE_DIR} ${sentencepiece_BINARY_DIR} EXCLUDE_FROM_ALL)

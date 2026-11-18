@@ -20,7 +20,7 @@ typedef struct ggml_backend * ggml_backend_t;
 // GELU), BOS/EOS removal and the LastTransformerLayerListener's reduce_mean
 // pooling per spaCy token. Heads (tagger/morphologizer/parser lower layer) are
 // computed on the pooled vectors and returned as NumericOutput.
-// Built only with CRISPEMBED_SPACY_TRF (SentencePiece C++ v0.2.0, Apache-2.0).
+// Built only with CRISPEMBED_SPACY_TRF (SentencePiece C++ v0.2.1, Apache-2.0).
 namespace crispembed {
 namespace spacy {
 

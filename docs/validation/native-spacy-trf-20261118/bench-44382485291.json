@@ -1,0 +1,149 @@
+{
+  "schema": "crispembed.spacy.trf_bench.v1",
+  "source": "a7358065f5548afe71c04d7b24379fc0db94fce8",
+  "run": "44382485291",
+  "platform": "macOS-15.8.2-arm64-arm-64bit",
+  "cpu_count": 3,
+  "native": {
+    "sentences/fused=0/blas=0/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 74.53,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=0/blas=0/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 464.87,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=0/blas=1/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 47.92,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=0/blas=1/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 701.15,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=1/blas=0/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 55.62,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=1/blas=0/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 423.64,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=1/blas=1/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 60.08,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "sentences/fused=1/blas=1/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 694.48,
+      "exact_cases": 416,
+      "cases": 416,
+      "tokens": 9786
+    },
+    "documents/fused=0/blas=0/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 65.96,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=0/blas=0/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 146.58,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=0/blas=1/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 39.24,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=0/blas=1/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 271.45,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=1/blas=0/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 62.68,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=1/blas=0/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 50.77,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=1/blas=1/threads=1": {
+      "returncode": 0,
+      "seconds_including_load": 38.03,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    },
+    "documents/fused=1/blas=1/threads=4": {
+      "returncode": 0,
+      "seconds_including_load": 78.99,
+      "exact_cases": 7,
+      "cases": 7,
+      "tokens": 9786
+    }
+  },
+  "pytorch": {
+    "sentences": {
+      "threads_1": {
+        "seconds": 47.526241958000014,
+        "tokens": 9786
+      },
+      "threads_4": {
+        "seconds": 50.761020040999995,
+        "tokens": 9786
+      }
+    },
+    "documents": {
+      "threads_1": {
+        "seconds": 31.42393920899997,
+        "tokens": 9786
+      },
+      "threads_4": {
+        "seconds": 25.998043416999963,
+        "tokens": 9786
+      }
+    }
+  },
+  "reference_versions": "{\"spacy\": \"3.8.18\", \"spacy-curated-transformers\": \"0.3.1\", \"curated-transformers\": \"0.1.1\", \"curated-tokenizers\": \"0.0.10\", \"torch\": \"2.15.0\"}",
+  "model_gguf": {
+    "sha256": "a2a1c5feeae7549cf018558f848d005aa0faeb7dd68b4e6f2bafbd54506cd337",
+    "size_bytes": 441135136
+  },
+  "all_exact": true
+}

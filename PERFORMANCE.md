@@ -1,3 +1,12 @@
+## Native spaCy transformer pipeline (fr_dep_news_trf, 18 November 2026)
+
+Hosted runners, exact against original spaCy in all 48 configurations; best
+native vs best PyTorch tokens/s (native includes model load): Linux x86-64
+sentences 430 vs 235, documents 420 vs 476; Linux arm64 sentences 314 vs 267,
+documents 284 vs 568; macOS arm64 sentences 204 vs 206, documents 257 vs 376.
+Fused graph is the default; avoid BLAS with several ggml threads.
+[Details](docs/validation/native-spacy-trf-20261118/README.md).
+
 ## Native spaCy ggml engine and precisions (18 November 2026, macOS arm64 dev build)
 
 Long document of 835 tokens (60 development texts joined), warm, through the
