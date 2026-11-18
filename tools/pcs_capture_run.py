@@ -54,6 +54,13 @@ def main():
     write_new(OUT / 'neutrality.json', {'all_four_head_dumps_and_decoded_bytes_equal': neutral, 'sha256': inventories})
     if not neutral:
         raise RuntimeError('Observer neutrality failed; trace is not admissible')
+    # Separate same-request encoder readback for original head attribution.
+    one = OUT / 'row37-corpus.txt'
+    one.write_text(records[3]['text'] + '\n')
+    probe_env = dict(base, PCS_DUMP_HIDDEN=str(OUT / 'row37-hidden.f32'))
+    probe = run('row37-hidden', [BUILD / 'punct-ab', MODEL, one], probe_env)
+    if probe.returncode or probe.stdout.splitlines() != [(OUT / 'original.stdout').read_bytes().splitlines()[3]]:
+        raise RuntimeError('Separate hidden readback changes decoded output')
     # Run the unchanged comparator against the real original driver.
     result = run('original-gate', [sys.executable, ROOT / 'tests/pcs_parity.py', BUILD, MODEL, REF], base)
     print(result.stdout.decode(), flush=True)
