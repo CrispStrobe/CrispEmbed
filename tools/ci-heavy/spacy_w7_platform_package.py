@@ -45,7 +45,43 @@ RUNNERS = {
     'linux-x86_64': ('Linux', 'x86_64'),
     'linux-arm64': ('Linux', 'aarch64'),
     'macos-arm64': ('Darwin', 'arm64'),
+    'windows-x86_64': ('Windows', 'AMD64'),
 }
+LEGACY_SCHEMA = 'crispembed.spacy.distribution.v1'
+
+
+def pe_imports(path):
+    """DLL names imported by a PE image (stdlib only; no dumpbin needed)."""
+    data = Path(path).read_bytes()
+    pe = int.from_bytes(data[0x3C:0x40], 'little')
+    assert data[pe:pe + 4] == b'PE\0\0', 'Not a PE image'
+    coff = pe + 4
+    sections_count = int.from_bytes(data[coff + 2:coff + 4], 'little')
+    optional_size = int.from_bytes(data[coff + 16:coff + 18], 'little')
+    optional = coff + 20
+    assert int.from_bytes(data[optional:optional + 2], 'little') == 0x20B, 'Expected PE32+'
+    import_rva = int.from_bytes(data[optional + 120:optional + 124], 'little')
+    sections = []
+    for i in range(sections_count):
+        at = optional + optional_size + 40 * i
+        sections.append((int.from_bytes(data[at + 12:at + 16], 'little'),
+                         int.from_bytes(data[at + 8:at + 12], 'little'),
+                         int.from_bytes(data[at + 20:at + 24], 'little')))
+
+    def offset(rva):
+        for start, size, raw in sections:
+            if start <= rva < start + size:
+                return raw + rva - start
+        raise AssertionError('RVA outside sections')
+
+    names, at = [], offset(import_rva)
+    while True:
+        name_rva = int.from_bytes(data[at + 12:at + 16], 'little')
+        if not name_rva:
+            return names
+        start = offset(name_rva)
+        names.append(data[start:data.index(b'\0', start)].decode('ascii'))
+        at += 20
 
 
 def _load(name, path):
@@ -58,7 +94,10 @@ def _load(name, path):
 def catalog_with(entry, base):
     catalog = json.loads(json.dumps(base))
     if entry:
-        catalog['packages'] = [p for p in catalog['packages'] if p['platform'] != entry['platform']]
+        # A new build replaces earlier v2/pending rows for its platform but never
+        # the frozen v1 W7 capsule: that row carries the only grammar claim.
+        catalog['packages'] = [p for p in catalog['packages']
+                               if p['platform'] != entry['platform'] or p.get('schema') == LEGACY_SCHEMA]
         catalog['packages'].append(entry)
         catalog['packages'].sort(key=lambda p: (p.get('path') is None, p['platform']))
     return catalog
@@ -85,6 +124,8 @@ def main():
     parser.add_argument('--card-only', action='store_true')
     parser.add_argument('--ner', action='store_true',
                         help='Convert ner.gguf canonically on CPython 3.12.14 and (with --publish) publish it')
+    parser.add_argument('--oracle-dir', type=Path,
+                        help='Original-spaCy oracle (spacy_mobile_sdk.py oracle) for the spacy_smoke comparison')
     parser.add_argument('--linux-runtime', choices=['shared', 'static'], default='shared',
                         help='Linux only: link libstdc++/libgcc dynamically (default) or statically')
     args = parser.parse_args()
@@ -169,33 +210,51 @@ def main():
                                 'https://github.com/PCRE2Project/pcre2.git', pcre])
             run('pcre2-checkout', ['git', 'checkout', '--detach', PCRE2], pcre)
             darwin = system == 'Darwin'
+            windows = system == 'Windows'
             apple = ['-DCMAKE_OSX_ARCHITECTURES=arm64', '-DCMAKE_OSX_DEPLOYMENT_TARGET=13.0'] if darwin else []
-            run('pcre2-configure', ['cmake', '-S', pcre, '-B', pcre_build, '-DCMAKE_BUILD_TYPE=Release', *apple,
+            # Visual Studio is multi-config: name the configuration everywhere.
+            msvc = ['-A', 'x64'] if windows else []  # default /MD: dynamic MSVC runtime
+            config = ['--config', 'Release'] if windows else []
+            run('pcre2-configure', ['cmake', '-S', pcre, '-B', pcre_build, '-DCMAKE_BUILD_TYPE=Release', *apple, *msvc,
                 '-DBUILD_SHARED_LIBS=OFF', '-DPCRE2_STATIC_PIC=ON', '-DPCRE2_BUILD_PCRE2_8=ON',
                 '-DPCRE2_BUILD_PCRE2_16=OFF', '-DPCRE2_BUILD_PCRE2_32=OFF', '-DPCRE2_BUILD_PCRE2GREP=OFF',
                 '-DPCRE2_BUILD_TESTS=OFF', '-DCMAKE_INSTALL_PREFIX=' + str(prefix)])
-            run('pcre2-build', ['cmake', '--build', pcre_build, '--parallel', '4'])
-            run('pcre2-install', ['cmake', '--install', pcre_build])
-            static_pcre = next(p for p in [prefix / 'lib/libpcre2-8.a', prefix / 'lib64/libpcre2-8.a'] if p.exists())
+            run('pcre2-build', ['cmake', '--build', pcre_build, '--parallel', '4', *config])
+            run('pcre2-install', ['cmake', '--install', pcre_build, *config])
+            static_pcre = next(p for p in [prefix / 'lib/libpcre2-8.a', prefix / 'lib64/libpcre2-8.a',
+                                           prefix / 'lib/pcre2-8-static.lib', prefix / 'lib/pcre2-8.lib']
+                               if p.exists())
             build, install = scratch / 'native-build', scratch / 'native-install'
             link = (['-DCMAKE_INSTALL_NAME_DIR=@rpath', '-DCMAKE_INSTALL_RPATH=@loader_path',
                      '-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON'] if darwin
                     else (['-DCMAKE_SHARED_LINKER_FLAGS=-static-libstdc++ -static-libgcc']
                           if args.linux_runtime == 'static' else []))
-            configure = ['cmake', '-S', ROOT / 'tools/spacy', '-B', build, '-DCMAKE_BUILD_TYPE=Release', *apple,
+            if windows:
+                link = ['-DSPACY_PCRE2_STATIC=ON']
+            configure = ['cmake', '-S', ROOT / 'tools/spacy', '-B', build, '-DCMAKE_BUILD_TYPE=Release', *apple, *msvc,
                          '-DSPACY_PCRE2_INCLUDE_DIR=' + str(prefix / 'include'),
                          '-DSPACY_PCRE2_LIBRARY=' + str(static_pcre), *link]
             run('native-configure', configure)
-            run('native-build', ['cmake', '--build', build, '--parallel', '4'])
-            run('ctest', ['ctest', '--test-dir', build, '--output-on-failure'])
-            run('native-install', ['cmake', '--install', build, '--prefix', install])
+            run('native-build', ['cmake', '--build', build, '--parallel', '4', *config])
+            run('ctest', ['ctest', '--test-dir', build, '--output-on-failure', *(['-C', 'Release'] if windows else [])])
+            run('native-install', ['cmake', '--install', build, '--prefix', install, *config])
             cache_flags = {line.split(':', 1)[0]: line.split('=', 1)[1]
                            for line in (build / 'CMakeCache.txt').read_text().splitlines()
-                           if re.match(r'^(GGML_|CRISPEMBED_|CMAKE_BUILD_TYPE|CMAKE_SHARED_LINKER_FLAGS|CMAKE_OSX_)', line)
+                           if re.match(r'^(GGML_|CRISPEMBED_|SPACY_PCRE2_STATIC|CMAKE_BUILD_TYPE|CMAKE_SHARED_LINKER_FLAGS|CMAKE_OSX_|CMAKE_MSVC_|CMAKE_CXX_COMPILER_ID|CMAKE_CXX_COMPILER_VERSION|CMAKE_GENERATOR)', line)
                            and '=' in line}
-            compiler = subprocess.check_output(['c++', '--version'], text=True).splitlines()[0]
-            library = install / 'lib' / pd.PLATFORMS[args.platform]['library']
-            if darwin:
+            if windows:
+                compiler = (f"{cache_flags.get('CMAKE_CXX_COMPILER_ID', 'MSVC')} "
+                            f"{cache_flags.get('CMAKE_CXX_COMPILER_VERSION', '')}").strip()
+            else:
+                compiler = subprocess.check_output(['c++', '--version'], text=True).splitlines()[0]
+            target = pd.PLATFORMS[args.platform]
+            library = install / target['library_dir'] / target['library']
+            if windows:
+                imports = pe_imports(library)
+                dependencies = {'pe_imports': imports, 'bundled': False, 'pcre2': 'static ' + PCRE2,
+                                'msvc_runtime': 'dynamic (MSVCP140/VCRUNTIME140, Visual C++ 2015-2022 redistributable)'}
+                assert not [n for n in imports if 'pcre' in n.lower() or 'python' in n.lower()], imports
+            elif darwin:
                 dependencies = {'otool_L': subprocess.check_output(['otool', '-L', str(library)], text=True),
                                 'bundled': False, 'pcre2': 'static ' + PCRE2}
                 assert 'libpcre2' not in dependencies['otool_L'] and 'Python' not in dependencies['otool_L']
@@ -228,11 +287,20 @@ def main():
             installed_bundle = installed / 'bundle'
             save()
             # Qualify the exact bytes inside the capsule, not the build tree.
+            # The Quds development fixtures contain a case directory named
+            # `nul`, a reserved Windows device name git cannot check out there;
+            # Windows relies on the decoded original-spaCy comparison below.
+            quds_parity = not windows
             oracle = scratch / 'quds-reference'
-            run('oracle-clone', ['git', 'clone', '--filter=blob:none', '--no-checkout',
-                                 'https://github.com/CrispStrobe/quds_office_suite.git', oracle])
-            run('oracle-sparse', ['git', 'sparse-checkout', 'set', 'tools/proofing/spacy'], oracle)
-            run('oracle-checkout', ['git', 'checkout', '--detach', ORACLE], oracle)
+            if quds_parity:
+                run('oracle-clone', ['git', 'clone', '--filter=blob:none', '--no-checkout',
+                                     'https://github.com/CrispStrobe/quds_office_suite.git', oracle])
+                run('oracle-sparse', ['git', 'sparse-checkout', 'set', 'tools/proofing/spacy'], oracle)
+                run('oracle-checkout', ['git', 'checkout', '--detach', ORACLE], oracle)
+            else:
+                report['quds_parity_unrun_reason'] = (
+                    "Quds development fixtures include a case directory named 'nul', a reserved Windows device "
+                    "name that cannot be checked out; decoded exactness is verified with spacy_smoke instead.")
             run('numpy-install', [sys.executable, '-m', 'pip', 'install', 'numpy==2.4.6'])
             def check(label, command):
                 with (out / f'{label}.log').open('w') as log:
@@ -248,8 +316,48 @@ def main():
             report['text_api'] = {'returncode': code, 'passed': bool(api and api.get('status') == 'pass'),
                                   'controls': (api or {}).get('tests_run')}
             save()
+            with (out / 'enable-api.log').open('w') as log:
+                enable = subprocess.run([sys.executable, '-X', 'faulthandler', str(ROOT / 'tests/test_spacy_enable_api.py'),
+                                         '--library', str(installed_library), '--bundle', str(installed_bundle)],
+                                        cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
+                                        env={k: v for k, v in os.environ.items()
+                                             if k not in ('CRISPEMBED_SPACY', 'CRISPEMBED_SPACY_NER')})
+            report['enable_api'] = {'returncode': enable.returncode, 'passed': enable.returncode == 0}
+            assert report['enable_api']['passed'], 'Process-wide enable API controls failed'
+            # spacy_smoke (C ABI only) on copies of the installed library bytes,
+            # compared token by token and entity by entity with original spaCy.
+            if args.oracle_dir:
+                mobile = _load('spacy_mobile_sdk', ROOT / 'tools/ci-heavy/spacy_mobile_sdk.py')
+                smoke_built = next(p for p in build.rglob('spacy-smoke' + ('.exe' if windows else ''))
+                                   if p.is_file())
+                smoke_dir = scratch / 'smoke'
+                smoke_dir.mkdir()
+                smoke = smoke_dir / smoke_built.name
+                shutil.copyfile(smoke_built, smoke)
+                os.chmod(smoke, 0o755)
+                shutil.copyfile(installed_library, smoke_dir / installed_library.name)
+                assert common.digest(smoke_dir / installed_library.name) == built['library_sha256']
+                ner_dir = scratch / 'smoke-models'
+                ner_dir.mkdir()
+                _, ner_model = mobile.model_files(ner_dir)
+                texts = mobile.corpus_lines(scratch / 'smoke-texts.txt')
+                smoke_env = dict(os.environ)
+                smoke_env['LD_LIBRARY_PATH' if system == 'Linux' else 'DYLD_LIBRARY_PATH'] = str(smoke_dir)
+                smoke_out = out / 'smoke.jsonl'
+                with smoke_out.open('wb') as stdout, (out / 'smoke.log').open('w') as log:
+                    code = subprocess.run([str(smoke), *map(str, mobile.smoke_arguments(installed_bundle, ner_model,
+                                                                                          texts))],
+                                          stdout=stdout, stderr=log, env=smoke_env).returncode
+                assert code == 0, f'spacy_smoke exited {code}'
+                comparison = mobile.compare(run, out, smoke_out, args.oracle_dir, 'smoke')
+                report['original_spacy_smoke'] = comparison
+                save()
+                assert comparison['passed'], 'spacy_smoke output differs from original spaCy'
+            elif not quds_parity:
+                raise AssertionError('Windows needs --oracle-dir: the Quds parity panels cannot run there')
             report['parity'] = {}
-            for script, name in [('spacy_parity.py', 'prepared'), ('spacy_text_parity.py', 'text')]:
+            for script, name in ([('spacy_parity.py', 'prepared'), ('spacy_text_parity.py', 'text')]
+                                 if quds_parity else []):
                 code, result = check(f'{name}-parity', [ROOT / 'tests' / script, '--library', installed_library,
                                                         '--bundle', installed_bundle, '--quds-root', oracle,
                                                         '--report', out / f'{name}-parity.json'])
@@ -259,8 +367,13 @@ def main():
             save()
             assert all(item['passed'] for item in report['parity'].values()), 'Development parity failed'
             assert report['text_api']['passed'], 'Text API controls failed'
-            counts = report['parity']['text']['counts'] or {}
+            counts = report['parity']['text']['counts'] or {} if quds_parity else {}
             run_id = os.environ.get('GITHUB_RUN_ID')
+            smoke_result = report.get('original_spacy_smoke')
+            smoke_text = (f"spacy_smoke vs original spaCy: {smoke_result['exact_cases']}/{smoke_result['cases']} "
+                          f"development texts, {smoke_result['tokens']} tokens, "
+                          f"{smoke_result['entities']['matched']}/{smoke_result['entities']['oracle']} entities exact"
+                          if smoke_result else None)
             prefix_path = f'packages/{args.platform}/{source}'
             entry = {
                 'platform': args.platform, 'status': 'published', 'revision': None,
@@ -268,13 +381,16 @@ def main():
                 'bytes': built['archive_size_bytes'], 'manifest_sha256': built['manifest_sha256'],
                 'library_sha256': built['library_sha256'], 'schema': pd.SCHEMA,
                 'requirements': (f"{host.platform()} build; dependencies: "
-                                 f"{dependencies.get('elf_needed') or 'system libc++/libSystem only'}"
+                                 f"{dependencies.get('elf_needed') or dependencies.get('pe_imports') or 'system libc++/libSystem only'}"
                                  + (f"; symbol floors {dependencies['symbol_version_floors']}"
                                     if dependencies.get('symbol_version_floors') else '')),
-                'analysis': (f"Hosted development parity on this exact library (run {run_id}): "
-                             f"{counts.get('cases')} cases, {counts.get('tokens')} tokens, "
-                             f"{counts.get('numeric_stages')} numerical stages exact; text-API controls pass. "
-                             "Component evidence only; not an app qualification."),
+                'analysis': ((f"Hosted development parity on this exact library (run {run_id}): "
+                              f"{counts.get('cases')} cases, {counts.get('tokens')} tokens, "
+                              f"{counts.get('numeric_stages')} numerical stages exact; "
+                              if quds_parity else f"Hosted run {run_id} on this exact library: ")
+                             + (f"{smoke_text}; " if smoke_text else '')
+                             + "text-API and enable-API controls pass. Component evidence only; not an app "
+                               "qualification."),
                 'grammar': 'Not qualified for this build',
                 'receipt': f'{prefix_path}/receipt.json',
             }

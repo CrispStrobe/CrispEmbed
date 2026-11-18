@@ -27,7 +27,8 @@ import importlib.util
 import io
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+import shutil
 import stat
 import sys
 import tarfile
@@ -44,13 +45,20 @@ SCHEMA = "crispembed.spacy.distribution.v2"
 MANIFEST_NAME = v1.MANIFEST_NAME
 MODEL = "de_core_news_sm-3.8.0"
 
-# Declared targets. `library` is the CMake install name under lib/.
+# Declared targets. `library` is the CMake install name under `library_dir`
+# (lib/ for shared objects; bin/ for a Windows DLL, whose import library is
+# not shipped because consumers load the DLL at run time).
 PLATFORMS = {
-    "linux-x86_64": {"system": "Linux", "machine": "x86_64", "library": "libcrispembed-spacy.so"},
-    "linux-arm64": {"system": "Linux", "machine": "aarch64", "library": "libcrispembed-spacy.so"},
-    "macos-arm64": {"system": "Darwin", "machine": "arm64", "library": "libcrispembed-spacy.dylib"},
-    "windows-x86_64": {"system": "Windows", "machine": "AMD64", "library": "crispembed-spacy.dll"},
+    "linux-x86_64": {"system": "Linux", "machine": "x86_64", "library": "libcrispembed-spacy.so",
+                     "library_dir": "lib"},
+    "linux-arm64": {"system": "Linux", "machine": "aarch64", "library": "libcrispembed-spacy.so",
+                    "library_dir": "lib"},
+    "macos-arm64": {"system": "Darwin", "machine": "arm64", "library": "libcrispembed-spacy.dylib",
+                    "library_dir": "lib"},
+    "windows-x86_64": {"system": "Windows", "machine": "AMD64", "library": "crispembed-spacy.dll",
+                       "library_dir": "bin"},
 }
+WINDOWS = os.name == "nt"
 
 # Every notice shipped by the accepted Linux capsule must be present.
 REQUIRED_NOTICES = sorted(
@@ -76,10 +84,77 @@ def _platform(name: str) -> dict:
     return PLATFORMS[name]
 
 
+def _library_path(target: dict) -> str:
+    return f"{target['library_dir']}/{target['library']}"
+
+
+# --- File primitives -------------------------------------------------------
+# POSIX hosts use the frozen v1 primitives unchanged. Windows has no O_NOFOLLOW,
+# fchmod or hard-link publication, and os.open defaults to text mode, so it
+# gets binary-safe equivalents: reparse points are refused, new files are
+# created exclusively, and read-only is the only permission bit Windows keeps.
+
+def _reject_reparse(path: Path) -> os.stat_result:
+    info = path.lstat()
+    if getattr(info, "st_file_attributes", 0) & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400):
+        raise DistributionError("An input is a link or reparse point.")
+    return info
+
+
+def _read(path, *, maximum: int, pin: dict | None = None) -> bytes:
+    if not WINDOWS:
+        return v1._read_regular(path, maximum=maximum, pin=pin)
+    path = Path(os.path.abspath(path))
+    for parent in reversed(path.parents):
+        if parent.exists():
+            _reject_reparse(parent)
+    info = _reject_reparse(path)
+    if not stat.S_ISREG(info.st_mode):
+        raise DistributionError("An input is not a regular file.")
+    if info.st_size < 1 or info.st_size > maximum:
+        raise DistributionError("An input exceeds its byte bound or is empty.")
+    if pin is not None and info.st_size != pin["size_bytes"]:
+        raise DistributionError("A pinned input has the wrong size.")
+    with open(path, "rb") as source:
+        data = source.read(maximum + 1)
+    if len(data) != info.st_size or path.lstat().st_mtime_ns != info.st_mtime_ns:
+        raise DistributionError("An input changed while being read.")
+    if pin is not None and _sha(data) != pin["sha256"]:
+        raise DistributionError("A pinned input failed SHA-256 verification.")
+    return data
+
+
+def _write_new(path: Path, data: bytes, mode: int) -> None:
+    if not WINDOWS:
+        return v1._write_new_file(path, data, mode)
+    with open(path, "xb") as output:
+        output.write(data)
+        output.flush()
+        os.fsync(output.fileno())
+    os.chmod(path, mode)
+
+
+def _publish(path: Path, data: bytes) -> None:
+    if not WINDOWS:
+        return v1._publish_file(path, data)
+    _write_new(path, data, 0o644)  # exclusive create: never replaces an output
+
+
+def _remove(directory: Path) -> None:
+    if not WINDOWS:
+        return v1._remove_staging(directory)
+    for current, dirs, names in os.walk(directory):
+        for name in dirs + names:
+            os.chmod(Path(current) / name, stat.S_IWRITE | stat.S_IREAD)
+    os.chmod(directory, stat.S_IWRITE | stat.S_IREAD)
+    shutil.rmtree(directory)
+
+
 def collect_native(install_prefix: os.PathLike | str, platform: str) -> dict[str, bytes]:
     """Read a CMake install tree: exactly the library, headers and notices."""
     prefix = Path(os.path.abspath(install_prefix))
-    library = _platform(platform)["library"]
+    target = _platform(platform)
+    library = _library_path(target)
     files: dict[str, bytes] = {}
     for path in sorted(prefix.rglob("*")):
         info = path.lstat()
@@ -88,11 +163,13 @@ def collect_native(install_prefix: os.PathLike | str, platform: str) -> dict[str
         if stat.S_ISDIR(info.st_mode):
             continue
         relative = path.relative_to(prefix).as_posix()
-        if not (relative == "lib/" + library or relative.startswith("include/")
+        if target["system"] == "Windows" and relative == "lib/" + Path(target["library"]).stem + ".lib":
+            continue  # import library: not needed by run-time loaders
+        if not (relative == library or relative.startswith("include/")
                 or relative.startswith("share/licenses/")):
             raise DistributionError(f"Unexpected native install member {relative}.")
-        files[relative] = v1._read_regular(path, maximum=64 * 1024 * 1024)
-    if "lib/" + library not in files:
+        files[relative] = _read(path, maximum=64 * 1024 * 1024)
+    if library not in files:
         raise DistributionError("Native install tree lacks the library.")
     missing = [name for name in REQUIRED_NOTICES if name not in files]
     if missing:
@@ -103,11 +180,11 @@ def collect_native(install_prefix: os.PathLike | str, platform: str) -> dict[str
 def manifest(platform: str, native: dict[str, bytes], *, source_commit: str,
              build: dict, system_dependencies: dict) -> dict:
     target = _platform(platform)
-    library = native["lib/" + target["library"]]
+    library = native[_library_path(target)]
     library_sha = _sha(library)
 
     def place(name: str) -> str:
-        if name == "lib/" + target["library"]:
+        if name == _library_path(target):
             return f"native/{library_sha}/{target['library']}"
         return "native/" + name
 
@@ -122,7 +199,7 @@ def manifest(platform: str, native: dict[str, bytes], *, source_commit: str,
                    "library_size_bytes": len(library), "abi_version": 1,
                    "text_abi_version": 1, "build": build},
         "bundle_manifest_sha256": v1.BUNDLE_MANIFEST_SHA256,
-        "entrypoints": {"library": place("lib/" + target["library"]), "bundle": "bundle"},
+        "entrypoints": {"library": place(_library_path(target)), "bundle": "bundle"},
         "files": dict(sorted(files.items())),
         "archive_format": {"tar": "USTAR", "compression": "gzip-level-9", "timestamp": 0,
                            "uid": 0, "gid": 0, "file_mode": "0644", "order": "lexical path"},
@@ -154,15 +231,15 @@ def build(platform: str, install_prefix, bundle, output, *, source_commit: str,
     files = {path: None for path in data["files"]}
     target = _platform(platform)
     for name, payload in native.items():
-        key = (data["entrypoints"]["library"] if name == "lib/" + target["library"]
+        key = (data["entrypoints"]["library"] if name == _library_path(target)
                else "native/" + name)
         files[key] = payload
     for name, pin in v1.BUNDLE_FILES.items():
-        files["bundle/" + name] = v1._read_regular(bundle / name, maximum=pin["size_bytes"], pin=pin)
+        files["bundle/" + name] = _read(bundle / name, maximum=pin["size_bytes"], pin=pin)
     files[MANIFEST_NAME] = _manifest_bytes(data)
     packed = v1._pack(files)
     _read_capsule(packed)  # exercise the exact reader before publication
-    v1._publish_file(Path(os.path.abspath(output)), packed)
+    _publish(Path(os.path.abspath(output)), packed)
     return {"archive_sha256": _sha(packed), "archive_size_bytes": len(packed),
             "manifest_sha256": _sha(files[MANIFEST_NAME]),
             "manifest_size_bytes": len(files[MANIFEST_NAME]),
@@ -225,7 +302,7 @@ def _check_manifest(data: dict) -> None:
 
 def verify_archive(path, trusted_sha256: str) -> dict:
     expected = v1._trusted_hash(trusted_sha256)
-    data = v1._read_regular(path, maximum=v1.MAX_ARCHIVE_BYTES)
+    data = _read(path, maximum=v1.MAX_ARCHIVE_BYTES)
     if _sha(data) != expected:  # authenticate before any parsing
         raise DistributionError("Archive differs from the externally trusted SHA-256.")
     data_manifest, files = _read_capsule(data)
@@ -249,6 +326,14 @@ def _publish_directory(staging: Path, destination: Path) -> bool:
         if code == errno.EEXIST:
             return False
         raise OSError(code, os.strerror(code))
+    if WINDOWS:
+        # MoveFileExW without MOVEFILE_REPLACE_EXISTING: an existing
+        # destination fails the rename instead of being replaced.
+        try:
+            os.rename(staging, destination)
+            return True
+        except FileExistsError:
+            return False
     raise DistributionError("No atomic no-replace directory rename on this host.")
 
 
@@ -260,11 +345,12 @@ def verify_tree(directory, trusted_sha256: str, *, named: bool = True) -> dict:
     root_info = directory.lstat()
     if not stat.S_ISDIR(root_info.st_mode) or (named and stat.S_IMODE(root_info.st_mode) != 0o555):
         raise DistributionError("Installation root must be a regular read-only directory.")
-    manifest_bytes = v1._read_regular(directory / MANIFEST_NAME, maximum=256 * 1024)
+    manifest_bytes = _read(directory / MANIFEST_NAME, maximum=256 * 1024)
     data = json.loads(manifest_bytes)
     _check_manifest(data)
     pins = {**data["files"], MANIFEST_NAME: _pin(manifest_bytes)}
-    allowed_dirs = {str(p) for name in pins for p in Path(name).parents if str(p) != "."}
+    # Member names are POSIX paths; compare them as such on every host.
+    allowed_dirs = {p.as_posix() for name in pins for p in PurePosixPath(name).parents if str(p) != "."}
     found_files, found_dirs = set(), set()
     for current, dirs, names in os.walk(directory, followlinks=False):
         parent = Path(current)
@@ -279,7 +365,7 @@ def verify_tree(directory, trusted_sha256: str, *, named: bool = True) -> dict:
             relative = (parent / name).relative_to(directory).as_posix()
             if relative not in pins or stat.S_IMODE((parent / name).lstat().st_mode) != 0o444:
                 raise DistributionError("Unexpected or writable installation file.")
-            v1._read_regular(parent / name, maximum=pins[relative]["size_bytes"], pin=pins[relative])
+            _read(parent / name, maximum=pins[relative]["size_bytes"], pin=pins[relative])
             found_files.add(relative)
     if found_files != pins.keys() or found_dirs != allowed_dirs:
         raise DistributionError("Installation is missing required files or directories.")
@@ -291,14 +377,15 @@ def verify_tree(directory, trusted_sha256: str, *, named: bool = True) -> dict:
 def install(archive, trusted_sha256: str, cache) -> dict:
     """Authenticate, stage, verify, then publish atomically without replacement."""
     expected = v1._trusted_hash(trusted_sha256)
-    data = v1._read_regular(archive, maximum=v1.MAX_ARCHIVE_BYTES)
+    data = _read(archive, maximum=v1.MAX_ARCHIVE_BYTES)
     if _sha(data) != expected:
         raise DistributionError("Archive differs from the externally trusted SHA-256.")
     _, files = _read_capsule(data)
     cache = Path(os.path.abspath(cache))
     cache.mkdir(mode=0o700, exist_ok=True)
     info = cache.lstat()
-    if not stat.S_ISDIR(info.st_mode) or stat.S_IMODE(info.st_mode) & 0o022:
+    # Windows has no POSIX group/other bits; its per-user profile ACLs apply.
+    if not stat.S_ISDIR(info.st_mode) or (not WINDOWS and stat.S_IMODE(info.st_mode) & 0o022):
         raise DistributionError("Installation requires a private cache directory.")
     destination = cache / expected
     if os.path.lexists(destination):
@@ -309,7 +396,7 @@ def install(archive, trusted_sha256: str, cache) -> dict:
         for name, payload in sorted(files.items()):
             path = staging / name
             path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-            v1._write_new_file(path, payload, 0o444)
+            _write_new(path, payload, 0o444)
         for current, _, _ in os.walk(staging, topdown=False):
             os.chmod(current, 0o555)
         verify_tree(staging, expected, named=False)
@@ -323,7 +410,7 @@ def install(archive, trusted_sha256: str, cache) -> dict:
         return {**verify_tree(destination, expected), "installed": published}
     finally:
         if staging is not None and staging.exists():
-            v1._remove_staging(staging)
+            _remove(staging)
 
 
 def main(argv: list[str] | None = None) -> int:
