@@ -25,17 +25,32 @@ part of this documentation update.
 
 ## W7 completion ownership — 18 November 2026
 
-Owner `owner/spacy-w7-finish-20261118` continues PR237 from `f22662cf` and
-paired Quds PR153 from `2e013f26`, preserving the consumed native and W6 panels.
-The retained Linux audit passes all 1,031 assertions and the 25 archive/installer
-controls pass locally. Focused exact-head model-free CI is added before owner
-merge; Linux packaging is not held for macOS. Next execute immutable hosted
-publication with empty-cache hash/tree/install readback, real macOS ARM64 and
-signed-app worker controls, default-OFF CrispCloud settings/provider wiring,
-separately frozen additional grammar cases, and separately gated quantization
-and optimized execution. Keep accepted F32, all failures and old evidence intact.
-Publication/other-platform/quantized/grammar claims require actual source-bound
-runs. No runtime/app release or default activation follows from preparatory work.
+Remaining work is paired Quds integration and the final merged consumer pin.
+PR139 has three actual Office check failures: footer PAGE compatibility and
+seven editor raster goldens. Resolve those failures without weakening assertions
+or goldens, normally integrate the current139 source into stacked153, then
+merge/pin the reviewed153 path. Its sealed historical evidence is not current
+integration proof. Preserve all342sealed identities.
+
+CrispCloud [draftPR271](https://github.com/CrispStrobe/CrispCloud/pull/271)
+at `b01676d4` carries the guarded unmerged153 candidate; main still pins6245a695.
+Actual signed ARM64 Runner/native-worker and normal30second startup pass at
+44279211190, including signatures, sandbox/library validation and cleanup.
+Final pin, manual-provider UI activation and Mac grammar remain unqualified.
+Settings/manual registration stay default OFF with no automatic downloads.
+
+F16/Q8/Q4 CPU and real CUDA assessments are complete and rejected under the
+original numerical/discrete gates. The isolated AVX2/F32 development candidate
+passes prepared/rawtext gates at44284405910/source `41195dc4`; it remains OFF
+and unpromoted. No accepted quantized profile or broad speed result exists.
+
+Completed Linux PR237/publication, ARM64 component/signed-app startup, finite
+96-case coverage and quantization/optimization evidence are in [HISTORY](HISTORY.md),
+[PERFORMANCE](PERFORMANCE.md) and the
+[source-bound execution receipt](docs/validation/native-spacy-w7-20261118/owner-execution/results.json).
+Preserve original W6 5/30,22/30/eight misses and new panel14/40,24/40/sixteen
+misses. Never rerun either consumed grammar panel or native acceptance split.
+F32 remains accepted; runtime/app release and provider activation remain open.
 
 ## PR235 post-OOM owner repair — 18 November 2026
 

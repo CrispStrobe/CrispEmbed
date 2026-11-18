@@ -1,0 +1,91 @@
+{
+  "schema": "quds.spacy.grammar.protocol.v1",
+  "created_date": "2026-11-17",
+  "status": "amended-before-first-qualification-execution",
+  "scope": "New finite W7 coverage panel. Original consumed W6 split and original numerical gates remain unchanged.",
+  "baseline": {
+    "repository": "CrispStrobe/quds_office_suite",
+    "main_commit": "6245a6956a76a38f925e1eb18851c0086730112d",
+    "feature_initial_commit": "e7c67f29b34f1c1909e51aa25997fc774bb8ac80",
+    "provider": "GermanWritingRulesProvider with every current rule enabled except explicit per-case ignored IDs",
+    "ordinary_provider_sources_sha256": {
+      "packages/quds_office_engine/lib/src/proofing/german_context_grammar.dart": "9f3b6006ad8da9f5f0e6c5e76df6b135fd325604185f2ca3c97fdd2c4823f1d9",
+      "packages/quds_office_engine/lib/src/proofing/german_grammar.dart": "ab3947b5c27f91084f40433d3a12784559fb67dcaa6ff0b929196844d2ba6897",
+      "packages/quds_office_engine/lib/src/proofing/german_literal_ranges.dart": "c975a512605f7c0b2d9251547492253319c80a37a9829e04de48ff2a4e271f23",
+      "packages/quds_office_engine/lib/src/proofing/german_morphology.dart": "b87a9873de8ad8b7ee9f3881971739c2a112098fa3491f43560302b055224183",
+      "packages/quds_office_engine/lib/src/proofing/german_spelling.dart": "9e51dd774237e6a22232ad88f905cc32314f75ee3ffeb263fee7cdbade93f82c",
+      "packages/quds_office_engine/lib/src/proofing/german_writing_rules.dart": "636050b5c5ec111e64377387e5013bb207f16e3fc4f92fa7dcdb65b23540ddb9",
+      "packages/quds_office_engine/lib/src/proofing/office_proofing.dart": "5a2711e5102948b88524aa6933c447791bf0839e83429c7e861d7a51cd23518e",
+      "packages/quds_office_engine/lib/src/proofing/proofing_text_ranges.dart": "4760ffde9a19bcaa6bb09f43e31a52d0e84bdbfb4b7940086938c098f0c47b17"
+    },
+    "note": "Latest main includes German phrase completion and formatting-preserving correction. These baseline semantics supersede the initial protocol main before qualification. Original current-main files must remain byte-identical except the additive shared-facts part; candidate source/runtime are sealed separately."
+  },
+  "native": {
+    "repository": "CrispStrobe/CrispEmbed",
+    "feature_initial_commit": "584dd9e50282aa9cee2c5250da7803898a86f9a4",
+    "source_commit": "51c2ac328ef40b00f18eb9b03130fb67c3f11313",
+    "library_sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977",
+    "bundle_manifest_sha256": "d599768375de3dc56abcca5cf1d49da0015857f9d3a10640aebb5317ef5d427e",
+    "new_native_acceptance_executions": 0
+  },
+  "qualification_panel": {
+    "sha256": "92338ceb27d2877a6b0cfbfd1218440f53db6509d80571f85d34cfb0d0118ecd",
+    "total": 96,
+    "counts": {
+      "error": 40,
+      "valid": 40,
+      "guard": 12,
+      "unsupported": 4
+    }
+  },
+  "development": {
+    "policy": "Separate authored development inputs and historical grammar panels may be used for implementation and debugging. They never increase qualification denominator. Every initial failure is retained."
+  },
+  "scoring": {
+    "arms": [
+      "current deterministic",
+      "native planner alone",
+      "current deterministic plus native secondary via mergeOfficeProofingReports"
+    ],
+    "exact_correction": "For error cases, all reviewable replacement edits applied to original input must equal the frozen expected full string. No multiple-choice oracle picks; a finding must contain exactly one replacement.",
+    "valid_control": "Report any finding and any changed valid text separately for each arm; reject any added native finding on a valid control even if merge hides it.",
+    "guard_control": "Not asserted grammatical: require no native suggestion on protected, ignored, vocabulary, unsupported-structure or malformed-mark contexts; report baseline findings separately.",
+    "unsupported": "Report explicit unsupported separately from clean success; do not count as false positive success or correction coverage.",
+    "merge": "Deterministic findings keep precedence using existing merger; count raw model proposals and proposals suppressed by merge separately.",
+    "recheck": "Re-analyze corrected error outputs with the same native candidate and planner; record any remaining model finding; these repeated executions are not additional independent cases.",
+    "offsets": "Use nonzero UTF-16 request origin 23 in every panel case. Each finding must map exactly back to originalText and a source grapheme boundary.",
+    "operational": "Failures/timeouts/cancellations/missing assets/status mismatches are counted separately and cannot be represented as clean results."
+  },
+  "predeclared_gate": {
+    "minimum_additional_exact_error_cases_over_baseline": 4,
+    "maximum_baseline_exact_corrections_lost": 0,
+    "maximum_native_findings_on_valid_controls": 0,
+    "maximum_native_findings_on_guard_controls": 0,
+    "maximum_added_changed_valid_controls": 0,
+    "maximum_operational_failures": 0,
+    "maximum_model_findings_on_corrected_recheck": 0,
+    "all_declared_local_editor_safety_controls_required": true,
+    "meaning": "A finite incremental benefit on this authored panel only, not general German precision/recall or production release."
+  },
+  "execution_order": [
+    "Publish this protocol and panel before candidate output inspection.",
+    "Develop on separate data and retain initial failures.",
+    "Review and publish candidate, harness, and exact source/runtime hashes before reading qualification outputs.",
+    "Run qualification exactly once for this candidate; retain partial report on failure and never overwrite it.",
+    "If output-informed planner changes are needed, classify this panel as development and require a new independently frozen panel for a new qualification claim.",
+    "Publish outcome whether positive or negative; keep grammar default off and packaging separate."
+  ],
+  "ci_endpoints_queried_or_waited": false,
+  "amendment": {
+    "revision": 2,
+    "original_protocol_sha256": "5fa7ff99f43020fd6506ecf832fc264fa97834ce838733a8d395ba57e6c6978e",
+    "original_protocol_path": "protocol-initial.json",
+    "original_freeze_commit": "846fc0371b23bf4a84542db7a3f24eee2d8609dd",
+    "reason": "New deterministic German main arrived during prequalification refresh; compare to current behavior rather than the superseded baseline.",
+    "qualification_executions_before_amendment": 0,
+    "qualification_outputs_seen": false,
+    "panel_inputs_expectations_denominators_unchanged": true,
+    "success_thresholds_and_scoring_unchanged": true,
+    "native_planner_provider_and_evaluator_unchanged": true
+  }
+}

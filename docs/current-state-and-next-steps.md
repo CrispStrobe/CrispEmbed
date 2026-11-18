@@ -1,6 +1,6 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
-## Native spaCy W7 local package closure — 18 November 2026
+## Native spaCy W7 completion — 18 November 2026
 
 The [paired completion](validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json)
 records verified Linux package reproduction/installation and current Python/Dart
@@ -9,9 +9,17 @@ all 342 sealed Quds sources. Main `be20e497` is integrated in the W7 branch;
 the accepted native/model bytes and consumed linguistic panels are preserved.
 The [current continuation](validation/native-spacy-w7-20261118/CONTINUE.md)
 supersedes the old pending/uncompiled handoff and provides read-only auditors.
-Hosted publication/download readback, portable dependencies, other devices and
-activation remain open. Keep checkpoints on `feat/native-spacy-w7-20261118`
-and do not query, wait for, rerun or dispatch Actions for this lane.
+The independently valid Linux PR237 is merged; immutable publication/readback,
+real ARM64 Mac component and new finite grammar/quantization assessments now
+have actual [source-bound results](validation/native-spacy-w7-20261118/owner-execution/results.json).
+The current completion scope includes explicit hosted W7 qualification and
+supersedes the dated no-Actions local-closure constraint. Signed ARM64 Runner/native-worker and normal startup pass at44279211190;
+the isolated AVX2/F32 development candidate also passes its frozen gates,
+remaining OFF and unpromoted. CrispCloud draftPR271 is the tested source
+candidate. Quds139/153 integration, final app pin and Mac grammar remain open;
+the provider stays OFF.
+All quantized candidates are rejected; accepted F32 and both consumed grammar
+panels remain unchanged. Do not repeat consumed native/W6/new-W7 held-out runs.
 
 ## Current portfolio checkpoint — 12 November 2026
 
