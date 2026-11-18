@@ -23,6 +23,20 @@ set(_spacy_disabled_ggml NATIVE BACKEND_DL CPU_ALL_VARIANTS CPU_HBM CPU_KLEIDIAI
     OPENMP ACCELERATE BLAS CUDA HIP MUSA CANN VULKAN METAL
     SYCL RPC OPENCL OPENVINO WEBGPU ZDNN ZENDNN VIRTGPU
     VIRTGPU_BACKEND ET HEXAGON BUILD_TESTS BUILD_EXAMPLES)
+# CRISPEMBED_SPACY_BLAS (default OFF): ggml's BLAS backend (Accelerate on
+# Apple, OpenBLAS elsewhere) for the transformer encoder's matrix products,
+# selected at run time with CRISPEMBED_SPACY_TRF_BLAS=1. ggml's ACCELERATE CPU
+# paths stay off, so the CPU kernels of every other spaCy path are unchanged.
+option(CRISPEMBED_SPACY_BLAS "Build the ggml BLAS backend for spaCy transformer encoders" OFF)
+if(CRISPEMBED_SPACY_BLAS)
+    list(REMOVE_ITEM _spacy_disabled_ggml BLAS)
+    set(GGML_BLAS ON CACHE BOOL "ggml BLAS backend for spaCy transformers" FORCE)
+    if(APPLE)
+        set(GGML_BLAS_VENDOR "Apple" CACHE STRING "BLAS vendor" FORCE)
+    elseif(NOT GGML_BLAS_VENDOR)
+        set(GGML_BLAS_VENDOR "OpenBLAS" CACHE STRING "BLAS vendor" FORCE)
+    endif()
+endif()
 if(NOT CRISPEMBED_SPACY_SGEMM)
     list(APPEND _spacy_disabled_ggml LLAMAFILE)
 else()
@@ -93,6 +107,10 @@ if(CRISPEMBED_SPACY_TRF)
     target_include_directories(crispembed-spacy PRIVATE "${sentencepiece_SOURCE_DIR}/src")
     target_link_libraries(crispembed-spacy PRIVATE sentencepiece-static)
     target_compile_definitions(crispembed-spacy PRIVATE CRISPEMBED_SPACY_TRF)
+    if(CRISPEMBED_SPACY_BLAS)
+        target_link_libraries(crispembed-spacy PRIVATE ggml-blas)
+        target_compile_definitions(crispembed-spacy PRIVATE CRISPEMBED_SPACY_BLAS)
+    endif()
     install(FILES "${sentencepiece_SOURCE_DIR}/LICENSE" DESTINATION share/licenses/crispembed-spacy
             RENAME SentencePiece-LICENSE)
 endif()

@@ -4,6 +4,10 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "ggml.h"
+#ifdef CRISPEMBED_SPACY_BLAS
+#include "core/env_gate.h"
+#include "ggml-blas.h"
+#endif
 
 #include <sentencepiece_processor.h>
 
@@ -53,6 +57,10 @@ struct TransformerPipeline::Impl {
     ggml_backend_t backend = nullptr;
     ggml_gallocr * allocator = nullptr;
     sentencepiece::SentencePieceProcessor spp;
+    // Opt-in CRISPEMBED_SPACY_TRF_BLAS: encoder matrix products on ggml's BLAS
+    // backend (Accelerate/OpenBLAS) through a scheduler; CPU for the rest.
+    ggml_backend_t blas = nullptr;
+    ggml_backend_sched_t sched = nullptr;
 
     ggml_tensor * weight(const std::string & name) const {
         const auto found = weights.find(name);
@@ -119,14 +127,26 @@ struct TransformerPipeline::Impl {
         ggml_set_output(x);
         ggml_cgraph * graph = ggml_new_graph_custom(ctx, 4096, false);
         ggml_build_forward_expand(graph, x);
-        if (!ggml_gallocr_alloc_graph(allocator, graph)) throw std::bad_alloc();
+        if (sched) {
+            ggml_backend_sched_reset(sched);
+            if (!ggml_backend_sched_alloc_graph(sched, graph)) throw std::bad_alloc();
+        } else if (!ggml_gallocr_alloc_graph(allocator, graph)) {
+            throw std::bad_alloc();
+        }
         std::vector<int32_t> position_ids(static_cast<size_t>(T));
         for (int64_t t = 0; t < T; ++t)
             position_ids[static_cast<size_t>(t)] = static_cast<int32_t>(t + config.padding_idx + 1);
         std::vector<int32_t> token_ids(ids.begin(), ids.end());
         ggml_backend_tensor_set(tokens, token_ids.data(), 0, token_ids.size() * sizeof(int32_t));
         ggml_backend_tensor_set(positions, position_ids.data(), 0, position_ids.size() * sizeof(int32_t));
-        compute(graph, cancelled);
+        if (sched) {
+            check_cancelled(cancelled);
+            if (ggml_backend_sched_graph_compute(sched, graph) != GGML_STATUS_SUCCESS)
+                throw std::runtime_error("spaCy transformer graph computation failed");
+            check_cancelled(cancelled);
+        } else {
+            compute(graph, cancelled);
+        }
         std::vector<float> output(static_cast<size_t>(T * W));
         ggml_backend_tensor_get(x, output.data(), 0, output.size() * sizeof(float));
         return output;
@@ -156,10 +176,22 @@ TransformerPipeline::TransformerPipeline(TransformerConfig config, std::map<std:
     require(status.ok(), "Invalid SentencePiece model: " + status.ToString());
     m.allocator = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
     if (!m.allocator) throw std::bad_alloc();
+#ifdef CRISPEMBED_SPACY_BLAS
+    if (core_env::on("CRISPEMBED_SPACY_TRF_BLAS")) {
+        m.blas = ggml_backend_blas_init();
+        require(m.blas != nullptr, "Cannot initialise the ggml BLAS backend");
+        ggml_backend_t backends[2] = { m.blas, backend }; // CPU last, as the scheduler requires
+        m.sched = ggml_backend_sched_new(backends, nullptr, 2, 8192, false, false);
+        require(m.sched != nullptr, "Cannot create the spaCy transformer scheduler");
+    }
+#endif
 }
 
 TransformerPipeline::~TransformerPipeline() {
-    if (impl_ && impl_->allocator) ggml_gallocr_free(impl_->allocator);
+    if (!impl_) return;
+    if (impl_->sched) ggml_backend_sched_free(impl_->sched);
+    if (impl_->blas) ggml_backend_free(impl_->blas);
+    if (impl_->allocator) ggml_gallocr_free(impl_->allocator);
 }
 
 std::vector<std::vector<int>> TransformerPipeline::pieces(const std::vector<LexicalToken> & tokens) const {

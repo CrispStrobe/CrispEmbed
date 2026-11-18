@@ -705,7 +705,8 @@ int crispembed_spacy_attach_ner(crispembed_spacy_context * context, const char *
                 }
                 const auto * values = static_cast<const float *>(tensor->data);
                 for (int64_t i = 0; i < ggml_nelements(tensor); ++i)
-                    require(std::isfinite(values[i]), ("Nonfinite spaCy NER tensor: " + item.first).c_str());
+                    if (!std::isfinite(values[i]))
+                        require(false, ("Nonfinite spaCy NER tensor: " + item.first).c_str());
                 weights.emplace(item.first, found->second);
             }
             require(core_sha256::file(ner_path) == expected_sha256, "NER GGUF file changed while opening");
@@ -797,7 +798,7 @@ crispembed_spacy_context * create_v2(const char * model_path, const char * expec
                 ("Non-F32 spaCy v2 tensor: " + item.first).c_str());
         const auto * values = static_cast<const float *>(tensor->data);
         for (int64_t i = 0; i < ggml_nelements(tensor); ++i)
-            require(std::isfinite(values[i]), ("Nonfinite spaCy v2 tensor: " + item.first).c_str());
+            if (!std::isfinite(values[i])) require(false, ("Nonfinite spaCy v2 tensor: " + item.first).c_str());
         weights.emplace(item.first, item.second);
     }
     require(core_sha256::file(model_path) == expected_sha256, "GGUF file changed while opening");
