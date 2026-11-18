@@ -40,23 +40,10 @@ sys.path.insert(0, str(ROOT / 'tests'))
 from pcs_parity import parse_ref
 
 
-def main():
-    out = ROOT / 'pcs-weight-replay'
-    out.mkdir(exist_ok=True)
-    repo = '1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase'
-    revision = 'd1769a597ce8dfaa070d436bc67d4ee761f58884'
-    paths = {name: Path(hf_hub_download(repo, name, revision=revision))
-             for name in ['model.onnx', 'sp.model', 'config.yaml']}
-    expected = {'model.onnx': 'c43ca686dabc237c3b06be834b9423c07580fef7e2b1a6c09976f7d60caa5d89',
-                'sp.model': '7f944d0be93b275f62e1913fd409f378ddbba108e57fe4a9cb47e8c047f6bef1'}
-    for name, digest in expected.items():
-        with paths[name].open('rb') as f:
-            if hashlib.file_digest(f, 'sha256').hexdigest() != digest:
-                raise ValueError('Original hash differs')
-    graph = onnx.load(str(paths['model.onnx']))
+def map_stored_weights(graph, model_path, out, selected_rows=None):
     nodes = {n.name: n for n in graph.graph.node}
     initializers = {i.name: i for i in graph.graph.initializer}
-    reader = gguf.GGUFReader(str(ROOT / '.pcs-models/pcs-xlmr-base-q4_k-imatrix.gguf'))
+    reader = gguf.GGUFReader(str(model_path))
     tensors = {t.name: t for t in reader.tensors}
     (out / 'inventory.json').write_text(json.dumps({
         'original': [{'name': i.name, 'shape': list(i.dims), 'type': i.data_type} for i in graph.graph.initializer],
@@ -78,6 +65,17 @@ def main():
             raise ValueError('Original/native tensor geometry/type differs: ' + name + ' / ' + source +
                              ' native=' + str(array.shape) + ' original=' + str(list(dst.dims)) +
                              ' original_type=' + str(dst.data_type))
+        if selected_rows is not None and source.startswith('emb.'):
+            original = numpy_helper.to_array(dst)
+            rows = selected_rows.get(source)
+            left, right = (original[rows], array[rows]) if rows is not None else (original, array)
+            delta = left.astype(np.float64) - right.astype(np.float64)
+            selected_rows['report'].append({'name': source, 'rows': None if rows is None else rows,
+                'shape': list(left.shape), 'max_absolute': float(np.max(np.abs(delta))),
+                'rms': float(np.sqrt(np.mean(delta * delta))),
+                'original_max_magnitude': float(np.max(np.abs(left))),
+                'stored_max_magnitude': float(np.max(np.abs(right))),
+                'bytes_equal': left.tobytes() == right.tobytes()})
         digest = hashlib.sha256(array.tobytes()).hexdigest()
         if name in mapped and mapped[name] != digest:
             raise ValueError('Conflicting original alias replacement')
@@ -121,6 +119,26 @@ def main():
     replace(nodes['/_decoder/_punct_emb/Gather'].input[0], 'head.post_emb.weight')
     if used != set(tensors):
         raise ValueError('Incomplete native tensor replacement: ' + repr(set(tensors) - used))
+    return manifest
+
+
+def main():
+    out = ROOT / 'pcs-weight-replay'
+    out.mkdir(exist_ok=True)
+    repo = '1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase'
+    revision = 'd1769a597ce8dfaa070d436bc67d4ee761f58884'
+    paths = {name: Path(hf_hub_download(repo, name, revision=revision))
+             for name in ['model.onnx', 'sp.model', 'config.yaml']}
+    expected = {'model.onnx': 'c43ca686dabc237c3b06be834b9423c07580fef7e2b1a6c09976f7d60caa5d89',
+                'sp.model': '7f944d0be93b275f62e1913fd409f378ddbba108e57fe4a9cb47e8c047f6bef1'}
+    for name, digest in expected.items():
+        with paths[name].open('rb') as f:
+            if hashlib.file_digest(f, 'sha256').hexdigest() != digest:
+                raise ValueError('Original hash differs')
+    graph = onnx.load(str(paths['model.onnx']))
+    nodes = {n.name: n for n in graph.graph.node}
+    initializers = {i.name: i for i in graph.graph.initializer}
+    manifest = map_stored_weights(graph, ROOT / '.pcs-models/pcs-xlmr-base-q4_k-imatrix.gguf', out)
     capture = ['/_decoder/_cap_head/_linears.1/Add_output_0', '/_decoder/Concat_4_output_0']
     capture += [n.output[0] for n in graph.graph.node if n.op_type == 'LayerNormalization']
     for name in capture:
@@ -131,7 +149,7 @@ def main():
     (out / 'summary.json').write_text(json.dumps(report, indent=2))
     onnx.save_model(graph, str(out / 'replay.onnx'), save_as_external_data=True,
                     all_tensors_to_one_file=True, location='replay-weights.bin', size_threshold=1024)
-    del graph, initializers, nodes, reader, tensors
+    del graph, initializers, nodes
     gc.collect()
     opts = ort.SessionOptions()
     opts.intra_op_num_threads = 2

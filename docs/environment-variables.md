@@ -17,6 +17,14 @@ need it, then run `python tools/list_env_vars.py --write`. See the
 
 ## Semantics
 
+The explicit PCS step diagnostic adds default-off `PCS_STEP_CAPTURE` and its
+fresh output directory `PCS_STEP_CAPTURE_PATH`. Default-off `PCS_STEP_REPLAY`
+requires capture and an explicit `PCS_STEP_REPLAY_REF` archive; it feeds
+independent reference values between observed operators for error attribution.
+These variables exist only in generated test builds, do not select production
+paths, and do not establish composed quality. See the
+[matched-operator contract](pcs-step-diff.md).
+
 The explicit test-only `punct-ab-capture` target uses default-off
 `PCS_GATE_CAPTURE` (`core_env::on`) and the output file path
 `PCS_GATE_CAPTURE_PATH`. These are unavailable in production builds. See the

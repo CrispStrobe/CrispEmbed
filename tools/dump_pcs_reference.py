@@ -36,6 +36,12 @@ import sys
 
 
 def main():
+    # Keep the established discrete reference mode unchanged. Step mode observes
+    # real ONNX operators and writes the shared crispembed-diff archive format.
+    if '--steps' in sys.argv:
+        sys.argv.remove('--steps')
+        from dump_pcs_steps import main as dump_steps
+        return dump_steps()
     ap = argparse.ArgumentParser()
     ap.add_argument("--model-dir", required=True,
                     help="dir holding model.onnx, sp.model, config.yaml")

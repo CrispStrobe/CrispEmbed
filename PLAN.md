@@ -1,5 +1,17 @@
 # CrispEmbed plan — open work (updated 18 November 2026)
 
+## PCS matched-operator continuation — 18 November 2026
+
+Direct user authorization continues the PCS diagnostic with the established
+tools dumper and shared crispembed-diff implementation. See the
+[matched-operator contract](docs/pcs-step-diff.md). Scope is original graph/code
+comparison, matched captures, identical stored weights/inputs, observer
+neutrality and independent-input replay. Production PCS, dependency pins,
+frozen references, gates and distributed artifacts remain unchanged. The
+original layer-boundary and stored-weight quality failures stay open.
+Prepared source is not a numerical result; record actual source-bound runs
+before claiming a finer first divergence or repair.
+
 ## Free OCR model priorities from ParseBench 2 — 18 November 2026
 
 The [updated OCR expansion roadmap](docs/ocr-benchmark-expansion.md#parsebench-2-model-priorities--18-november-2026)
