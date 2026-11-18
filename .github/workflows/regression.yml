@@ -27,6 +27,10 @@ on:
         description: 'Run only frozen PCS original/diagnostic neutrality and capture'
         type: boolean
         default: false
+      pcs_step_diff:
+        description: 'Only the matched PCS tools dumper/shared-diff operator diagnostic'
+        type: boolean
+        default: false
       pcs_profile:
         description: 'PCS diagnostic CPU profile (production gate is unchanged)'
         type: choice
@@ -406,8 +410,12 @@ jobs:
             --bin build/crispembed \
             --no-unpaper --fail-on-harm
 
+  pcs-step-diff:
+    if: github.event_name == 'workflow_dispatch' && inputs.pcs_capture == true && inputs.pcs_step_diff == true
+    uses: ./.github/workflows/pcs-step-diff.yml
+
   pcs-capture:
-    if: github.event_name == 'workflow_dispatch' && inputs.pcs_capture == true
+    if: github.event_name == 'workflow_dispatch' && inputs.pcs_capture == true && inputs.pcs_step_diff != true
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
