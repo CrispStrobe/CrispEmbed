@@ -154,7 +154,7 @@ def main() -> int:
     parser.add_argument("--catalog", type=Path, default=CATALOG)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    args.output.write_text(render(json.loads(args.catalog.read_text())))
+    args.output.write_text(render(json.loads(args.catalog.read_text(encoding='utf-8'))), encoding='utf-8', newline='\n')
     return 0
 
 

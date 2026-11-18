@@ -139,7 +139,7 @@ def main():
     scratch.mkdir()
     pd = _load('spacy_platform_distribution', ROOT / 'tools/spacy/platform_distribution.py')
     card = _load('spacy_model_card', ROOT / 'tools/spacy/model_card.py')
-    tracked = json.loads((ROOT / 'tools/spacy/hub_catalog.json').read_text())
+    tracked = json.loads((ROOT / 'tools/spacy/hub_catalog.json').read_text(encoding='utf-8'))
     source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     report = {'schema': 'crispembed.spacy.platform_package.v1', 'passed': False, 'source': source,
               'ref': os.environ.get('GITHUB_REF'), 'run': os.environ.get('GITHUB_RUN_ID'),
@@ -147,7 +147,7 @@ def main():
               'grammar_qualified': False, 'consumed_acceptance_or_grammar_panels_replayed': False}
 
     def save():
-        (out / 'platform-package.json').write_text(json.dumps(report, indent=2) + '\n')
+        (out / 'platform-package.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8', newline='\n')
 
     def run(label, command, cwd=ROOT, env=None):
         with (out / (label + '.log')).open('w') as log:
@@ -172,7 +172,7 @@ def main():
             converted = scratch / 'ner-converted'
             run('ner-conversion', [reference / 'bin/python', ROOT / 'models/convert-spacy-ner-to-gguf.py',
                                    '--wheel', wheel, '--output', converted])
-            manifest = json.loads((converted / 'ner-manifest.json').read_text())
+            manifest = json.loads((converted / 'ner-manifest.json').read_text(encoding='utf-8'))
             assert manifest['dev_environment'] is False and manifest['reference_python'] == '3.12.14'
             assert sorted(p.name for p in converted.iterdir()) == ['ner-manifest.json', 'ner.gguf']
             pin = manifest['files']['ner.gguf']
@@ -239,7 +239,7 @@ def main():
             run('ctest', ['ctest', '--test-dir', build, '--output-on-failure', *(['-C', 'Release'] if windows else [])])
             run('native-install', ['cmake', '--install', build, '--prefix', install, *config])
             cache_flags = {line.split(':', 1)[0]: line.split('=', 1)[1]
-                           for line in (build / 'CMakeCache.txt').read_text().splitlines()
+                           for line in (build / 'CMakeCache.txt').read_text(encoding='utf-8', errors='replace').splitlines()
                            if re.match(r'^(GGML_|CRISPEMBED_|SPACY_PCRE2_STATIC|CMAKE_BUILD_TYPE|CMAKE_SHARED_LINKER_FLAGS|CMAKE_OSX_|CMAKE_MSVC_|CMAKE_CXX_COMPILER_ID|CMAKE_CXX_COMPILER_VERSION|CMAKE_GENERATOR)', line)
                            and '=' in line}
             if windows:
@@ -308,7 +308,7 @@ def main():
                     code = subprocess.run([sys.executable, '-X', 'faulthandler', *map(str, command)],
                                           cwd=ROOT, stdout=log, stderr=subprocess.STDOUT).returncode
                 target = out / f'{label}.json'
-                return code, (json.loads(target.read_text()) if target.exists() else None)
+                return code, (json.loads(target.read_text(encoding='utf-8')) if target.exists() else None)
 
             report['text_api'] = {}
             code, api = check('text-api', [ROOT / 'tests/test_spacy_text_api.py', '--library', installed_library,
@@ -406,7 +406,7 @@ def main():
             report['passed'] = True
             report['dry_run'] = True
             save()
-            (out / 'summary.md').write_text('# spaCy distribution dry run\n\nNothing was uploaded.\n')
+            (out / 'summary.md').write_text('# spaCy distribution dry run\n\nNothing was uploaded.\n', encoding='utf-8', newline='\n')
             return
         subprocess.run([sys.executable, '-m', 'pip', 'install', 'huggingface_hub==0.36.0'], check=True)
         from huggingface_hub import CommitOperationAdd, HfApi
@@ -441,7 +441,7 @@ def main():
 
         if entry:
             receipt = payload / 'receipt.json'
-            receipt.write_text(json.dumps(report, indent=2) + '\n')
+            receipt.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8', newline='\n')
             revision, fresh, report['package_publication'] = publish(
                 {entry['path']: payload / pd.archive_name(args.platform), entry['receipt']: receipt},
                 f'Publish {args.platform} spaCy capsule built from CrispEmbed {source[:12]}')
@@ -463,8 +463,8 @@ def main():
         catalog = catalog_with(entry, current_hub_catalog(tracked))
         if ner:
             catalog['ner'] = ner
-        (payload / HUB_CATALOG).write_text(json.dumps(catalog, indent=2) + '\n')
-        (payload / 'README.md').write_text(card.render(catalog))
+        (payload / HUB_CATALOG).write_text(json.dumps(catalog, indent=2) + '\n', encoding='utf-8', newline='\n')
+        (payload / 'README.md').write_text(card.render(catalog), encoding='utf-8', newline='\n')
         revision, _, report['card_publication'] = publish(
             {HUB_CATALOG: payload / HUB_CATALOG, 'README.md': payload / 'README.md'},
             'Update model card and platform catalog')
@@ -472,7 +472,7 @@ def main():
         save()
         (out / 'summary.md').write_text('# spaCy Hub publication\n\n' + json.dumps(
             {k: report[k]['revision'] for k in ('package_publication', 'ner_publication', 'card_publication')
-             if k in report}) + '\n')
+             if k in report}) + '\n', encoding='utf-8', newline='\n')
         print(json.dumps({'passed': True, 'card_revision': revision,
                           'package_revision': report.get('package_publication', {}).get('revision')}))
     except Exception as exc:
