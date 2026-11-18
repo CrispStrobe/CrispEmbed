@@ -72,7 +72,18 @@ struct pcs_step_trace {
     void build(ggml_context * context, ggml_cgraph * graph) {
         if (!enabled) return;
         for (auto & item : tensors) {
-            if (!ggml_is_contiguous(item.second)) item.second = ggml_cont(context, item.second);
+            // A contiguous reshape is still a view. Marking only that view
+            // OUTPUT does not retain its unmarked backing allocation after
+            // the final inference consumer. A future DUP consumer holds the
+            // source alive, then owns its own retained, non-view output.
+            // Never return this snapshot to the inference graph.
+            if (item.second->type == GGML_TYPE_F32) {
+                item.second = ggml_dup(context, item.second);
+                if (item.second->view_src || !ggml_is_contiguous(item.second))
+                    throw std::runtime_error("PCS snapshot does not own contiguous storage");
+            } else if (item.second->view_src || item.second->op != GGML_OP_NONE) {
+                throw std::runtime_error("PCS integer capture must be an original input leaf");
+            }
             ggml_set_name(item.second, item.first.c_str());
             ggml_set_output(item.second);
             ggml_build_forward_expand(graph, item.second);

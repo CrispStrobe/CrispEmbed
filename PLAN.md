@@ -12,6 +12,13 @@ original layer-boundary and stored-weight quality failures stay open.
 Prepared source is not a numerical result; record actual source-bound runs
 before claiming a finer first divergence or repair.
 
+The first scoped operator run44334585175 completed all arms and13 source
+controls. Independent raw metrics locate the stored-weight difference at token
+lookup and the legacy same-weight difference at layer0 query multiplication.
+The composed context capture exposed a view/backing-allocation lifetime limit;
+the diagnostic now prepares owned snapshots. Its fresh actual qualification is
+pending. Keep all first-run negatives, original gates and production bytes.
+
 ## Free OCR model priorities from ParseBench 2 — 18 November 2026
 
 The [updated OCR expansion roadmap](docs/ocr-benchmark-expansion.md#parsebench-2-model-priorities--18-november-2026)

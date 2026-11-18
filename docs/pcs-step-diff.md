@@ -60,3 +60,42 @@ Replay is local-error attribution, not composed inference or quality evidence.
 The dispatch-only workflow retains small intermediates and original failures.
 It does not upload original/expanded model graphs, weights, libraries or
 production artifacts. Prepared source is not an executed model result.
+
+## First measured panel and observer storage limit
+
+Run [44334585175](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44334585175)
+at `21dd802a7b57249a960fab32075bacc10001d789` builds both variants and passes
+all 13 source controls. Both original graph arms and all six native arms
+execute. All four head dumps and decoded bytes are neutral with observation
+enabled. The 214 mapped tensor identities match the retained replay exactly;
+expanded original/stored captures remain within 0.0001 of the retained anchors.
+
+Independent raw-array review verifies all five 266-stage reports. Original versus
+stored weights first differs at token lookup, maximum 0.04326669872; position
+lookup differs by 0.04800090566. Type embeddings and embedding normalization
+scale/bias are byte-identical. Legacy versus the same stored weights first
+differs at layer-0 query multiplication, maximum 0.07043683529. Reference-input
+replay retains that local difference (0.07043671608), separating it from
+upstream amplification. F32-materialized reference-input replay passes all
+266 boundaries; this does not repair the stored-weight decoded failure.
+
+The composed attention-context snapshots have a separate observer defect:
+contiguous reshape tensors are views, not owned snapshots. The pinned allocator
+can release their unmarked backing allocation after the last inference consumer
+even when the view itself is marked as output. These context captures cannot
+be interpreted as native arithmetic errors. Independent raw inspection finds
+the entire layer-0 context capture identical to the later attention-bias capture;
+none of the six token/head/channel permutations explains it. At full-sequence
+token0/channel720 it reads8.556599617 instead of−0.09441738576. Other reported
+negatives, including small QK absolute-budget exceedances, remain preserved.
+
+The observer now prepares independent DUP output tensors. Their future graph
+consumers retain the source allocation until copying; the copies then own
+retained storage. This changes diagnostic observation only. Fresh actual
+neutrality and capture qualification of this correction remain pending; the
+first panel is never relabelled as having used the corrected observer.
+
+The first panel independently confirms four-head/decoded OFF/ON equality for
+both native paths. Original-driver versus legacy OFF captured decoded equality
+only, not original four-head bytes. The controller now prepares that missing
+four-head control too; its execution remains pending.

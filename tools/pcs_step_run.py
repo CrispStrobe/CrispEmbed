@@ -44,8 +44,15 @@ def main():
     for key in ['CRISPEMBED_DIFF_COS_THRESHOLD', 'CRISPEMBED_DIFF_DUMP_DIR', 'PCS_FLASH_ATTN',
                 'PCS_DUMP_LAYER', 'PCS_DUMP_HIDDEN', 'PCS_STEP_REPLAY_REF', 'PCS_STEP_CAPTURE_PATH']:
         base.pop(key, None)
-    if run('original-driver', [ROOT / 'build/punct-ab', model, input_text], base):
+    original_directory = out / 'original-driver'
+    original_directory.mkdir()
+    original_environment = dict(base)
+    for head in ['LOGITS', 'PRE', 'SEG', 'CAP']:
+        original_environment['PCS_DUMP_' + head] = str(original_directory / (head.lower() + '.txt'))
+    if run('original-driver', [ROOT / 'build/punct-ab', model, input_text], original_environment):
         raise RuntimeError('Original driver failed')
+    original_heads = {head: (original_directory / (head.lower() + '.txt')).read_bytes()
+                      for head in ['LOGITS', 'PRE', 'SEG', 'CAP']}
     composed_heads = {}
     def native(label, binary, materialized=False, captured=False, replay=None):
         directory = out / label
@@ -75,6 +82,8 @@ def main():
                 composed_heads[control] = (heads, text)
                 if not materialized and text != (out / 'original-driver.stdout').read_bytes():
                     raise RuntimeError('Disabled observer changes original decoded output')
+                if not materialized and heads != original_heads:
+                    raise RuntimeError('Disabled observer changes original head bytes')
         if captured:
             pack(directory, directory / 'capture.gguf')
         save()
