@@ -12,6 +12,7 @@
 #include <cstring>
 #include <cmath>
 #include <vector>
+#include <algorithm>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -382,6 +383,106 @@ static void test_full_pipeline() {
     scan_cleanup_free(ctx);
 }
 
+static void cleanup_gate(const char * name, const char * value) {
+#ifdef _WIN32
+    _putenv_s(name, value ? value : "");
+#else
+    if (value)
+        setenv(name, value, 1);
+    else
+        unsetenv(name);
+#endif
+}
+
+// Independent, deliberately slow centered rectangular closing oracle.
+static std::vector<float> reference_whiten(const std::vector<float> & input, int w, int h, int kernel) {
+    if (kernel % 2 == 0) ++kernel;
+    const int half = kernel / 2;
+    auto extremum = [&](const std::vector<float> & src, bool minimum) {
+        std::vector<float> dst(src.size());
+        for (int y = 0; y < h; ++y)
+            for (int x = 0; x < w; ++x) {
+                float value = minimum ? 1.0f : 0.0f;
+                for (int yy = std::max(0, y - half); yy <= std::min(h - 1, y + half); ++yy)
+                    for (int xx = std::max(0, x - half); xx <= std::min(w - 1, x + half); ++xx)
+                        value = minimum ? std::min(value, src[yy * w + xx]) : std::max(value, src[yy * w + xx]);
+                dst[y * w + x] = value;
+            }
+        return dst;
+    };
+    auto bg = extremum(extremum(input, false), true);
+    for (size_t i = 0; i < bg.size(); ++i) bg[i] = std::clamp(input[i] / std::max(bg[i], .01f), 0.0f, 1.0f);
+    return bg;
+}
+
+static void test_centered_whitening() {
+    printf("\n=== Centered whitening reference and mirrored lighting ===\n");
+    const int w = 43, h = 37;
+    std::vector<float> input(w * h), output(input.size());
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) input[y * w + x] = ((x * 37 + y * 71) % 223 + 20) / 255.0f;
+    for (int kernel : { 1, 3, 20, 51, 101 }) {
+        cleanup_gate("CRISPEMBED_SCAN_CENTERED_WHITEN", nullptr);
+        scan_cleanup_whiten(input.data(), w, h, kernel, output.data());
+        const auto expected = reference_whiten(input, w, h, kernel);
+        float error = 0;
+        for (size_t i = 0; i < output.size(); ++i) error = std::max(error, fabsf(output[i] - expected[i]));
+        CHECK(error < 1e-6f,
+              "whitening matches independent centered closing, including boundaries and oversized windows");
+    }
+    for (int direction : { -1, 1 }) {
+        for (int y = 0; y < h; ++y)
+            for (int x = 0; x < w; ++x) input[y * w + x] = .3f + .6f * float(direction == 1 ? x : w - 1 - x) / (w - 1);
+        scan_cleanup_whiten(input.data(), w, h, 11, output.data());
+        float error = 0;
+        for (int y = 10; y < h - 10; ++y)
+            for (int x = 10; x < w - 10; ++x) error = std::max(error, fabsf(output[y * w + x] - 1.0f));
+        CHECK(error < 1e-6f, "both lighting directions whiten identically in the ramp interior");
+    }
+    // Preserve old output for explicit false spellings, never presence-check gates.
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) input[y * w + x] = .3f + .6f * float(w - 1 - x) / (w - 1);
+    std::vector<float> legacy(input.size());
+    cleanup_gate("CRISPEMBED_SCAN_CENTERED_WHITEN", "0");
+    scan_cleanup_whiten(input.data(), w, h, 11, legacy.data());
+    CHECK(legacy[w * (h / 2) + w / 2] < .99f, "legacy trailing-window replay remains available");
+    for (const char * off : { "false", "OFF", "no" }) {
+        cleanup_gate("CRISPEMBED_SCAN_CENTERED_WHITEN", off);
+        scan_cleanup_whiten(input.data(), w, h, 11, output.data());
+        CHECK(output == legacy, "false spellings select the same legacy whitening path");
+    }
+    cleanup_gate("CRISPEMBED_SCAN_CENTERED_WHITEN", nullptr);
+}
+
+static void test_worksheet_rules() {
+    printf("\n=== Thin worksheet rules versus isolated dust ===\n");
+    const int w = 160, h = 100;
+    std::vector<uint8_t> input(w * h, 240);
+    for (int x = 10; x < 150; ++x) input[30 * w + x] = 20;
+    for (int y = 10; y < 90; ++y) input[y * w + 80] = 20;
+    input[5 * w + 5] = 0;
+    auto * ctx = scan_cleanup_init(nullptr, 1);
+    auto params = scan_cleanup_defaults();
+    params.deskew = params.crop_borders = params.whiten_background = params.blackfilter = 0;
+    params.binarize = 1;
+    for (const char * state : { "1", "0" }) {
+        cleanup_gate("CRISPEMBED_SCAN_PRESERVE_RULES", state);
+        uint8_t * output = nullptr;
+        int ow = 0, oh = 0;
+        const int rc = scan_cleanup_process(ctx, input.data(), w, h, 1, params, &output, &ow, &oh);
+        CHECK(rc == 0 && output && ow == w && oh == h, "worksheet cleanup retains dimensions");
+        if (!output) continue;
+        int retained = 0;
+        for (int x = 11; x < 149; ++x) retained += output[(30 * w + x) * 3] == 0;
+        CHECK(state[0] == '1' ? retained == 138 : retained < 10,
+              "thin horizontal rules survive; legacy removal is separately replayable");
+        CHECK(output[(5 * w + 5) * 3] == 255, "isolated dust is still removed");
+        scan_cleanup_free_image(output);
+    }
+    cleanup_gate("CRISPEMBED_SCAN_PRESERVE_RULES", nullptr);
+    scan_cleanup_free(ctx);
+}
+
 static int crispembed_test_main(int argc, char ** argv) {
     if (argc > 1) {
         // Process a real image file
@@ -401,6 +502,8 @@ static int crispembed_test_main(int argc, char ** argv) {
     test_deskew_consensus();
     test_deskew_rgb();
     test_background_whiten();
+    test_centered_whitening();
+    test_worksheet_rules();
     test_full_pipeline();
 
     printf("\n=======================\n");

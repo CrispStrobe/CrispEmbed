@@ -8,6 +8,7 @@
 #include "ocr_pdf_font.h"
 #include "ocr_pdf_metrics.h"
 #include "ocr_pdf_srgb.h"
+#include "core/env_gate.h"
 #include <SheenBidi/SheenBidi.h>
 
 #include <algorithm>
@@ -675,26 +676,46 @@ static int pdf_image(pdf_document & doc, const stored_page & page) {
     if (width != page.width || height != page.height)
         throw std::runtime_error("PDF page image changed dimensions while being read");
     const size_t pixels = size_t(width) * size_t(height);
-    std::string rgb(pixels * 3, '\0');
+    bool binary = !core_env::explicitly_off("CRISPEMBED_PDF_PACK_BINARY");
     for (size_t i = 0; i < pixels; i++) {
         const unsigned int alpha = rgba.get()[i * 4 + 3];
         for (size_t c = 0; c < 3; c++)
-            rgb[i * 3 + c] = char((rgba.get()[i * 4 + c] * alpha + 255 * (255 - alpha) + 127) / 255);
+            rgba.get()[i * 4 + c] = (rgba.get()[i * 4 + c] * alpha + 255 * (255 - alpha) + 127) / 255;
+        const auto * pixel = rgba.get() + i * 4;
+        binary = binary && (pixel[0] == 0 || pixel[0] == 255) && pixel[0] == pixel[1] && pixel[0] == pixel[2];
+    }
+    std::string raster;
+    if (binary) {
+        // PDF DeviceGray uses 0=black, 1=white. Each row begins on a byte
+        // boundary; keep unused bits white for widths not divisible by eight.
+        const size_t stride = (size_t(width) + 7) / 8;
+        raster.assign(stride * size_t(height), char(255));
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                if (rgba.get()[(size_t(y) * width + x) * 4] == 0)
+                    raster[size_t(y) * stride + size_t(x) / 8] &= char(~(0x80 >> (x % 8)));
+            }
+        }
+    } else {
+        raster.resize(pixels * 3);
+        for (size_t i = 0; i < pixels; ++i)
+            for (size_t c = 0; c < 3; ++c) raster[i * 3 + c] = char(rgba.get()[i * 4 + c]);
     }
     rgba.reset();
     int compressed_size = 0;
     std::unique_ptr<unsigned char, decltype(&std::free)> compressed(
-        stbi_zlib_compress(reinterpret_cast<unsigned char *>(&rgb[0]), int(rgb.size()), &compressed_size, 8),
+        stbi_zlib_compress(reinterpret_cast<unsigned char *>(&raster[0]), int(raster.size()), &compressed_size, 8),
         &std::free);
     if (!compressed || compressed_size <= 0) throw std::runtime_error("Could not compress PDF page image");
     doc.check_bytes(size_t(compressed_size));
-    std::string().swap(rgb);
+    std::string().swap(raster);
     std::string encoded(reinterpret_cast<char *>(compressed.get()), size_t(compressed_size));
     compressed.reset();
-    return doc.stream(std::move(encoded),
-                      "/Type /XObject /Subtype /Image /Width " + std::to_string(width) + " /Height " +
-                          std::to_string(height) +
-                          " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Interpolate false /Filter /FlateDecode");
+    return doc.stream(
+        std::move(encoded),
+        "/Type /XObject /Subtype /Image /Width " + std::to_string(width) + " /Height " + std::to_string(height) +
+            (binary ? " /ColorSpace /DeviceGray /BitsPerComponent 1" : " /ColorSpace /DeviceRGB /BitsPerComponent 8") +
+            " /Interpolate false /Filter /FlateDecode");
 }
 
 static void pdf_word(std::string & content, const stored_word & word, int page_height,

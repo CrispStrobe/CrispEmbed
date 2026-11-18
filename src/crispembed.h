@@ -1237,7 +1237,9 @@ typedef struct {
     float despeckle_thresh;   // speck vs local-median darkness gap 0..1, default 0.25
     int blackfilter;          // 1 = clear large SOLID dark regions (default: 1)
     float blackfilter_thresh; // dark-pixel threshold 0..1, default 0.20
-    int deskew_consensus;     // 1 = cross-check Hough vs differential-square-sum
+    int deskew_consensus;     // 2 = rectify ruled photos, then fall back to consensus;
+                              // older libraries treat 2 as ordinary consensus.
+                              // 1 = cross-check Hough vs differential-square-sum
                               //     detectors; rotate only on agreement (default: 1)
 } crispembed_scan_cleanup_params;
 

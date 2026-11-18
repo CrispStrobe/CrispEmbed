@@ -1,0 +1,32 @@
+{
+  "schema": "crispembed.pr235.build-guard-repair.v1",
+  "initial_head": "6dffe3029cad4f3a8c1d84f1baa11bf68857f3a9",
+  "base": "04e8445823d82591120203e953365582d7ba33be",
+  "initial_run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/44188032296",
+  "initial_static_guards_job": 134440287776,
+  "initial_build_result_job": 134454301549,
+  "initial_failure": {
+    "step": "Unlimited-OCR-2 quantizer policy equals its measured recipe (model-free)",
+    "assertion": "complete and worst_position == 1 and abs(final_cos_min - want) < 1e-9",
+    "observed": {
+      "complete": true,
+      "final_cos_min": 0.49481255505973076,
+      "final_cos_mean": 0.5492043140022717,
+      "worst_position": 1,
+      "top1_disagreements": [1, 2],
+      "max_abs": 28.725472364385496
+    },
+    "aggregate": "guards did not succeed; selected build, sibling, Android, iOS and bundle jobs were skipped"
+  },
+  "runner_image": "https://github.com/actions/runner-images/blob/ubuntu26/20261111.196/images/ubuntu/Ubuntu2604-Readme.md",
+  "runner_system_python": "3.14.4",
+  "diagnosis": "Pinned NumPy 2.2.6 ran under an unpinned system Python newer than its supported Python 3.10-3.13 range. Local Python 3.13 / NumPy 2.2.6 passes the unchanged probe. Attribution to a particular NumPy operation is not established.",
+  "repair": "Select Python 3.12 with actions/setup-python before installing NumPy 2.2.6; retain the exact assertion, fixture, scorer and recipe.",
+  "local_validation": {
+    "quantizer_policy_and_synthetic_cosine": "pass",
+    "ci_selection_controls": 54,
+    "native_builds": 0,
+    "model_forwards": 0
+  },
+  "limits": "Hosted exact-head builds still required. No model quality, release, app pin or new platform qualification follows. Original failed run remains retained."
+}
