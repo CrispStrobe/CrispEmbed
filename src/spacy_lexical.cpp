@@ -188,6 +188,17 @@ std::string python_regex(const std::string & source) {
             i += 3;
             continue;
         }
+        // Python's unicode flag is implicit in PCRE2_UTF; keep the others.
+        if (source.compare(i, 5, "(?iu)") == 0 || source.compare(i, 5, "(?ui)") == 0) {
+            out += "(?i)";
+            i += 4;
+            continue;
+        }
+        if (source.compare(i, 4, "(?i)") == 0) {
+            out += "(?i)";
+            i += 3;
+            continue;
+        }
         const char c = source[i];
         if (c == '[') in_class = true;
         if (c == ']') in_class = false;
@@ -316,9 +327,19 @@ std::uint64_t spacy_string_id(std::string_view text) {
 
 struct LexicalModel::Impl {
     Regex prefix, suffix, infix, url;
+    // Optional anchored `token_match` (format 2 only; e.g. French hyphenated
+    // words), compiled as separate top-level alternatives: re.match on the
+    // original alternation succeeds iff one alternative matches at 0.
+    std::vector<std::unique_ptr<Regex>> token;
     std::map<std::string, std::vector<ExceptionPiece>, std::less<>> exceptions;
-    std::map<std::uint64_t, std::string> hash_norms;
-    std::map<std::string, std::string, std::less<>> text_norms;
+    // NORM lookups in spaCy's _get_attr_unless_lookup order (first hit wins),
+    // keyed by the token's string ID or by its text; fallback is lowercase.
+    struct NormTable {
+        bool by_hash = false;
+        std::map<std::uint64_t, std::string> hashes;
+        std::map<std::string, std::string, std::less<>> texts;
+    };
+    std::vector<NormTable> norm_tables;
     std::map<std::uint32_t, std::string> lower;
     Ranges alpha, digit, upper, space;
     std::map<std::string, std::vector<SpecialPattern>, std::less<>> specials_by_first;
@@ -341,7 +362,20 @@ struct LexicalModel::Impl {
         require(field(source, "revision", Json::string_t).s == "43311999028032fd81bef77a75fdb4fa96803c98",
                 "Unsupported lexical source revision");
         const auto & tokenizer = field(root, "tokenizer", Json::object_t);
-        field(tokenizer, "token_match", Json::null_t);
+        if (closed) {
+            field(tokenizer, "token_match", Json::null_t);
+        } else if (const auto * pattern = tokenizer.get("token_match"); pattern && pattern->kind == Json::object_t) {
+            const auto & flags = field(*pattern, "flags", Json::string_t).s;
+            require(flags == "iu" || flags == "u" || flags == "i", "Unsupported token_match flags");
+            const auto & alternatives = field(*pattern, "alternatives", Json::array_t).a;
+            require(!alternatives.empty() && alternatives.size() <= 4096, "Invalid token_match alternatives");
+            for (const auto & alternative : alternatives) {
+                require(alternative.kind == Json::string_t, "Invalid token_match alternative");
+                token.push_back(std::make_unique<Regex>("(?" + flags + ")" + alternative.s));
+            }
+        } else {
+            field(tokenizer, "token_match", Json::null_t);
+        }
         require(field(tokenizer, "faster_heuristics", Json::bool_t).b, "Unsupported tokenizer special-case policy");
         const auto & cases = field(tokenizer, "exceptions", Json::object_t);
         require(closed ? cases.o.size() == 417 : !cases.o.empty() && cases.o.size() <= 20000,
@@ -369,19 +403,26 @@ struct LexicalModel::Impl {
             require(combined == item.first, "Exception does not reconstruct original source");
         }
         const auto & norms = field(root, "norm_lookup_precedence", Json::array_t).a;
-        require(norms.size() == 2 && field(norms[0], "key_kind", Json::string_t).s == "hash_uint64_decimal" &&
-                    field(norms[1], "key_kind", Json::string_t).s == "text",
+        require(closed ? norms.size() == 2 && field(norms[0], "key_kind", Json::string_t).s == "hash_uint64_decimal" &&
+                             field(norms[1], "key_kind", Json::string_t).s == "text"
+                       : norms.size() <= 8,
                 "Unsupported normalization precedence");
-        for (const auto & item : field(norms[0], "entries", Json::object_t).o) {
-            require(item.second.kind == Json::string_t, "Invalid normalization value");
-            hash_norms.emplace(decimal_id(item.first), item.second.s);
+        for (const auto & table : norms) {
+            const auto & kind = field(table, "key_kind", Json::string_t).s;
+            require(kind == "hash_uint64_decimal" || kind == "text", "Unsupported normalization key kind");
+            NormTable parsed;
+            parsed.by_hash = kind == "hash_uint64_decimal";
+            for (const auto & item : field(table, "entries", Json::object_t).o) {
+                require(item.second.kind == Json::string_t, "Invalid normalization value");
+                if (parsed.by_hash)
+                    parsed.hashes.emplace(decimal_id(item.first), item.second.s);
+                else
+                    parsed.texts.emplace(item.first, item.second.s);
+            }
+            require(parsed.hashes.size() + parsed.texts.size() <= 1000000, "Normalization table exceeds bound");
+            norm_tables.push_back(std::move(parsed));
         }
-        for (const auto & item : field(norms[1], "entries", Json::object_t).o) {
-            require(item.second.kind == Json::string_t, "Invalid normalization value");
-            text_norms.emplace(item.first, item.second.s);
-        }
-        require(closed ? hash_norms.size() == 2 && text_norms.size() == 45
-                       : hash_norms.size() <= 1000000 && text_norms.size() <= 100000,
+        require(!closed || (norm_tables[0].hashes.size() == 2 && norm_tables[1].texts.size() == 45),
                 "Changed normalization inventory");
         const auto & unicode = field(root, "unicode", Json::object_t);
         require(field(unicode, "unicode_version", Json::string_t).s == "15.0.0" &&
@@ -446,6 +487,13 @@ struct LexicalModel::Impl {
         return true;
     }
 
+    // Python re.match: anchored at the start, not necessarily the full string.
+    bool token_matches(std::string_view current) const {
+        for (const auto & alternative : token)
+            if (alternative->search(current, 0, PCRE2_ANCHORED).found) return true;
+        return false;
+    }
+
     void split_span(std::string_view text, std::size_t start, std::size_t end, bool with_special,
                     std::vector<Piece> & out, const CancelCheck & cancelled) const {
         if (append_special(text, start, end, out, with_special)) return;
@@ -453,6 +501,7 @@ struct LexicalModel::Impl {
         while (start < end) {
             check_cancel(cancelled);
             const auto current = text.substr(start, end - start);
+            if (token_matches(current)) break;
             if (with_special && exceptions.find(current) != exceptions.end()) break;
             const auto pre = prefix.search(current);
             const auto pre_len = pre.found ? pre.end - pre.start : 0;
@@ -485,7 +534,7 @@ struct LexicalModel::Impl {
         if (start < end && !append_special(text, start, end, out, with_special)) {
             const auto current = text.substr(start, end - start);
             const auto url_match = url.search(current);
-            if (url_match.found && url_match.start == 0) {
+            if (token_matches(current) || (url_match.found && url_match.start == 0)) {
                 push(out, { start, end, false, nullptr });
             } else {
                 std::size_t offset = 0;
@@ -623,12 +672,19 @@ struct LexicalModel::Impl {
             token.is_space = token.is_space && in_ranges(decoded.scalars[i], space);
         if (piece.exception && piece.exception->has_norm) {
             token.norm = piece.exception->norm;
-        } else if (const auto found = hash_norms.find(token.orth_id); found != hash_norms.end()) {
-            token.norm = found->second;
-        } else if (const auto found = text_norms.find(token.text); found != text_norms.end()) {
-            token.norm = found->second;
         } else {
-            token.norm = lowered(decoded, token.scalar_start, token.scalar_end);
+            const std::string * found = nullptr;
+            for (const auto & table : norm_tables) {
+                if (table.by_hash) {
+                    const auto hit = table.hashes.find(token.orth_id);
+                    if (hit != table.hashes.end()) found = &hit->second;
+                } else {
+                    const auto hit = table.texts.find(token.text);
+                    if (hit != table.texts.end()) found = &hit->second;
+                }
+                if (found) break;
+            }
+            token.norm = found ? *found : lowered(decoded, token.scalar_start, token.scalar_end);
         }
         token.prefix = std::string(text.substr(piece.start, decoded.bytes[token.scalar_start + 1] - piece.start));
         const auto suffix_start =
@@ -693,7 +749,7 @@ bool LexicalModel::python_isalpha(std::string_view text) const {
 }
 
 LexicalModel::LexicalModel(const std::string & authenticated_resource_json) {
-    require(authenticated_resource_json.size() <= 32 * 1024 * 1024, "Lexical resource file exceeds bound");
+    require(authenticated_resource_json.size() <= 128 * 1024 * 1024, "Lexical resource file exceeds bound");
     const auto root = core_json_value::parse(authenticated_resource_json);
     unique_finite_json(root);
     impl_ = std::make_unique<Impl>(root);

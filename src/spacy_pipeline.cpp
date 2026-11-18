@@ -375,8 +375,9 @@ std::string read_resources(const char * path, const char * expected_sha256, bool
     std::ifstream stream(path, std::ios::binary | std::ios::ate);
     require(static_cast<bool>(stream), "Cannot open spaCy resources file");
     const auto length = stream.tellg();
-    require(length > 0 && length <= static_cast<std::streamoff>(k_max_model_bytes),
-            "Resource file size outside admitted bounds");
+    // v2 resources may carry large lemma lookup tables (French: 217k entries).
+    const size_t bound = german_profile ? k_max_model_bytes : 128u * 1024u * 1024u;
+    require(length > 0 && length <= static_cast<std::streamoff>(bound), "Resource file size outside admitted bounds");
     std::string bytes(static_cast<size_t>(length), '\0');
     stream.seekg(0);
     stream.read(bytes.data(), static_cast<std::streamsize>(bytes.size()));

@@ -179,10 +179,17 @@ def extract(nlp, source: Path):
     if "tagger" in pipes:
         labels["tagger"] = list(nlp.get_pipe("tagger").labels)
     if "morphologizer" in pipes:
+        from spacy.symbols import NAMES
+        from spacy.tokens import MorphAnalysis
         morph = nlp.get_pipe("morphologizer")
-        labels["morphologizer"] = {"labels": list(morph.labels), "morph": morph.cfg["labels_morph"],
-                                   "pos": morph.cfg["labels_pos"], "overwrite": morph.cfg["overwrite"],
-                                   "extend": morph.cfg["extend"]}
+        require(morph.cfg["overwrite"] is True and morph.cfg["extend"] is False,
+                "Only overwrite/no-extend morphologizers are supported")
+        # Per label: POS symbol name and canonical morphology (as assigned).
+        labels["morphologizer"] = {
+            "labels": list(morph.labels), "overwrite": True, "extend": False,
+            "assign": [{"pos": NAMES[morph.cfg["labels_pos"][label]] if morph.cfg["labels_pos"][label] else "",
+                        "morph": str(MorphAnalysis(nlp.vocab, morph.cfg["labels_morph"][label]))}
+                       for label in morph.labels]}
     labels["parser"] = {"moves": export_transition(nlp, "parser", "parser.", tensors, origins, 8),
                         "learn_tokens": nlp.get_pipe("parser").cfg.get("learn_tokens", False),
                         "features": ["B0", "B1", "S0", "S1", "S2", "L(B0,1)", "L(S0,1)", "R(S0,1)"]}
@@ -229,6 +236,8 @@ def shared_lexical(nlp, source: Path):
                                "url_match", "exceptions", "faster_heuristics"}, "Tokenizer schema changed")
     tokenizer["exceptions"] = {key: [{reverse[attr]: value for attr, value in item.items()} for item in entries]
                                for key, entries in tokenizer["exceptions"].items()}
+    if tokenizer["token_match"] is not None:
+        tokenizer["token_match"] = split_alternation(tokenizer["token_match"])
     norm_tables = []
     getter = nlp.vocab.lex_attr_getters[NORM]
     while isinstance(getter, functools.partial):
@@ -240,6 +249,45 @@ def shared_lexical(nlp, source: Path):
         getter = getter.args[0]
     require(getter.__name__ == "lower", "Unknown fallback NORM getter")
     return {"tokenizer": tokenizer, "norm_lookup_precedence": norm_tables}
+
+
+def split_alternation(pattern: str):
+    """Split `(?flags)(?:a)|(?:b)|...` into its top-level alternatives.
+
+    spaCy calls token_match with re.match, so the whole pattern matches iff
+    one alternative matches at position 0. Separate alternatives stay below
+    PCRE2's compiled-pattern size limit (French: one 1.45 MB alternation).
+    Rejoining must reproduce the pattern exactly, and every part must compile.
+    """
+    import re
+    flags = re.match(r"\(\?([a-zA-Z]+)\)", pattern)
+    require(flags is not None, "token_match without a leading flag group")
+    inner, parts, depth, in_class, start, i = pattern[flags.end():], [], 0, False, 0, 0
+    while i < len(inner):
+        c = inner[i]
+        if c == "\\":
+            i += 2
+            continue
+        if in_class:
+            in_class = c != "]"
+        elif c == "[":
+            in_class = True
+            if inner[i + 1:i + 2] == "]":
+                i += 1
+        elif c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+        elif c == "|" and depth == 0:
+            parts.append(inner[start:i])
+            start = i + 1
+        i += 1
+    parts.append(inner[start:])
+    require(depth == 0 and not in_class and flags.group(0) + "|".join(parts) == pattern,
+            "token_match split does not reproduce the pattern")
+    for part in parts:
+        re.compile(flags.group(0) + part)
+    return {"flags": flags.group(1), "alternatives": parts}
 
 
 def convert(wheel: Path, output: Path):

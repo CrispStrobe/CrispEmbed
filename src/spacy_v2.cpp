@@ -217,7 +217,14 @@ RuleLemmatizer parse_lemmatizer(const Json & value, const std::string & language
                 require(c >= '0' && c <= '9', "Invalid lemma_lookup key");
                 key = key * 10 + static_cast<std::uint64_t>(c - '0');
             }
-            result.lookup.emplace(key, text(item.second, "lemma_lookup value"));
+            // spaCy stores one-element lists; both lookup paths use element 0.
+            const auto & value = item.second;
+            if (value.kind == Json::array_t) {
+                require(!value.a.empty(), "Empty lemma_lookup value");
+                result.lookup.emplace(key, text(value.a[0], "lemma_lookup value"));
+            } else {
+                result.lookup.emplace(key, text(value, "lemma_lookup value"));
+            }
         }
     }
     return result;
@@ -253,7 +260,7 @@ struct PipelineV2::Impl {
     std::string language;
     std::vector<std::string> components;
     std::vector<std::string> tags;
-    std::vector<MorphLabel> morphology;
+    std::vector<MorphLabel> morphology; // morphologizer: label -> (POS, canonical morph)
     std::vector<std::string> parser_moves;
     std::vector<Rule> rules;
     RuleLemmatizer lemmatizer;
@@ -374,8 +381,50 @@ struct PipelineV2::Impl {
         return false;
     }
 
+    // spaCy FrenchLemmatizer.rule_lemmatize / Lemmatizer.lookup_lemmatize.
+    std::string french_lemma(const TokenAnnotation & annotation, const LexicalToken & token) const {
+        const auto pos = ascii_lower(annotation.pos);
+        if (pos.empty() || pos == "eol" || pos == "space") return lexical->python_lower(token.text);
+        static const std::set<std::string> rule_pos = { "noun",  "verb", "adj",  "adp",   "adv",  "aux",
+                                                        "cconj", "det",  "pron", "punct", "sconj" };
+        if (lemmatizer.rules.empty() || !rule_pos.count(pos)) {
+            const auto found = lemmatizer.lookup.find(spacy_string_id(token.text)); // original case
+            return found == lemmatizer.lookup.end() ? token.text : found->second;
+        }
+        const auto string = lexical->python_lower(token.text);
+        const auto index = lemmatizer.index.find(pos);
+        const bool has_index = index != lemmatizer.index.end();
+        if (has_index && index->second.count(string)) return string;
+        std::vector<std::string> forms;
+        const auto exceptions = lemmatizer.exceptions.find(pos);
+        if (exceptions != lemmatizer.exceptions.end()) {
+            const auto found = exceptions->second.find(string);
+            if (found != exceptions->second.end()) forms = found->second;
+        }
+        std::vector<std::string> oov_forms;
+        const auto rules = lemmatizer.rules.find(pos);
+        if (forms.empty() && rules != lemmatizer.rules.end()) {
+            for (const auto & rule : rules->second) {
+                if (!ends_with(string, rule.first)) continue;
+                const auto form = string.substr(0, string.size() - rule.first.size()) + rule.second;
+                if (form.empty()) continue;
+                if ((has_index && index->second.count(form)) || !lexical->python_isalpha(form))
+                    forms.push_back(form);
+                else
+                    oov_forms.push_back(form);
+            }
+        }
+        if (forms.empty()) forms = oov_forms;
+        if (forms.empty()) {
+            const auto found = lemmatizer.lookup.find(spacy_string_id(string));
+            forms.push_back(found == lemmatizer.lookup.end() ? string : found->second);
+        }
+        return forms.front(); // dict.fromkeys dedupe keeps the first element first
+    }
+
     // spaCy Lemmatizer.rule_lemmatize (+ EnglishLemmatizer.is_base_form).
     std::string rule_lemma(const TokenAnnotation & annotation, const LexicalToken & token) const {
+        if (language == "fr") return french_lemma(annotation, token);
         const auto & string = token.text;
         const auto pos = ascii_lower(annotation.pos);
         if (pos.empty() || pos == "eol" || pos == "space") return lexical->python_lower(string);
@@ -444,7 +493,18 @@ PipelineV2::PipelineV2(const std::string & resources_json, std::map<std::string,
         return std::find(m.components.begin(), m.components.end(), component) != m.components.end();
     };
     if (has("tagger")) m.tags = strings(member(labels, "tagger"), "tagger labels", 4096);
-    require(!has("morphologizer"), "Morphologizer pipelines are not admitted yet");
+    if (has("morphologizer")) {
+        const auto & morph = member(labels, "morphologizer");
+        const auto & overwrite = member(morph, "overwrite");
+        const auto & extend = member(morph, "extend");
+        require(overwrite.kind == Json::bool_t && overwrite.b && extend.kind == Json::bool_t && !extend.b,
+                "Only overwrite/no-extend morphologizers are supported");
+        const auto names = strings(member(morph, "labels"), "morphologizer labels", 8192);
+        const auto & assign = member(morph, "assign");
+        require(assign.kind == Json::array_t && assign.a.size() == names.size(), "Invalid morphologizer assignment");
+        for (const auto & item : assign.a)
+            m.morphology.push_back({ text(member(item, "pos"), "pos"), text(member(item, "morph"), "morph") });
+    }
     const auto & parser = member(labels, "parser");
     m.parser_moves = strings(member(parser, "moves"), "parser moves", 137);
     (void)ParserState(0, m.parser_moves);
@@ -475,8 +535,15 @@ PipelineV2::PipelineV2(const std::string & resources_json, std::map<std::string,
         require(found != numeric_weights.end() && found->second->ne[1] == static_cast<std::int64_t>(m.tags.size()),
                 "Tagger weights do not match its labels");
     }
-    for (const char * absent : { "morphologizer.W", "lemmatizer.W" })
-        require(numeric_weights.find(absent) == numeric_weights.end(), "Unexpected spaCy v2 head weights");
+    if (has("morphologizer")) {
+        const auto found = numeric_weights.find("morphologizer.W");
+        require(found != numeric_weights.end() &&
+                    found->second->ne[1] == static_cast<std::int64_t>(m.morphology.size()),
+                "Morphologizer weights do not match its labels");
+    } else {
+        require(numeric_weights.find("morphologizer.W") == numeric_weights.end(), "Unexpected morphologizer weights");
+    }
+    require(numeric_weights.find("lemmatizer.W") == numeric_weights.end(), "Unexpected trainable lemmatizer weights");
     m.numeric = std::make_unique<GgmlNumeric>(std::move(numeric_weights), backend);
     if (has("ner")) {
         const auto ner_moves = strings(member(member(labels, "ner"), "moves"), "ner moves", 1024);
@@ -524,6 +591,19 @@ PipelineV2::Output PipelineV2::run(const std::vector<LexicalToken> & tokens, con
                     if (row[c] > row[best]) best = c;
                 annotations[i].tag_class = best;
                 annotations[i].tag = m.tags[best];
+            }
+        } else if (component == "morphologizer") {
+            // overwrite=True, extend=False: the label replaces POS and morph.
+            require(numeric.morphologizer.rows == n && numeric.morphologizer.cols == m.morphology.size(),
+                    "Invalid morphologizer scores");
+            for (std::size_t i = 0; i < n; ++i) {
+                const float * row = numeric.morphologizer.data.data() + i * numeric.morphologizer.cols;
+                std::size_t best = 0;
+                for (std::size_t c = 1; c < numeric.morphologizer.cols; ++c)
+                    if (row[c] > row[best]) best = c;
+                annotations[i].morph_class = best;
+                annotations[i].pos = m.morphology[best].pos;
+                annotations[i].morph = m.morphology[best].morph;
             }
         } else if (component == "parser") {
             ParserState state(n, m.parser_moves);
