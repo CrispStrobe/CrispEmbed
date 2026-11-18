@@ -1,3 +1,15 @@
+## W7 signed ARM64 Runner/native worker — 18 November 2026
+
+[Run44274988880](https://github.com/CrispStrobe/CrispCloud/actions/runs/44274988880)
+at `b07d1307cb807804b46f89ffc5d47e37b2eddae8` passes actual signed/sandboxed
+Runner loading, owned native worker context/forward, 3 warmups and25 measured
+operational requests; copied results survive disposal. Descriptor counts stay
+9/9/9; RSS grows2,179,072bytes. Strict app/native signatures, library validation
+and signing-material cleanup pass. This diagnostic build does not qualify
+normal GUI startup, Mac grammar, broad accuracy, leak freedom or comparative
+speed. Provider stays OFF; Quds139/153 final integration remains blocked.
+The three initial failed attempts remain in the source-bound execution receipt.
+
 ## 18 November 2026 — W7 hosted publication, Mac component and bounded assessments
 
 PR237 is owner-merged at `73f8a91e` from `fa964043` after12 PASS/10 SKIP.

@@ -257,16 +257,6 @@ def main():
             a = a + b
             b = b + a
             return torch.stack((a & 0xffffffff, right(a, 32), b & 0xffffffff, right(b, 32)), dim=1)
-            a = values * signed(0x87c37b91114253d5)
-            a = ((a << 31) | right(a, 33)) * signed(0x4cf5ad432745937f)
-            a = a ^ seed ^ 8
-            b = torch.full_like(a, seed ^ 8)
-            a = a + b
-            b = b + a
-            a, b = mix(a), mix(b)
-            a = a + b
-            b = b + a
-            return torch.stack((a & 0xffffffff, right(a, 32), b & 0xffffffff, right(b, 32)), dim=1)
 
         def forward(weights, case):
             trace = {}

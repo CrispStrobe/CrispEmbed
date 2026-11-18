@@ -6,10 +6,13 @@ Remaining W7 work is paired integration and actual signed-app qualification.
 Quds139 has three actual Office failures; Quds153 is its unmerged W7 descendant.
 Do not merge failed139 or call its sealed historical evidence current integration.
 CrispCloud settings/manual registration stay default OFF. Signing preflight
-passes; first actual app44266881665 stops at the missing paired agreement API.
-Guarded source sync fixes that exact dependency at `a7c773c1`; actual signed
-Runner/native-worker run44268579009 is pending. Inspect actual outcomes and fix
-only actual defects, then normally integrate/merge153 and pin the merged source
+passes. Actual signed ARM64 Runner/native-worker run44274988880 at
+`b07d1307` passes 3 warmups/25 measured operational requests, strict sandbox
+and library validation, copied-result disposal and signing-material cleanup.
+Earlier dependency and sandbox descriptor-capture failures remain retained.
+Normal GUI startup and Mac grammar are separate, unrun gates. Inspect actual
+outcomes and fix only actual defects, then normally integrate/merge153 and pin
+the merged source
 after139's blockers are resolved. Mac grammar, accelerated quantized execution,
 releases and provider activation remain unqualified.
 
