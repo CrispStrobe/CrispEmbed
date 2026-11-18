@@ -1,5 +1,27 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## PR235 post-OOM owner repair — 18 November 2026
+
+At `6dffe3029`, artifact validation and clang-format pass; current Build
+[44188032296](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44188032296)
+fails Static guards in the synthetic Unlimited-OCR-2 cosine probe. Build result
+correctly rejects the resulting selected-build skips. The Ubuntu 26.04 image
+uses Python 3.14.4, outside pinned NumPy 2.2.6's supported Python range.
+Select Python 3.12 explicitly before installing that unchanged NumPy pin;
+retain all assertions, fixture values, recipes and runtime sources. Python
+3.12/NumPy 2.2.6 passes the unchanged probe locally, as do 54 routing controls.
+The [initial evidence](tests/results/worksheet-cleanup-pr235-build-repair.json)
+preserves the actual failure and attribution limit. Main `04e84458` is already
+an ancestor. Pending: exact-head hosted checks, owner merge, then merged-main
+verification. No local build, model work, release, app pin or default change.
+
+PR236 is already merged at `04e8445823d82591120203e953365582d7ba33be`
+from head `05fe9a0ceaa80d529c5dca11f186a23b1bf52ecf`. Read-only local
+reverification authenticates all 22 frozen source files, 15 archive files,
+protocol and first-result hashes. The consumed split is not rerun. Its scope
+remains Linux x86-64/AVX2 with PCRE2 10.46; W6, mobile and distribution stay
+separate. No PR236 Actions queries, waits or reruns are used.
+
 ## PR235/PR236 owner closure — 17 November 2026
 
 Bounded ownership covers only worksheet PR235 and native spaCy PR236. Existing
