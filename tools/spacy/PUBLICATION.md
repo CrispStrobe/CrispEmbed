@@ -29,3 +29,38 @@ acceptance/W6 grammar panels. The accepted Linux profile still names its six
 exact external dependency builds; no broader Linux portability or other-platform
 qualification follows. macOS signing, sandbox/app loading, new grammar evidence
 and quantization are separate owner gates. The app provider remains default OFF.
+
+## Platform capsules and model card (schema v2)
+
+Additional platforms use [`platform_distribution.py`](platform_distribution.py):
+the same closed canonical USTAR/gzip format and fixed five-file model bundle,
+with member pins in the embedded `distribution.json` authenticated by an
+externally trusted archive SHA-256. The library sits under
+`native/<library sha256>/`; every notice of the accepted Linux capsule is
+required. The frozen Linux v1 capsule and `distribution.py` are unchanged.
+
+[`spacy_w7_platform_package.py`](../ci-heavy/spacy_w7_platform_package.py) runs
+on a real runner for `linux-x86_64`, `linux-arm64` or `macos-arm64` (no
+emulation). It builds from the checked-out source with static PCRE2 (and static
+libstdc++/libgcc on Linux), runs ctest, packages, verifies, installs atomically,
+then runs the development parity panels and text-API controls against the
+library **installed from the capsule**. Without `--publish` it uploads nothing.
+
+```sh
+gh workflow run heavy-cpu.yml --ref <branch> -f script=tools/ci-heavy/spacy_w7_platform_package.py \
+  -f runner=macos-15 -f isolated_lane=spacy-pkg-macos-arm64 -f args="--platform macos-arm64"
+```
+
+`--publish` is accepted only on `main`. It makes two Hub commits: the capsule
+and its receipt under `packages/<platform>/<source commit>/`, then the merged
+`hub-catalog.json` and the model card rendered by
+[`model_card.py`](model_card.py) from [`hub_catalog.json`](hub_catalog.json).
+Each commit is checked for the exact expected tree and every uploaded file is
+freshly downloaded from the immutable revision and hash/length verified; the
+capsule is then verified and installed again from those downloaded bytes.
+`--card-only --publish` refreshes only the card and catalog.
+
+A new capsule's analysis claim is the hosted development parity of that exact
+library; its grammar claim is always "not qualified". Consumers (the Quds
+catalog) add a package only by its archive SHA-256, manifest digest and library
+digest from the receipt. No hosted Windows lane exists yet.

@@ -4,7 +4,12 @@ on:
   pull_request:
     paths:
       - 'tools/spacy/distribution*.py'
+      - 'tools/spacy/platform_distribution.py'
+      - 'tools/spacy/model_card.py'
+      - 'tools/spacy/hub_catalog.json'
+      - 'tools/ci-heavy/spacy_w7_platform_package.py'
       - 'tests/test_spacy_distribution*.py'
+      - 'tests/test_spacy_platform_distribution.py'
       - 'docs/validation/native-spacy-w7-20261118/**'
       - '.github/workflows/spacy-linux-package.yml'
   workflow_dispatch:
@@ -31,6 +36,8 @@ jobs:
         run: python3 -B tests/test_spacy_distribution.py -v
       - name: Consumer engineering controls (no native/model load)
         run: python3 -B tests/test_spacy_distribution_consumer.py -v
+      - name: Platform capsule, catalog and model-card controls (no native/model load)
+        run: python3 -B tests/test_spacy_platform_distribution.py -v
       - name: Independently authenticate retained Linux evidence
         run: >-
           python3 -B docs/validation/native-spacy-w7-20261118/completion-20261118/audit_retained_python_package.py
@@ -40,3 +47,14 @@ jobs:
           name: spacy-linux-package-retained-audit
           path: package-retained-audit.json
           retention-days: 90
+
+  platform-controls-macos:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Platform capsule controls on macOS (renamex_np no-replace install)
+        run: python3 -B tests/test_spacy_platform_distribution.py -v

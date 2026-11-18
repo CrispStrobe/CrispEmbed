@@ -1,0 +1,98 @@
+{
+  "schema": "crispembed.spacy.hub_catalog.v1",
+  "repository": "cstr/crispembed-spacy-de-core-news-sm-3.8.0",
+  "model": {
+    "name": "de_core_news_sm",
+    "version": "3.8.0",
+    "source_wheel_sha256": "fec69fec52b1780f2d269d5af7582a5e28028738bd3190532459aeb473bfa3e7",
+    "precision": "F32",
+    "components": [
+      "tok2vec",
+      "tagger",
+      "morphologizer",
+      "parser",
+      "lemmatizer",
+      "attribute_ruler"
+    ],
+    "omitted": [
+      "ner (separate opt-in ner.gguf; see Optional NER model)",
+      "senter (disabled in this pipeline; the parser supplies sentences)"
+    ]
+  },
+  "bundle": {
+    "revision": "659dae33997d00296ae12b76510fa4dfe26540e0",
+    "files": {
+      "bundle/model.gguf": {
+        "sha256": "fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd",
+        "bytes": 7383104,
+        "purpose": "F32 weights (GGUF)"
+      },
+      "bundle/resources.json": {
+        "sha256": "b42496cc373ada57a67ed2f4c2c25f8d22f80c08db5841a7cdb91c8a6e18562a",
+        "bytes": 1404948,
+        "purpose": "tokenizer exceptions, lookups, edit trees, labels"
+      },
+      "bundle/manifest.json": {
+        "sha256": "d599768375de3dc56abcca5cf1d49da0015857f9d3a10640aebb5317ef5d427e",
+        "bytes": 23762,
+        "purpose": "bundle manifest (pinned by consumers)"
+      },
+      "bundle/LICENSE": {
+        "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+        "bytes": 1056,
+        "purpose": "model license (MIT), verbatim from the wheel"
+      },
+      "bundle/LICENSES_SOURCES": {
+        "sha256": "0c3ab78745569d848b7c83a486183bce42b9643561084d6d6f67eb0229c79869",
+        "bytes": 13470,
+        "purpose": "training-source notices, verbatim from the wheel"
+      }
+    }
+  },
+  "packages": [
+    {
+      "platform": "linux-x86_64",
+      "status": "published",
+      "revision": "659dae33997d00296ae12b76510fa4dfe26540e0",
+      "path": "spacy-de_core_news_sm-3.8.0-linux-x86_64-avx2-f32.tar.gz",
+      "sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+      "bytes": 7808129,
+      "manifest_sha256": "e043af51e247368931f23fa0d9b931453e174f105b021fe2053e8e3029fd3d8d",
+      "library_sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977",
+      "schema": "crispembed.spacy.distribution.v1",
+      "requirements": "x86-64 AVX2; glibc >= 2.38, libstdc++ (GLIBCXX 3.4.29), shared PCRE2 10.x; only six recorded dependency builds qualified",
+      "analysis": "Qualified: native acceptance 2176c896 (98 tokens, 13 sentences, 851 numerical stages exact); W5 Dart worker",
+      "grammar": "Qualified for the manual de-DE Quds provider only (W6 panel 22/30 vs 5/30; W7 extension run 44262982569 24/40, 0 valid/guard findings)",
+      "receipt": "https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/validation/native-spacy-w7-20261118/owner-execution/results.json"
+    },
+    {
+      "platform": "macos-arm64",
+      "status": "pending: build from main after runtime PR #240",
+      "analysis": "Earlier unsigned development candidate 5cb67f00 (macos-candidates/) passed hosted component parity only",
+      "grammar": "Not qualified"
+    },
+    {
+      "platform": "linux-arm64",
+      "status": "pending: build from main after runtime PR #240",
+      "analysis": "Not yet built",
+      "grammar": "Not qualified"
+    },
+    {
+      "platform": "windows-x86_64",
+      "status": "not built (no hosted Windows lane)",
+      "analysis": "Not qualified",
+      "grammar": "Not qualified"
+    }
+  ],
+  "not_qualified": [
+    "quantization-attempts/: F16, Q8_0 and Q4_0 candidates failed parity and are retained only as evidence",
+    "macos-candidates/: unsigned development component, not an app or signed library",
+    "Signed/notarized app loading, iOS, Android and Windows",
+    "General German grammar quality; any build other than the one named in a grammar claim"
+  ],
+  "ner": {
+    "status": "pending canonical CPython 3.12.14 conversion and publication",
+    "files": {},
+    "qualification": "Opt-in (CRISPEMBED_SPACY_NER=1). Runtime-owner receipts: 1,776/1,776 UD GSD sentences and 1,758/1,758 entities identical to original spaCy."
+  }
+}
