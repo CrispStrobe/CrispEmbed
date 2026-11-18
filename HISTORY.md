@@ -1,3 +1,116 @@
+## spaCy ggml+SGEMM default, F16 upcast and opt-in NER — 18 November 2026
+
+Branch `feat/spacy-default-ner-20261118`. On 1,776 UD German GSD sentences
+(28,139 tokens) against original spaCy run on the same host, the ggml+SGEMM
+engine is exact on macOS arm64 and Linux AVX2 ([44294318084](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44294318084),
+[44295825163](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44295825163))
+at 6–7× the scalar engine, and passes the frozen development gates with both
+engines; it is now the default (`CRISPEMBED_SPACY_GGML=0` keeps scalar). F16
+changes 3/1,776 sentences, reproduced exactly by original spaCy with the same
+weights, and stays gated; `CRISPEMBED_SPACY_GGML_UPCAST` runs F16 storage at
+F32 speed. Opt-in NER (`ner.gguf`, `CRISPEMBED_SPACY_NER`) matches 1,758/1,758
+original entities on both hosts. The published W7 capsule is unchanged and
+must be rebuilt/requalified before it carries the new default.
+[Audit](docs/validation/native-spacy-ggml-20261118/README.md).
+
+## W7 isolated AVX2/F32 development assessment — 18 November 2026
+
+[Run44284405910](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44284405910)
+at `41195dc43b27ed15c19a991803aa8519fff4d7ee` passes four CTest controls and
+unchanged prepared/rawtext parity for scalar and opt-in AVX2 reductions:
+16development cases/1,201stages/1,406,553floats/244parserstates/339decisions per
+arm. One new72token operational input has exact copied token records across
+10alternating measured pairs after3warmup pairs; sampled RSSgrowth0. The
+predeclared finite timing signal passes, but this is not a broad speed result
+or an accepted runtime profile. Default remains OFF; original F32 production
+sources/capsule and all consumed splits remain unchanged.
+[Exact sources, numerical gates and diagnostic timings](docs/validation/native-spacy-w7-20261118/owner-execution/optimized-f32-assessment.json).
+
+## W7 same signed Runner: ARM64 worker and normal startup — 18 November 2026
+
+[Run44279211190](https://github.com/CrispStrobe/CrispCloud/actions/runs/44279211190)
+at `b01676d417a57b116451e3d0314ad36f0bf32cb8` passes actual signed/sandboxed
+ARM64 native-worker context/forward (3warmups/25requests), copied results after
+disposal, descriptor9/9/9 and RSSgrowth786,432bytes. A second launch of the
+same universal release Runner with probe environment absent passes the existing
+30second credential/setup UI startup smoke. Strict signatures/library validation
+and signing-material cleanup pass. Both normal startup and probe remain reachable
+in this binary. This qualifies ARM64 operational loading/startup; final Quds pin,
+Mac grammar, manual-provider UI activation, broad accuracy, comparative speed,
+leak freedom and macOS x86-64 remain separate. Provider stays OFF. Retain the
+three initial failures and earlier diagnostic-only PASS separately.
+[Exact report hashes, code identities and actual output](docs/validation/native-spacy-w7-20261118/owner-execution/signed-app-assessment.json).
+
+## W7 real CUDA quantization assessment — 18 November 2026
+
+Kaggle kernel145760385/version1 at `607052f90e6f11daa0925c3ed1ec307b11a24f88`
+completed real CUDA quantization and prepared graph execution on Tesla T4,
+Torch2.11.0+cu130. F32 passes all16development cases/113tokens/244reference
+parser states/1,201stages/1,406,553floats. Each compressed candidate fails1,197
+stages under unchanged2e-4/2e-5 budgets. F16 classifier/legal choices remain
+exact; Q8 changes one classifier case; Q4 changes six classifier cases and four
+legal-action cases on the frozen reference states. This is not free native
+parser/text decoding. All39GPU-produced tensor types/payloads match the prior
+rejected CPU recipes. An independent fresh-byte reader confirms all39
+tensor shapes/types/payloads and metadata values match per profile. The first
+archive difference is byte596, where metadata order differs; full archives
+retain distinct SHA-256 identities. Retain both source-bound
+assessments separately. No CPU build/inference, held-out replay, accepted quant
+profile, speed/default/app change or native GPU backend qualification.
+[Exact counts, errors, hashes and limits](docs/validation/native-spacy-w7-20261118/owner-execution/kaggle-cuda-assessment.json).
+
+## W7 signed ARM64 Runner/native worker — 18 November 2026
+
+[Run44274988880](https://github.com/CrispStrobe/CrispCloud/actions/runs/44274988880)
+at `b07d1307cb807804b46f89ffc5d47e37b2eddae8` passes actual signed/sandboxed
+Runner loading, owned native worker context/forward, 3 warmups and25 measured
+operational requests; copied results survive disposal. Descriptor counts stay
+9/9/9; RSS grows2,179,072bytes. Strict app/native signatures, library validation
+and signing-material cleanup pass. This diagnostic build does not qualify
+normal GUI startup, Mac grammar, broad accuracy, leak freedom or comparative
+speed. Provider stays OFF; Quds139/153 final integration remains blocked.
+The three initial failed attempts remain in the source-bound execution receipt.
+
+## 18 November 2026 — W7 hosted publication, Mac component and bounded assessments
+
+PR237 is owner-merged at `73f8a91e` from `fa964043` after12 PASS/10 SKIP.
+[Publication44258325121](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44258325121)
+publishes the unchanged Linux x86-64/AVX2 F32 capsule to Hub revision
+`659dae33997d00296ae12b76510fa4dfe26540e0`; all11 payload files have fresh
+HTTP hash/length verification, complete-tree checking and immutable installation.
+An independent fresh readback verifies the three principal artifacts and installer.
+Exact URLs, sizes and SHA-256 values are in the
+[execution receipt](docs/validation/native-spacy-w7-20261118/owner-execution/results.json).
+
+[Actual ARM64 Mac44262399612](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44262399612)
+passes16 development cases/1,201 stages/1,406,553 floats,244 parser states and21
+native API controls. Static PCRE2/native dependency construction, ARM64-only
+binary inspection and finite lifecycle controls pass. Its unsigned native
+candidate and reports are hosted with fresh readback at `a0455e70740688161b3a494e553f09bbc783ecc9`.
+Initial unsupported macos-14 and unavailable ARM64 Python3.12.14 attempts remain
+preserved; the actual successful run records macOS15.8.2/Python3.12.10. This
+component result is distinct from signing, sandbox, app and Mac grammar gates.
+
+The new96-case panel was frozen before outputs at `0dc3cef7` and consumed once
+by [44262982569](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44262982569):
+40 errors,40 valid cases,12 guards and4 unsupported-language cases. The baseline
+corrects14/40 errors, combined24/40, leaving16 misses. Valid/guard findings are
+zero,24 corrected rechecks are clean, and the source map is unchanged. The exact
+original result/seal and initial quantization failures are durably retained and
+freshly downloaded at `4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23`.
+Original W6 5/30,22/30 and eight misses remain unchanged. Neither consumed panel
+is rerun; these authored samples do not establish broad grammar accuracy.
+
+[Quantization44265895817](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44265895817)
+completes F16/Q8/Q4 storage admission,18 actual OFF-gate controls and7,200 calls
+to the real crispembed-diff stage comparator. All candidates are rejected by
+unchanged element budgets:1,197/1,201 prepared stages fail in each. F16 retains
+16/16 discrete outputs, Q8 15/16, and Q4 7/16 with incomplete raw-text parser/
+stage denominators. High cosine does not waive these failures. All three
+diagnostic models/reports are immutable and fresh-readback verified at
+`8ee4b35366003654a043c80f616d6ba77fd4e746`. The default F32 production sources,
+model and package remain unchanged; no quantized profile or speed win is qualified.
+
 ## 18 November 2026 — Native spaCy Linux package and worker evidence closed
 
 The [paired W7 completion](docs/validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json)

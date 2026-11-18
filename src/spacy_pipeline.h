@@ -45,7 +45,9 @@ enum crispembed_spacy_capability {
     CRISPEMBED_SPACY_PREPARED_FEATURE_SCORES = 1,
     CRISPEMBED_SPACY_PARSER_STATE_SCORES = 2,
     CRISPEMBED_SPACY_TOKENIZE_UTF8 = 4,
-    CRISPEMBED_SPACY_ANALYZE_UTF8 = 8
+    CRISPEMBED_SPACY_ANALYZE_UTF8 = 8,
+    // Context-only: an attached NER component adds entities to analyses.
+    CRISPEMBED_SPACY_ENTITIES_UTF8 = 16
 };
 
 // Borrowed callback views expire when the callback returns. Nonzero requests
@@ -54,6 +56,14 @@ enum crispembed_spacy_capability {
 typedef int (*crispembed_spacy_trace_callback)(void * user, const char * stage, const float * values,
                                                const size_t * shape, size_t rank);
 typedef int (*crispembed_spacy_cancel_callback)(void * user);
+
+// Process-wide enablement without environment variables. Flags replace the
+// previous set (returned); 0 clears them. Either a flag or its environment gate
+// (CRISPEMBED_SPACY=1 / CRISPEMBED_SPACY_NER=1) enables the service, so existing
+// environment-driven hosts are unchanged. Safe to call from any thread; it does
+// not affect contexts already created except for later per-call gate checks.
+enum crispembed_spacy_enable_flag { CRISPEMBED_SPACY_ENABLE_ANALYSIS = 1, CRISPEMBED_SPACY_ENABLE_NER = 2 };
+CRISPEMBED_SPACY_API uint32_t crispembed_spacy_set_enabled(uint32_t flags);
 
 CRISPEMBED_SPACY_API uint32_t crispembed_spacy_abi_version(void);
 // Legacy numeric-service mask, retained for existing prepared-feature clients.
@@ -174,6 +184,33 @@ CRISPEMBED_SPACY_API int crispembed_spacy_document_is_analyzed(const crispembed_
 // Invalid arguments clear *token when nonnull and return INVALID_ARGUMENT.
 CRISPEMBED_SPACY_API int crispembed_spacy_document_token(const crispembed_spacy_document * document, size_t index,
                                                          crispembed_spacy_token_view * token);
+// Opt-in named entities (CRISPEMBED_SPACY_NER=1). Attaches the separate
+// de_core_news_sm 3.8.0 NER component (ner.gguf, exact closed F32 profile,
+// externally trusted lowercase SHA-256) to a context created with resources.
+// Subsequent analyze calls also decode entities; tokenize/forward calls and
+// existing token views are unchanged. Attaching twice is rejected.
+CRISPEMBED_SPACY_API int crispembed_spacy_attach_ner(crispembed_spacy_context * context, const char * ner_path,
+                                                     const char * expected_sha256, char * error, size_t error_capacity);
+
+// Entity spans use the same offsets as token views; token_end and the
+// *_end offsets are exclusive. label is one of LOC, PER, ORG, MISC.
+typedef struct crispembed_spacy_entity_view {
+    crispembed_spacy_text_view label;
+    size_t token_start;
+    size_t token_end;
+    size_t byte_start;
+    size_t byte_end;
+    size_t scalar_start;
+    size_t scalar_end;
+    size_t utf16_start;
+    size_t utf16_end;
+} crispembed_spacy_entity_view;
+
+// Zero unless the document was analyzed by a context with attached NER.
+CRISPEMBED_SPACY_API size_t crispembed_spacy_document_entity_count(const crispembed_spacy_document * document);
+// Invalid arguments clear *entity when nonnull and return INVALID_ARGUMENT.
+CRISPEMBED_SPACY_API int crispembed_spacy_document_entity(const crispembed_spacy_document * document, size_t index,
+                                                          crispembed_spacy_entity_view * entity);
 // Documents may outlive their creating context. Free only after view readers
 // finish; concurrent readers of an immutable document are allowed.
 CRISPEMBED_SPACY_API void crispembed_spacy_document_free(crispembed_spacy_document * document);

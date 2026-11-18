@@ -1,0 +1,213 @@
+# Native spaCy platform capsules (tools/ci-heavy/spacy_w7_platform_package.py).
+#
+# One real runner per platform; no emulation. The Linux packages build on the
+# oldest supported hosted images so their glibc/libstdc++ symbol floors stay low
+# (ubuntu-latest produced a GLIBC 2.43 floor). Pushes to spacy-platform-dev/**
+# run dry runs of every platform; publication is a manual dispatch from main
+# with publish=true (the script itself refuses Hub writes from any other ref).
+# Mobile SDKs (ios, android) are run in a booted iOS Simulator / an x86_64
+# Android emulator and compared with original spaCy before packaging; they
+# publish after the desktop packages so Hub catalog commits stay serialized.
+name: spaCy platform package
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build (or all)'
+        required: true
+        default: 'all'
+        type: choice
+        options: [all, linux-x86_64, linux-arm64, macos-arm64, windows-x86_64, ios, android]
+      publish:
+        description: 'Publish to the Hub (main only)'
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches: ['spacy-platform-dev/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spacy-platform-package-${{ github.ref }}-${{ inputs.platform || 'all' }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    needs: [mobile-oracle]
+    strategy:
+      fail-fast: false
+      # Hub publication commits are serialized: one platform at a time.
+      max-parallel: ${{ inputs.publish && 1 || 4 }}
+      matrix:
+        include:
+          - platform: linux-x86_64
+            runner: ubuntu-22.04
+          - platform: linux-arm64
+            runner: ubuntu-22.04-arm
+          - platform: macos-arm64
+            runner: macos-15
+          - platform: windows-x86_64
+            runner: windows-2022
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Select platform
+        id: select
+        run: |
+          want='${{ inputs.platform || 'all' }}'
+          if [ "$want" = all ] || [ "$want" = '${{ matrix.platform }}' ]; then echo "run=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.select.outputs.run
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        if: steps.select.outputs.run
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        if: steps.select.outputs.run
+        with:
+          name: spacy-mobile-oracle-${{ github.run_id }}
+          path: ${{ runner.temp }}/oracle
+      - name: Scratch and output directories
+        if: steps.select.outputs.run
+        run: |
+          mkdir -p "$RUNNER_TEMP/heavy/scratch" "$RUNNER_TEMP/out"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/heavy/scratch" >> "$GITHUB_ENV"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+      - name: Build, test and package${{ inputs.publish && ' (publish)' || ' (dry run)' }}
+        if: steps.select.outputs.run
+        env:
+          HF_PUBLISH_TOKEN: ${{ inputs.publish && secrets.HF_PUBLISH_TOKEN || '' }}
+        run: |
+          args=(--platform '${{ matrix.platform }}' --oracle-dir "$RUNNER_TEMP/oracle")
+          if [ '${{ inputs.publish }}' = true ]; then args+=(--publish); fi
+          python -u tools/ci-heavy/spacy_w7_platform_package.py "${args[@]}"
+      - name: Job summary
+        if: always() && steps.select.outputs.run
+        run: if [ -f "$HEAVY_OUT/summary.md" ]; then cat "$HEAVY_OUT/summary.md" >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.select.outputs.run
+        with:
+          name: spacy-${{ matrix.platform }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/out
+          retention-days: 14
+
+  # Original-spaCy oracle for every spacy_smoke comparison (desktop and mobile).
+  mobile-oracle:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Original spaCy oracle (hash-locked Linux reference environment)
+        run: |
+          mkdir -p "$RUNNER_TEMP/heavy/scratch" "$RUNNER_TEMP/out"
+          export HEAVY_SCRATCH="$RUNNER_TEMP/heavy/scratch" HEAVY_OUT="$RUNNER_TEMP/out"
+          python -u tools/ci-heavy/spacy_mobile_sdk.py oracle --oracle-dir "$RUNNER_TEMP/oracle"
+          cp "$RUNNER_TEMP/out/mobile-oracle.json" "$RUNNER_TEMP/oracle/"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spacy-mobile-oracle-${{ github.run_id }}
+          path: ${{ runner.temp }}/oracle
+          retention-days: 14
+
+  ios:
+    needs: [mobile-oracle, package]
+    if: ${{ always() && needs.mobile-oracle.result == 'success' && (!inputs.platform || inputs.platform == 'all' || inputs.platform == 'ios') }}
+    runs-on: macos-15
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: spacy-mobile-oracle-${{ github.run_id }}
+          path: ${{ runner.temp }}/oracle
+      - name: Build, run in iOS Simulator, compare, package${{ inputs.publish && ' (publish)' || ' (dry run)' }}
+        env:
+          HF_PUBLISH_TOKEN: ${{ inputs.publish && secrets.HF_PUBLISH_TOKEN || '' }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/heavy/scratch" "$RUNNER_TEMP/out"
+          export HEAVY_SCRATCH="$RUNNER_TEMP/heavy/scratch" HEAVY_OUT="$RUNNER_TEMP/out"
+          args=(ios --oracle-dir "$RUNNER_TEMP/oracle")
+          if [ '${{ inputs.publish }}' = true ]; then args+=(--publish); fi
+          python -u tools/ci-heavy/spacy_mobile_sdk.py "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spacy-ios-${{ github.run_id }}
+          path: ${{ runner.temp }}/out
+          retention-days: 14
+
+  android:
+    needs: [mobile-oracle, package, ios]
+    if: ${{ always() && needs.mobile-oracle.result == 'success' && (!inputs.platform || inputs.platform == 'all' || inputs.platform == 'android') }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: spacy-mobile-oracle-${{ github.run_id }}
+          path: ${{ runner.temp }}/oracle
+      - name: Directories
+        run: |
+          mkdir -p "$RUNNER_TEMP/heavy/scratch" "$RUNNER_TEMP/out" "$RUNNER_TEMP/android-run"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/heavy/scratch" >> "$GITHUB_ENV"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "ANDROID_RUN=$RUNNER_TEMP/android-run" >> "$GITHUB_ENV"
+      - name: NDK builds (arm64-v8a, x86_64)
+        run: python -u tools/ci-heavy/spacy_mobile_sdk.py android-build --run-dir "$ANDROID_RUN"
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run spacy_smoke on an x86_64 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: default
+          disable-animations: true
+          script: bash tools/ci-heavy/spacy_android_emulator.sh "$ANDROID_RUN"
+      - name: Compare and package${{ inputs.publish && ' (publish)' || ' (dry run)' }}
+        env:
+          HF_PUBLISH_TOKEN: ${{ inputs.publish && secrets.HF_PUBLISH_TOKEN || '' }}
+        run: |
+          args=(android-finish --oracle-dir "$RUNNER_TEMP/oracle" --run-dir "$ANDROID_RUN")
+          if [ '${{ inputs.publish }}' = true ]; then args+=(--publish); fi
+          python -u tools/ci-heavy/spacy_mobile_sdk.py "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spacy-android-${{ github.run_id }}
+          path: ${{ runner.temp }}/out
+          retention-days: 14

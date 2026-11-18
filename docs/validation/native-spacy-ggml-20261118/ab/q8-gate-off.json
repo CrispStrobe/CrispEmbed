@@ -1,0 +1,5 @@
+{
+ "label": "q8-gate-off",
+ "admitted": false,
+ "error": "Quantized spaCy GGUF requires CRISPEMBED_SPACY_QUANT=1"
+}

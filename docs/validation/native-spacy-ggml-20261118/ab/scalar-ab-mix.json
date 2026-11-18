@@ -1,0 +1,80 @@
+{
+ "label": "scalar-ab-mix",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_QUANT=1"
+ ],
+ "model": "<scratch>/q/ab-mix.gguf",
+ "model_sha256": "6211b06cd49f35697b8650645bdcb4f64a738ea4fd3de73385bff7fca82362c5",
+ "model_bytes": 3566784,
+ "load_ms": 195.91,
+ "cases": 60,
+ "tokens": 835,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 57,
+ "agreement": {
+  "tag": 0.997605,
+  "pos": 1.0,
+  "morph": 1.0,
+  "lemma": 1.0,
+  "dep": 0.998802,
+  "head": 0.998802,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 2,
+  "pos": 0,
+  "morph": 0,
+  "lemma": 0,
+  "dep": 1,
+  "head": 1,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 891.943,
+  "long_doc_tokens": 835,
+  "long_doc_ms_median": 646.328,
+  "long_doc_tokens_per_s": 1291.9
+ },
+ "max_abs_drift_vs_reference": {
+  "tok2vec.output": 0.04574120044708252,
+  "tagger.scores": 0.07023906707763672,
+  "morphologizer.scores": 0.0880119800567627,
+  "lemmatizer.scores": 0.10399436950683594,
+  "parser.lower_cache": 0.06435830891132355
+ },
+ "differences": [
+  {
+   "case": 2,
+   "token": 12,
+   "text": "18:30",
+   "field": "tag",
+   "oracle": "NE",
+   "native": "FM"
+  },
+  {
+   "case": 16,
+   "token": 0,
+   "text": "Kannst",
+   "field": "tag",
+   "oracle": "VVFIN",
+   "native": "NE"
+  },
+  {
+   "case": 37,
+   "token": 8,
+   "text": "am",
+   "field": "dep",
+   "oracle": "mo",
+   "native": "mnr"
+  },
+  {
+   "case": 37,
+   "token": 8,
+   "text": "am",
+   "field": "head",
+   "oracle": 5,
+   "native": 7
+  }
+ ]
+}

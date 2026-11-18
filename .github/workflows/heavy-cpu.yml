@@ -49,7 +49,7 @@ on:
         required: false
         default: 'ubuntu-latest'
         type: choice
-        options: [ubuntu-latest, ubuntu-24.04-arm, macos-14]
+        options: [ubuntu-latest, ubuntu-24.04-arm, macos-14, macos-15]
       isolated_lane:
         description: 'Optional unique lane for independent inputs and artifacts; empty serializes by script'
         required: false
@@ -78,7 +78,7 @@ concurrency:
 
 jobs:
   run:
-    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_attribution.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_upstream.py' && inputs.script != 'tools/ci-heavy/lighton4b_dense_trace.py' && inputs.script != 'tools/ci-heavy/lighton4b_prefill_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_smoke_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_full_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_corrected_mixed_full_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_calibration_native.py' && inputs.script != 'tools/ci-heavy/lighton4b_q6_candidate.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_candidate.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_full.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_logo_diagnostic.py'
+    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_attribution.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_upstream.py' && inputs.script != 'tools/ci-heavy/lighton4b_dense_trace.py' && inputs.script != 'tools/ci-heavy/lighton4b_prefill_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_smoke_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_full_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_corrected_mixed_full_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_calibration_native.py' && inputs.script != 'tools/ci-heavy/lighton4b_q6_candidate.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_candidate.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_full.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_logo_diagnostic.py' && inputs.script != 'tools/ci-heavy/spacy_w7_retain_reports.py'
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 350
     env:
@@ -93,6 +93,7 @@ jobs:
       KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
       KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
       HF_TOKEN_2: ${{ secrets.HF_TOKEN_2 }}
+      HF_PUBLISH_TOKEN: ${{ startsWith(inputs.script, 'tools/ci-heavy/spacy_w7_') && secrets.HF_PUBLISH_TOKEN || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -133,7 +134,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ startsWith(inputs.script, 'tools/ci-heavy/spacy_w7_') && runner.os == 'Linux' && '3.12.14' || '3.12' }}
 
       - name: Install extra pip packages
         if: inputs.pip != ''
@@ -885,3 +886,40 @@ jobs:
           path: ${{ env.HEAVY_OUT }}
           retention-days: 90
           if-no-files-found: warn
+
+  spacy_w7_report_retention:
+    if: inputs.script == 'tools/ci-heavy/spacy_w7_retain_reports.py'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HF_PUBLISH_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+      SPACY_W7_RETAIN_ONLY: '1'
+      SPACY_W7_RETAIN_ARGS: ${{ inputs.args }}
+      SPACY_W7_RETAIN_PIP: ${{ inputs.pip }}
+      SPACY_W7_RETAIN_RUNNER: ${{ inputs.runner }}
+      SPACY_W7_RETAIN_MODE: ${{ inputs.build_mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Create isolated report-only scratch
+        run: |
+          mkdir "$RUNNER_TEMP/spacy-retain-scratch" "$RUNNER_TEMP/spacy-retain-out"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/spacy-retain-scratch" >> "$GITHUB_ENV"
+          echo "HEAVY_OUT=$RUNNER_TEMP/spacy-retain-out" >> "$GITHUB_ENV"
+      - name: Preserve only exact already-produced W7 reports
+        run: python -B tools/ci-heavy/spacy_w7_retain_reports.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: heavy-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}
+          retention-days: 90

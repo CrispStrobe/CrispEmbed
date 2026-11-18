@@ -1,0 +1,72 @@
+{
+ "label": "scalar-ab-embed",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_QUANT=1"
+ ],
+ "model": "<scratch>/q/ab-embed.gguf",
+ "model_sha256": "7100c5c6b297d160ef8f2537e3022583bfb20700334e8e7d6d7deaa93f5f788d",
+ "model_bytes": 2723392,
+ "load_ms": 211.467,
+ "cases": 60,
+ "tokens": 835,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 58,
+ "agreement": {
+  "tag": 1.0,
+  "pos": 1.0,
+  "morph": 0.998802,
+  "lemma": 1.0,
+  "dep": 0.998802,
+  "head": 0.998802,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 0,
+  "pos": 0,
+  "morph": 1,
+  "lemma": 0,
+  "dep": 1,
+  "head": 1,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 935.996,
+  "long_doc_tokens": 835,
+  "long_doc_ms_median": 609.353,
+  "long_doc_tokens_per_s": 1370.3
+ },
+ "max_abs_drift_vs_reference": {
+  "tok2vec.output": 0.03861343860626221,
+  "tagger.scores": 0.08076953887939453,
+  "morphologizer.scores": 0.09237146377563477,
+  "lemmatizer.scores": 0.11984491348266602,
+  "parser.lower_cache": 0.0690603256225586
+ },
+ "differences": [
+  {
+   "case": 58,
+   "token": 2,
+   "text": "mussten",
+   "field": "morph",
+   "oracle": "Mood=Ind|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+   "native": "Mood=Sub|Number=Plur|Person=3|Tense=Past|VerbForm=Fin"
+  },
+  {
+   "case": 59,
+   "token": 0,
+   "text": "Aufgrund",
+   "field": "head",
+   "oracle": 4,
+   "native": 11
+  },
+  {
+   "case": 59,
+   "token": 11,
+   "text": "ausverkauft",
+   "field": "dep",
+   "oracle": "pd",
+   "native": "oc"
+  }
+ ]
+}

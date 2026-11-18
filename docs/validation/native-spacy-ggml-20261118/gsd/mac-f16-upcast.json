@@ -1,0 +1,67 @@
+{
+ "label": "f16-upcast",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_QUANT=1",
+  "CRISPEMBED_SPACY_GGML_UPCAST=1"
+ ],
+ "model": "<scratch>/f16.gguf",
+ "model_sha256": "8712cdf3840e837cb94994e359a37e124b7010fc2e675983a202e0a1d76439bb",
+ "model_bytes": 3722304,
+ "load_ms": 82.711,
+ "cases": 1776,
+ "tokens": 28139,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 1773,
+ "agreement": {
+  "tag": 1.0,
+  "pos": 1.0,
+  "morph": 1.0,
+  "lemma": 0.999964,
+  "dep": 0.999964,
+  "head": 0.999964,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 0,
+  "pos": 0,
+  "morph": 0,
+  "lemma": 1,
+  "dep": 1,
+  "head": 1,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 2245.489,
+  "long_doc_tokens": 1793,
+  "long_doc_ms_median": 125.435,
+  "long_doc_tokens_per_s": 14294.2
+ },
+ "max_abs_drift_vs_reference": null,
+ "differences": [
+  {
+   "case": 154,
+   "token": 21,
+   "text": "Salbe",
+   "field": "lemma",
+   "oracle": "Salbe",
+   "native": "Salb"
+  },
+  {
+   "case": 1020,
+   "token": 4,
+   "text": "um",
+   "field": "head",
+   "oracle": 3,
+   "native": 11
+  },
+  {
+   "case": 1152,
+   "token": 4,
+   "text": "auf",
+   "field": "dep",
+   "oracle": "op",
+   "native": "mo"
+  }
+ ]
+}

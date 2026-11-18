@@ -1,0 +1,871 @@
+{
+  "schema": "quds.spacy.grammar.panel.v1",
+  "split": "qualification",
+  "authorship": "Assistant-authored expanded W7 panel; frozen before first outputs. Finite new examples, not an independently sampled population estimate. No fitting after first execution.",
+  "cases": [
+    {
+      "id": "w7-error-01",
+      "kind": "error",
+      "family": "ordinary",
+      "text": "Der junge Hund schlafen heute.",
+      "expected": "Der junge Hund schläft heute.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-01",
+      "kind": "valid",
+      "family": "ordinary",
+      "text": "Der junge Hund schläft heute.",
+      "expected": "Der junge Hund schläft heute.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-02",
+      "kind": "error",
+      "family": "ordinary",
+      "text": "Die kleinen Hunde schläft heute.",
+      "expected": "Die kleinen Hunde schlafen heute.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-02",
+      "kind": "valid",
+      "family": "ordinary",
+      "text": "Die kleinen Hunde schlafen heute.",
+      "expected": "Die kleinen Hunde schlafen heute.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-03",
+      "kind": "error",
+      "family": "ordinary",
+      "text": "Das müde Kind spielen leise.",
+      "expected": "Das müde Kind spielt leise.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-03",
+      "kind": "valid",
+      "family": "ordinary",
+      "text": "Das müde Kind spielt leise.",
+      "expected": "Das müde Kind spielt leise.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-04",
+      "kind": "error",
+      "family": "ordinary",
+      "text": "Die müden Kinder spielt leise.",
+      "expected": "Die müden Kinder spielen leise.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-04",
+      "kind": "valid",
+      "family": "ordinary",
+      "text": "Die müden Kinder spielen leise.",
+      "expected": "Die müden Kinder spielen leise.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-05",
+      "kind": "error",
+      "family": "ordinary",
+      "text": "Der neue Lehrer arbeiten lange.",
+      "expected": "Der neue Lehrer arbeitet lange.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-05",
+      "kind": "valid",
+      "family": "ordinary",
+      "text": "Der neue Lehrer arbeitet lange.",
+      "expected": "Der neue Lehrer arbeitet lange.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-06",
+      "kind": "error",
+      "family": "ordinary",
+      "text": "Die neuen Lehrer arbeitet lange.",
+      "expected": "Die neuen Lehrer arbeiten lange.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-06",
+      "kind": "valid",
+      "family": "ordinary",
+      "text": "Die neuen Lehrer arbeiten lange.",
+      "expected": "Die neuen Lehrer arbeiten lange.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-07",
+      "kind": "error",
+      "family": "ordinary",
+      "text": "Die alte Frau warten draußen.",
+      "expected": "Die alte Frau wartet draußen.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-07",
+      "kind": "valid",
+      "family": "ordinary",
+      "text": "Die alte Frau wartet draußen.",
+      "expected": "Die alte Frau wartet draußen.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-08",
+      "kind": "error",
+      "family": "ordinary",
+      "text": "Die alten Frauen wartet draußen.",
+      "expected": "Die alten Frauen warten draußen.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-08",
+      "kind": "valid",
+      "family": "ordinary",
+      "text": "Die alten Frauen warten draußen.",
+      "expected": "Die alten Frauen warten draußen.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-09",
+      "kind": "error",
+      "family": "ordinary",
+      "text": "Das rote Auto stehen hier.",
+      "expected": "Das rote Auto steht hier.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-09",
+      "kind": "valid",
+      "family": "ordinary",
+      "text": "Das rote Auto steht hier.",
+      "expected": "Das rote Auto steht hier.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-10",
+      "kind": "error",
+      "family": "ordinary",
+      "text": "Die roten Autos steht hier.",
+      "expected": "Die roten Autos stehen hier.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-10",
+      "kind": "valid",
+      "family": "ordinary",
+      "text": "Die roten Autos stehen hier.",
+      "expected": "Die roten Autos stehen hier.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-11",
+      "kind": "error",
+      "family": "pp",
+      "text": "Die Katze auf dem Sofa schlafen ruhig.",
+      "expected": "Die Katze auf dem Sofa schläft ruhig.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-11",
+      "kind": "valid",
+      "family": "pp",
+      "text": "Die Katze auf dem Sofa schläft ruhig.",
+      "expected": "Die Katze auf dem Sofa schläft ruhig.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-12",
+      "kind": "error",
+      "family": "pp",
+      "text": "Die Katzen unter dem Tisch schläft ruhig.",
+      "expected": "Die Katzen unter dem Tisch schlafen ruhig.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-12",
+      "kind": "valid",
+      "family": "pp",
+      "text": "Die Katzen unter dem Tisch schlafen ruhig.",
+      "expected": "Die Katzen unter dem Tisch schlafen ruhig.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-13",
+      "kind": "error",
+      "family": "pp",
+      "text": "Der Mann vor dem Laden warten geduldig.",
+      "expected": "Der Mann vor dem Laden wartet geduldig.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-13",
+      "kind": "valid",
+      "family": "pp",
+      "text": "Der Mann vor dem Laden wartet geduldig.",
+      "expected": "Der Mann vor dem Laden wartet geduldig.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-14",
+      "kind": "error",
+      "family": "pp",
+      "text": "Die Männer vor dem Bahnhof wartet geduldig.",
+      "expected": "Die Männer vor dem Bahnhof warten geduldig.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-14",
+      "kind": "valid",
+      "family": "pp",
+      "text": "Die Männer vor dem Bahnhof warten geduldig.",
+      "expected": "Die Männer vor dem Bahnhof warten geduldig.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-15",
+      "kind": "error",
+      "family": "pp",
+      "text": "Das Mädchen neben dem Fenster lesen leise.",
+      "expected": "Das Mädchen neben dem Fenster liest leise.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-15",
+      "kind": "valid",
+      "family": "pp",
+      "text": "Das Mädchen neben dem Fenster liest leise.",
+      "expected": "Das Mädchen neben dem Fenster liest leise.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-16",
+      "kind": "error",
+      "family": "pp",
+      "text": "Die Mädchen neben der Tür liest leise.",
+      "expected": "Die Mädchen neben der Tür lesen leise.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-16",
+      "kind": "valid",
+      "family": "pp",
+      "text": "Die Mädchen neben der Tür lesen leise.",
+      "expected": "Die Mädchen neben der Tür lesen leise.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-17",
+      "kind": "error",
+      "family": "pp",
+      "text": "Der Junge mit dem Ball laufen schnell.",
+      "expected": "Der Junge mit dem Ball läuft schnell.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-17",
+      "kind": "valid",
+      "family": "pp",
+      "text": "Der Junge mit dem Ball läuft schnell.",
+      "expected": "Der Junge mit dem Ball läuft schnell.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-18",
+      "kind": "error",
+      "family": "pp",
+      "text": "Die Jungen mit dem Ball läuft schnell.",
+      "expected": "Die Jungen mit dem Ball laufen schnell.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-18",
+      "kind": "valid",
+      "family": "pp",
+      "text": "Die Jungen mit dem Ball laufen schnell.",
+      "expected": "Die Jungen mit dem Ball laufen schnell.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-19",
+      "kind": "error",
+      "family": "pp",
+      "text": "Das Buch auf dem Regal liegen schief.",
+      "expected": "Das Buch auf dem Regal liegt schief.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-19",
+      "kind": "valid",
+      "family": "pp",
+      "text": "Das Buch auf dem Regal liegt schief.",
+      "expected": "Das Buch auf dem Regal liegt schief.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-20",
+      "kind": "error",
+      "family": "pp",
+      "text": "Die Bücher auf dem Regal liegt schief.",
+      "expected": "Die Bücher auf dem Regal liegen schief.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-20",
+      "kind": "valid",
+      "family": "pp",
+      "text": "Die Bücher auf dem Regal liegen schief.",
+      "expected": "Die Bücher auf dem Regal liegen schief.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-21",
+      "kind": "error",
+      "family": "inversion",
+      "text": "Heute warten der junge Hund.",
+      "expected": "Heute wartet der junge Hund.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-21",
+      "kind": "valid",
+      "family": "inversion",
+      "text": "Heute wartet der junge Hund.",
+      "expected": "Heute wartet der junge Hund.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-22",
+      "kind": "error",
+      "family": "inversion",
+      "text": "Heute wartet die jungen Hunde.",
+      "expected": "Heute warten die jungen Hunde.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-22",
+      "kind": "valid",
+      "family": "inversion",
+      "text": "Heute warten die jungen Hunde.",
+      "expected": "Heute warten die jungen Hunde.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-23",
+      "kind": "error",
+      "family": "inversion",
+      "text": "Morgen kommen das kleine Kind.",
+      "expected": "Morgen kommt das kleine Kind.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-23",
+      "kind": "valid",
+      "family": "inversion",
+      "text": "Morgen kommt das kleine Kind.",
+      "expected": "Morgen kommt das kleine Kind.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-24",
+      "kind": "error",
+      "family": "inversion",
+      "text": "Morgen kommt die kleinen Kinder.",
+      "expected": "Morgen kommen die kleinen Kinder.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-24",
+      "kind": "valid",
+      "family": "inversion",
+      "text": "Morgen kommen die kleinen Kinder.",
+      "expected": "Morgen kommen die kleinen Kinder.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-25",
+      "kind": "error",
+      "family": "inversion",
+      "text": "Hier stehen der alte Lehrer.",
+      "expected": "Hier steht der alte Lehrer.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-25",
+      "kind": "valid",
+      "family": "inversion",
+      "text": "Hier steht der alte Lehrer.",
+      "expected": "Hier steht der alte Lehrer.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-26",
+      "kind": "error",
+      "family": "inversion",
+      "text": "Hier steht die alten Lehrer.",
+      "expected": "Hier stehen die alten Lehrer.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-26",
+      "kind": "valid",
+      "family": "inversion",
+      "text": "Hier stehen die alten Lehrer.",
+      "expected": "Hier stehen die alten Lehrer.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-27",
+      "kind": "error",
+      "family": "inversion",
+      "text": "Dort wohnen die junge Frau.",
+      "expected": "Dort wohnt die junge Frau.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-27",
+      "kind": "valid",
+      "family": "inversion",
+      "text": "Dort wohnt die junge Frau.",
+      "expected": "Dort wohnt die junge Frau.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-28",
+      "kind": "error",
+      "family": "inversion",
+      "text": "Dort wohnt die jungen Frauen.",
+      "expected": "Dort wohnen die jungen Frauen.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-28",
+      "kind": "valid",
+      "family": "inversion",
+      "text": "Dort wohnen die jungen Frauen.",
+      "expected": "Dort wohnen die jungen Frauen.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-29",
+      "kind": "error",
+      "family": "inversion",
+      "text": "Draußen bleiben das rote Auto.",
+      "expected": "Draußen bleibt das rote Auto.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-29",
+      "kind": "valid",
+      "family": "inversion",
+      "text": "Draußen bleibt das rote Auto.",
+      "expected": "Draußen bleibt das rote Auto.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-30",
+      "kind": "error",
+      "family": "inversion",
+      "text": "Draußen bleibt die roten Autos.",
+      "expected": "Draußen bleiben die roten Autos.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-30",
+      "kind": "valid",
+      "family": "inversion",
+      "text": "Draußen bleiben die roten Autos.",
+      "expected": "Draußen bleiben die roten Autos.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-31",
+      "kind": "error",
+      "family": "lexical",
+      "text": "Der ruhige Gärtner arbeiten sorgfältig.",
+      "expected": "Der ruhige Gärtner arbeitet sorgfältig.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-31",
+      "kind": "valid",
+      "family": "lexical",
+      "text": "Der ruhige Gärtner arbeitet sorgfältig.",
+      "expected": "Der ruhige Gärtner arbeitet sorgfältig.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-32",
+      "kind": "error",
+      "family": "lexical",
+      "text": "Die ruhigen Gärtner arbeitet sorgfältig.",
+      "expected": "Die ruhigen Gärtner arbeiten sorgfältig.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-32",
+      "kind": "valid",
+      "family": "lexical",
+      "text": "Die ruhigen Gärtner arbeiten sorgfältig.",
+      "expected": "Die ruhigen Gärtner arbeiten sorgfältig.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-33",
+      "kind": "error",
+      "family": "lexical",
+      "text": "Die junge Ärztin warten drinnen.",
+      "expected": "Die junge Ärztin wartet drinnen.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-33",
+      "kind": "valid",
+      "family": "lexical",
+      "text": "Die junge Ärztin wartet drinnen.",
+      "expected": "Die junge Ärztin wartet drinnen.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-34",
+      "kind": "error",
+      "family": "lexical",
+      "text": "Die jungen Ärztinnen wartet drinnen.",
+      "expected": "Die jungen Ärztinnen warten drinnen.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-34",
+      "kind": "valid",
+      "family": "lexical",
+      "text": "Die jungen Ärztinnen warten drinnen.",
+      "expected": "Die jungen Ärztinnen warten drinnen.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-35",
+      "kind": "error",
+      "family": "lexical",
+      "text": "Das kleine Pferd laufen langsam.",
+      "expected": "Das kleine Pferd läuft langsam.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-35",
+      "kind": "valid",
+      "family": "lexical",
+      "text": "Das kleine Pferd läuft langsam.",
+      "expected": "Das kleine Pferd läuft langsam.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-36",
+      "kind": "error",
+      "family": "lexical",
+      "text": "Die kleinen Pferde läuft langsam.",
+      "expected": "Die kleinen Pferde laufen langsam.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-36",
+      "kind": "valid",
+      "family": "lexical",
+      "text": "Die kleinen Pferde laufen langsam.",
+      "expected": "Die kleinen Pferde laufen langsam.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-37",
+      "kind": "error",
+      "family": "lexical",
+      "text": "Der freundliche Nachbar kommen später.",
+      "expected": "Der freundliche Nachbar kommt später.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-37",
+      "kind": "valid",
+      "family": "lexical",
+      "text": "Der freundliche Nachbar kommt später.",
+      "expected": "Der freundliche Nachbar kommt später.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-38",
+      "kind": "error",
+      "family": "lexical",
+      "text": "Die freundlichen Nachbarn kommt später.",
+      "expected": "Die freundlichen Nachbarn kommen später.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-38",
+      "kind": "valid",
+      "family": "lexical",
+      "text": "Die freundlichen Nachbarn kommen später.",
+      "expected": "Die freundlichen Nachbarn kommen später.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-39",
+      "kind": "error",
+      "family": "lexical",
+      "text": "Die helle Lampe stehen links.",
+      "expected": "Die helle Lampe steht links.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-39",
+      "kind": "valid",
+      "family": "lexical",
+      "text": "Die helle Lampe steht links.",
+      "expected": "Die helle Lampe steht links.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-error-40",
+      "kind": "error",
+      "family": "lexical",
+      "text": "Die hellen Lampen steht links.",
+      "expected": "Die hellen Lampen stehen links.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-valid-40",
+      "kind": "valid",
+      "family": "lexical",
+      "text": "Die hellen Lampen stehen links.",
+      "expected": "Die hellen Lampen stehen links.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-guard-01",
+      "kind": "guard",
+      "family": "abstention",
+      "text": "Die Frau und der Mann warten vor dem Kino.",
+      "expected": "Die Frau und der Mann warten vor dem Kino.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-guard-02",
+      "kind": "guard",
+      "family": "abstention",
+      "text": "Wenn die Kinder kommen, wartet die Lehrerin.",
+      "expected": "Wenn die Kinder kommen, wartet die Lehrerin.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-guard-03",
+      "kind": "guard",
+      "family": "abstention",
+      "text": "Die Ärztin, die heute arbeitet, wartet dort.",
+      "expected": "Die Ärztin, die heute arbeitet, wartet dort.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-guard-04",
+      "kind": "guard",
+      "family": "abstention",
+      "text": "Die Katze scheint auf dem Sofa zu schlafen.",
+      "expected": "Die Katze scheint auf dem Sofa zu schlafen.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-guard-05",
+      "kind": "guard",
+      "family": "abstention",
+      "text": "Drei von den Männern warten hier.",
+      "expected": "Drei von den Männern warten hier.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-guard-06",
+      "kind": "guard",
+      "family": "abstention",
+      "text": "Die Hälfte der Frauen arbeitet heute.",
+      "expected": "Die Hälfte der Frauen arbeitet heute.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-guard-07",
+      "kind": "guard",
+      "family": "abstention",
+      "text": "„Die kleinen Hunde schläft heute.“ steht im Fehlerbeispiel.",
+      "expected": "„Die kleinen Hunde schläft heute.“ steht im Fehlerbeispiel.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-guard-08",
+      "kind": "guard",
+      "family": "abstention",
+      "text": "Die Adresse https://hunde.example/schlaeft bleibt unverändert.",
+      "expected": "Die Adresse https://hunde.example/schlaeft bleibt unverändert.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-guard-09",
+      "kind": "guard",
+      "family": "abstention",
+      "text": "Der Ordner `die_hunde_schlaeft` ist leer.",
+      "expected": "Der Ordner `die_hunde_schlaeft` ist leer.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-guard-10",
+      "kind": "guard",
+      "family": "abstention",
+      "text": "Die Daten liegen im Verzeichnis /tmp/katzen_schlaeft.",
+      "expected": "Die Daten liegen im Verzeichnis /tmp/katzen_schlaeft.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-guard-11",
+      "kind": "guard",
+      "family": "abstention",
+      "text": "Die Männer arbeiten und die Frauen warten.",
+      "expected": "Die Männer arbeiten und die Frauen warten.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-guard-12",
+      "kind": "guard",
+      "family": "abstention",
+      "text": "Das Mädchen hat heute lange gespielt.",
+      "expected": "Das Mädchen hat heute lange gespielt.",
+      "locale": "de-DE",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-unsupported-01",
+      "kind": "unsupported",
+      "family": "locale",
+      "text": "The friendly dogs sleep outside.",
+      "expected": "The friendly dogs sleep outside.",
+      "locale": "en-US",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-unsupported-02",
+      "kind": "unsupported",
+      "family": "locale",
+      "text": "Les petits chats dorment dehors.",
+      "expected": "Les petits chats dorment dehors.",
+      "locale": "fr-FR",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-unsupported-03",
+      "kind": "unsupported",
+      "family": "locale",
+      "text": "Los niños juegan afuera.",
+      "expected": "Los niños juegan afuera.",
+      "locale": "es-ES",
+      "start_offset": 23
+    },
+    {
+      "id": "w7-unsupported-04",
+      "kind": "unsupported",
+      "family": "locale",
+      "text": "Le piccole gatte dormono fuori.",
+      "expected": "Le piccole gatte dormono fuori.",
+      "locale": "it-IT",
+      "start_offset": 23
+    }
+  ]
+}

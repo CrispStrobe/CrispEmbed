@@ -1,0 +1,301 @@
+{
+  "schema": "crispembed.spacy.ggml-default-ab.v1",
+  "source": "6f1931cdba4e7e12c0938bb23537ca2290cd9dbd",
+  "scope": "Linux x86-64/AVX2 A/B of the ggml+SGEMM default vs the scalar reference engine",
+  "consumed_native_or_grammar_heldout_replayed": false,
+  "stage": "complete",
+  "passed": true,
+  "libraries_sha256": {
+    "default": "cb457c671238d64962c29d6a5c61a3268db40643026011717e0cf8648f4f046e",
+    "sgemm-off": "f793b6ed076c1ce66b72b0b2bd5104759fbdcc1de4624eb7f147711b4424c0ec"
+  },
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "compiler": "c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "development_gates": {
+    "ggml-default": {
+      "spacy_parity.py": {
+        "exit_code": 0,
+        "passed": true,
+        "counts": {
+          "cases": 16,
+          "classifier_decisions": 339,
+          "float_elements": 1406553,
+          "parser_states": 244,
+          "tokens": 113,
+          "trace_stages": 1201
+        }
+      },
+      "spacy_text_parity.py": {
+        "exit_code": 0,
+        "passed": true,
+        "counts": {
+          "cases": 16,
+          "classifier_decisions": 339,
+          "float_elements": 1406553,
+          "numeric_stages": 1201,
+          "parser_steps": 244,
+          "sentences": 22,
+          "tokens": 113
+        }
+      },
+      "test_spacy_text_api.py": {
+        "exit_code": 0,
+        "passed": true,
+        "counts": null
+      }
+    },
+    "scalar": {
+      "spacy_parity.py": {
+        "exit_code": 0,
+        "passed": true,
+        "counts": {
+          "cases": 16,
+          "classifier_decisions": 339,
+          "float_elements": 1406553,
+          "parser_states": 244,
+          "tokens": 113,
+          "trace_stages": 1201
+        }
+      },
+      "spacy_text_parity.py": {
+        "exit_code": 0,
+        "passed": true,
+        "counts": {
+          "cases": 16,
+          "classifier_decisions": 339,
+          "float_elements": 1406553,
+          "numeric_stages": 1201,
+          "parser_steps": 244,
+          "sentences": 22,
+          "tokens": 113
+        }
+      },
+      "test_spacy_text_api.py": {
+        "exit_code": 0,
+        "passed": true,
+        "counts": null
+      }
+    }
+  },
+  "f16_sha256": "8712cdf3840e837cb94994e359a37e124b7010fc2e675983a202e0a1d76439bb",
+  "gsd_ab": {
+    "scalar-f32": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1776,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 22566.568,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 1172.144,
+        "long_doc_tokens_per_s": 1529.7
+      },
+      "differences": []
+    },
+    "ggml-sgemm-f32": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1776,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 2902.765,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 167.743,
+        "long_doc_tokens_per_s": 10689.0
+      },
+      "differences": []
+    },
+    "ggml-sgemm-f32-t4": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1776,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 3072.265,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 142.755,
+        "long_doc_tokens_per_s": 12560.0
+      },
+      "differences": []
+    },
+    "ggml-nosgemm-f32": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1776,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 3516.879,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 199.37,
+        "long_doc_tokens_per_s": 8993.3
+      },
+      "differences": []
+    },
+    "scalar-f16": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1773,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 22582.712,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 1177.797,
+        "long_doc_tokens_per_s": 1522.3
+      },
+      "differences": [
+        {
+          "case": 154,
+          "token": 21,
+          "text": "Salbe",
+          "field": "lemma",
+          "oracle": "Salbe",
+          "native": "Salb"
+        },
+        {
+          "case": 1020,
+          "token": 4,
+          "text": "um",
+          "field": "head",
+          "oracle": 3,
+          "native": 11
+        },
+        {
+          "case": 1152,
+          "token": 4,
+          "text": "auf",
+          "field": "dep",
+          "oracle": "op",
+          "native": "mo"
+        }
+      ]
+    },
+    "ggml-sgemm-f16": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1773,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 4382.575,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 242.825,
+        "long_doc_tokens_per_s": 7383.9
+      },
+      "differences": [
+        {
+          "case": 154,
+          "token": 21,
+          "text": "Salbe",
+          "field": "lemma",
+          "oracle": "Salbe",
+          "native": "Salb"
+        },
+        {
+          "case": 1020,
+          "token": 4,
+          "text": "um",
+          "field": "head",
+          "oracle": 3,
+          "native": 11
+        },
+        {
+          "case": 1152,
+          "token": 4,
+          "text": "auf",
+          "field": "dep",
+          "oracle": "op",
+          "native": "mo"
+        }
+      ]
+    },
+    "ggml-sgemm-f16-upcast": {
+      "admitted": true,
+      "cases": 1776,
+      "exact_cases": 1773,
+      "tokens": 28139,
+      "field_agreement": null,
+      "timing": {
+        "corpus_ms_median": 2923.64,
+        "long_doc_tokens": 1793,
+        "long_doc_ms_median": 166.858,
+        "long_doc_tokens_per_s": 10745.7
+      },
+      "differences": [
+        {
+          "case": 154,
+          "token": 21,
+          "text": "Salbe",
+          "field": "lemma",
+          "oracle": "Salbe",
+          "native": "Salb"
+        },
+        {
+          "case": 1020,
+          "token": 4,
+          "text": "um",
+          "field": "head",
+          "oracle": 3,
+          "native": 11
+        },
+        {
+          "case": 1152,
+          "token": 4,
+          "text": "auf",
+          "field": "dep",
+          "oracle": "op",
+          "native": "mo"
+        }
+      ]
+    }
+  },
+  "original_spacy_with_f16_weights": {
+    "schema": "crispembed.spacy.quant_oracle_replay.v1",
+    "gguf": "/mnt/heavy/scratch/spacy-ggml-default/f16.gguf",
+    "types": [
+      "F16",
+      "F32"
+    ],
+    "replay_flips": 3,
+    "replay_flipped_cases": 3,
+    "flips": [
+      {
+        "case": 154,
+        "token": 21,
+        "text": "Salbe",
+        "field": "lemma",
+        "oracle": "Salbe",
+        "replay": "Salb"
+      },
+      {
+        "case": 1020,
+        "token": 4,
+        "text": "um",
+        "field": "head",
+        "oracle": 3,
+        "replay": 11
+      },
+      {
+        "case": 1152,
+        "token": 4,
+        "text": "auf",
+        "field": "dep",
+        "oracle": "op",
+        "replay": "mo"
+      }
+    ],
+    "native_flips": 3,
+    "shared_flips": 3,
+    "native_only": [],
+    "replay_only": []
+  },
+  "corpus": {
+    "sentences": 1776,
+    "oracle_sha256": "b480415b0f060a88c3c23f1f566503bd58b86897970b1c29fe30fcf4907e0bc0"
+  },
+  "default_candidate_exact": true
+}

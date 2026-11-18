@@ -14,7 +14,13 @@ The owner independently revalidated all 1,031 retained Python/package assertions
 and 25 archive/installer controls. A focused model-free workflow now checks
 archive/consumer engineering and retained evidence at the exact PR head.
 Linux packaging is eligible to land independently of unqualified macOS work.
-No hosted artifact, macOS, quantization or signed-app success is claimed yet.
+PR237 is now owner-merged at `73f8a91e`; Linux publication and unsigned Mac
+development-component execution have actual immutable fresh readback. The new
+96-case grammar panel is consumed once. F16/Q8/Q4 quantization assessments are
+complete and rejected under unchanged numerical/decoded gates. See the
+[current execution receipt](owner-execution/results.json) for exact sources,
+runs, hashes and limits; signing preflight is distinct from a signed app test.
+The historical checkpoints below are preserved, not current pending commands.
 
 The old ENOSPC handoff is superseded. The saved package, current Python consumer
 and corrected current Dart consumer have completed their declared local checks.

@@ -1,0 +1,174 @@
+{
+  "schema": "crispembed.spacy.w7.optimized-f32.v1",
+  "execution_passed": true,
+  "source": "41195dc43b27ed15c19a991803aa8519fff4d7ee",
+  "scope": "Private Linux x86-64/AVX2 F32 affine reduction candidate only",
+  "production_F32_sources_or_capsule_changed": false,
+  "default_gate": "OFF",
+  "consumed_native_W6_W7_heldout_replayed": false,
+  "speed_claim": false,
+  "promoted_profile": false,
+  "Kaggle_kernel_IDs": [],
+  "stage": "fast-text",
+  "fresh_bundle": {
+    "LICENSE": {
+      "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/659dae33997d00296ae12b76510fa4dfe26540e0/bundle/LICENSE",
+      "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+      "bytes": 1056,
+      "http_status": 200,
+      "response_repo_commit": "659dae33997d00296ae12b76510fa4dfe26540e0",
+      "fresh_empty_cache": true
+    },
+    "LICENSES_SOURCES": {
+      "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/659dae33997d00296ae12b76510fa4dfe26540e0/bundle/LICENSES_SOURCES",
+      "sha256": "0c3ab78745569d848b7c83a486183bce42b9643561084d6d6f67eb0229c79869",
+      "bytes": 13470,
+      "http_status": 200,
+      "response_repo_commit": "659dae33997d00296ae12b76510fa4dfe26540e0",
+      "fresh_empty_cache": true
+    },
+    "manifest.json": {
+      "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/659dae33997d00296ae12b76510fa4dfe26540e0/bundle/manifest.json",
+      "sha256": "d599768375de3dc56abcca5cf1d49da0015857f9d3a10640aebb5317ef5d427e",
+      "bytes": 23762,
+      "http_status": 200,
+      "response_repo_commit": "659dae33997d00296ae12b76510fa4dfe26540e0",
+      "fresh_empty_cache": true
+    },
+    "model.gguf": {
+      "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/659dae33997d00296ae12b76510fa4dfe26540e0/bundle/model.gguf",
+      "sha256": "fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd",
+      "bytes": 7383104,
+      "http_status": 200,
+      "response_repo_commit": null,
+      "fresh_empty_cache": true
+    },
+    "resources.json": {
+      "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/659dae33997d00296ae12b76510fa4dfe26540e0/bundle/resources.json",
+      "sha256": "b42496cc373ada57a67ed2f4c2c25f8d22f80c08db5841a7cdb91c8a6e18562a",
+      "bytes": 1404948,
+      "http_status": 200,
+      "response_repo_commit": "659dae33997d00296ae12b76510fa4dfe26540e0",
+      "fresh_empty_cache": true
+    }
+  },
+  "generated_sources_sha256": {
+    "spacy_pipeline.cpp": "61799e14cbba9bc55232d32fcb65f96472bce182be5a77736b690cbb4abb0733",
+    "spacy_numeric.cpp": "cc9120226749b0d526ee32b4ed515f3fdad8da24015f54b4cd9813dcdede0572",
+    "quantize.cpp": "d60246780cba2fcab2b9fcb8ddb2bbf7061ace9c337d02ee516e15fade224c56",
+    "quantized_diff.cpp": "133b3d3157152f2fd073210fcb5c1825defbde857ad4ad17de4f1348ffdd81b8",
+    "CMakeLists.txt": "46c6665d73e423645c840ab15f0e67614327c11b4fa9e567439446879e937738"
+  },
+  "library_sha256": "bef866ae3aef08c543805500a3269555b019287ad54251e7d6369796dd21f559",
+  "compiler": "c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0\nCopyright (C) 2025 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "cpu": "\t: AMD EPYC 9V74 80-Core Processor",
+  "development_gates": {
+    "scalar": {
+      "prepared": {
+        "passed": true,
+        "counts": {
+          "cases": 16,
+          "classifier_decisions": 339,
+          "float_elements": 1406553,
+          "parser_states": 244,
+          "tokens": 113,
+          "trace_stages": 1201
+        },
+        "exit_code": 0,
+        "report_sha256": "b27e851da75be376e47fe83c2c5dd8213a8bdfbc3fc111c858821cc56b0d7776"
+      },
+      "text": {
+        "passed": true,
+        "counts": {
+          "cases": 16,
+          "classifier_decisions": 339,
+          "float_elements": 1406553,
+          "numeric_stages": 1201,
+          "parser_steps": 244,
+          "sentences": 22,
+          "tokens": 113
+        },
+        "exit_code": 0,
+        "report_sha256": "e5bc21a136c3ef9d9cdb57ecb626febdc1fa871e08ad6f473c470b7dd507ad2e"
+      }
+    },
+    "fast": {
+      "prepared": {
+        "passed": true,
+        "counts": {
+          "cases": 16,
+          "classifier_decisions": 339,
+          "float_elements": 1406553,
+          "parser_states": 244,
+          "tokens": 113,
+          "trace_stages": 1201
+        },
+        "exit_code": 0,
+        "report_sha256": "44dbbd98919392395216e6fcec9d61ce253115251d0e47fc1a481fed39b31c80"
+      },
+      "text": {
+        "passed": true,
+        "counts": {
+          "cases": 16,
+          "classifier_decisions": 339,
+          "float_elements": 1406553,
+          "numeric_stages": 1201,
+          "parser_steps": 244,
+          "sentences": 22,
+          "tokens": 113
+        },
+        "exit_code": 0,
+        "report_sha256": "6b0cfcc6174687d302d4d0eb8f6353f38af48c0fa97f6d3540a53ed996cd1897"
+      }
+    }
+  },
+  "optimized_development_passed": true,
+  "same_context_operational_timing": {
+    "warmup_pairs": 3,
+    "measured_pairs": 10,
+    "tokens_per_call": 72,
+    "latencies_seconds": {
+      "scalar": [
+        0.03821157100000505,
+        0.0384206119999817,
+        0.038182038000002194,
+        0.038259422999999515,
+        0.038353884000002836,
+        0.038321134000000256,
+        0.03822807599999578,
+        0.03823265299999434,
+        0.03818531300001382,
+        0.03844759300000078
+      ],
+      "fast": [
+        0.006174368999978697,
+        0.006189341999998987,
+        0.006165385999992168,
+        0.006204113999984884,
+        0.0061593780000066545,
+        0.006195190999989109,
+        0.00616288200001236,
+        0.006187089000007973,
+        0.006180679000010514,
+        0.006219505999979447
+      ]
+    },
+    "median_seconds": {
+      "scalar": 0.03824603799999693,
+      "fast": 0.006183884000009243
+    },
+    "median_reduction_fraction": 0.8383130822594032,
+    "rss_growth_bytes": 0,
+    "all_copied_token_records_exact_between_modes": true,
+    "predeclared_candidate_signal": "At least10% median reduction with <=32MiB sampled growth; not broad performance qualification.",
+    "candidate_signal_passed": true,
+    "limits": "One authored operational input on one hosted CPU, fixed1native thread, alternating order; not cross-host/app/grammar proof."
+  },
+  "diagnostic_speed_signal": true,
+  "run": 44284405910,
+  "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/44284405910",
+  "original_report_sha256": "868f5af07cd444dc66c876c5ff21e950aac1dd25a66dfb810f9344488b25a250",
+  "original_report_bytes": 6516,
+  "model_free_CTest_pass": 4,
+  "limits": "Isolated development candidate on one Linuxx86-64/AVX2 hostedCPU; full16development prepared/rawtext gates pass, finite10paired timing sample only. No consumed acceptance/grammar replay, new accepted profile, release, default change or broad speed claim."
+}

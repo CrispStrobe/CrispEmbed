@@ -1,0 +1,64 @@
+{
+ "label": "scalar-ab-parser",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_QUANT=1"
+ ],
+ "model": "<scratch>/q/ab-parser.gguf",
+ "model_sha256": "89e62d5bde2a1eb2cbdd6c011ea684a779b7e6d50b33c5aecd587e1c286dacb1",
+ "model_bytes": 3655104,
+ "load_ms": 203.53,
+ "cases": 60,
+ "tokens": 835,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 59,
+ "agreement": {
+  "tag": 1.0,
+  "pos": 1.0,
+  "morph": 1.0,
+  "lemma": 1.0,
+  "dep": 0.998802,
+  "head": 0.998802,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 0,
+  "pos": 0,
+  "morph": 0,
+  "lemma": 0,
+  "dep": 1,
+  "head": 1,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 919.714,
+  "long_doc_tokens": 835,
+  "long_doc_ms_median": 670.95,
+  "long_doc_tokens_per_s": 1244.5
+ },
+ "max_abs_drift_vs_reference": {
+  "tok2vec.output": 0.0030221939086914062,
+  "tagger.scores": 0.00830221176147461,
+  "morphologizer.scores": 0.007613122463226318,
+  "lemmatizer.scores": 0.009627342224121094,
+  "parser.lower_cache": 0.1952199935913086
+ },
+ "differences": [
+  {
+   "case": 59,
+   "token": 0,
+   "text": "Aufgrund",
+   "field": "head",
+   "oracle": 4,
+   "native": 11
+  },
+  {
+   "case": 59,
+   "token": 11,
+   "text": "ausverkauft",
+   "field": "dep",
+   "oracle": "pd",
+   "native": "oc"
+  }
+ ]
+}
