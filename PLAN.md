@@ -14,7 +14,7 @@ before claiming a finer first divergence or repair.
 
 The first scoped operator run 44334585175 completed all arms and 13 source
 controls. Independent raw metrics locate the stored-weight difference at token
-lookup and the legacy same-weight difference at layer0 query multiplication.
+lookup and the first legacy same-weight budget failure at layer0 query multiplication.
 The composed context capture exposed a view/backing-allocation lifetime limit;
 the diagnostic now uses owned snapshots. Corrected source `9860370c4` is
 qualified on the frozen request by run 44347337837: original-driver/OFF and

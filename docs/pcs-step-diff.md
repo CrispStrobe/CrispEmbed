@@ -74,7 +74,8 @@ Independent raw-array review verifies all five 266-stage reports. Original versu
 stored weights first differs at token lookup, maximum 0.04326669872; position
 lookup differs by 0.04800090566. Type embeddings and embedding normalization
 scale/bias are byte-identical. Legacy versus the same stored weights first
-differs at layer-0 query multiplication, maximum 0.07043683529. Reference-input
+exceeds the diagnostic budget at layer-0 query multiplication, maximum
+0.07043683529. Reference-input
 replay retains that local difference (0.07043671608), separating it from
 upstream amplification. F32-materialized reference-input replay passes all
 266 boundaries; this does not repair the stored-weight decoded failure.
@@ -119,9 +120,18 @@ The numerical and quality failures remain. Composed F32 has 256/266 passing
 boundaries and ten QK absolute-budget failures: first layer1 QK, maximum
 0.0002994537354; largest at layer4 QK, 0.0003986358643. Independent-input F32
 replay passes 266/266 with maximum 9.155273438e-5, below the unchanged 0.0001
-budget. Legacy same-weight computation still first differs at layer0 query
+budget. Legacy same-weight computation still first exceeds the budget at layer0 query
 multiplication; original versus stored weights still first differs at token
 lookup. No threshold, original scorer or reference is changed.
+
+The first nonzero native/same-weight reference difference precedes those budget
+failures: embedding summation differs by one ULP (1.192092896e-7) at full-token
+1/channel588, native bits `bfc5f763` versus reference `bfc5f762`. A bounded offline
+check of the captured operands reproduces all 9,984 output values bit-for-bit
+with the two actual source orders: native `(token+position)+type`, original
+`(token+type)+position`. This is within budget; it is not evidence that the
+summation difference alone causes the decoded failure. First nonzero difference
+and first budget failure are reported separately.
 
 Row37's original `o` logit remains +1.083245516, stored-graph −0.238312081,
 legacy native −0.098158233 and materialized native −0.238311455. Native composed
