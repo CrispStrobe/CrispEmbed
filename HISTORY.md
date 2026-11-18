@@ -1,3 +1,12 @@
+## spaCy v2 profile: English and French exact — 18 November 2026
+
+Branch `feat/spacy-en-v2-20261118`. A generic spaCy 3.8 CNN converter and
+runtime path (`spacy_pipeline_v2`) add en_core_web_sm and fr_core_news_sm:
+2,077/2,077 UD English-EWT test texts (25,531 tokens, 1,876/1,876 entities)
+and 416/416 UD French-GSD test texts (9,786 tokens, 469/469 entities) are
+identical to original spaCy through the C ABI. German v1 is unchanged.
+[Audit](docs/validation/native-spacy-v2-20261118/README.md).
+
 ## spaCy ggml+SGEMM default, F16 upcast and opt-in NER — 18 November 2026
 
 Branch `feat/spacy-default-ner-20261118`. On 1,776 UD German GSD sentences
