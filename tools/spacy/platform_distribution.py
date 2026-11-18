@@ -27,7 +27,7 @@ import importlib.util
 import io
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import shutil
 import stat
 import sys
@@ -349,7 +349,8 @@ def verify_tree(directory, trusted_sha256: str, *, named: bool = True) -> dict:
     data = json.loads(manifest_bytes)
     _check_manifest(data)
     pins = {**data["files"], MANIFEST_NAME: _pin(manifest_bytes)}
-    allowed_dirs = {str(p) for name in pins for p in Path(name).parents if str(p) != "."}
+    # Member names are POSIX paths; compare them as such on every host.
+    allowed_dirs = {p.as_posix() for name in pins for p in PurePosixPath(name).parents if str(p) != "."}
     found_files, found_dirs = set(), set()
     for current, dirs, names in os.walk(directory, followlinks=False):
         parent = Path(current)

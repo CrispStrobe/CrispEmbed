@@ -47,7 +47,7 @@ jobs:
           - platform: linux-arm64
             runner: ubuntu-22.04-arm
           - platform: macos-arm64
-            runner: macos-14
+            runner: macos-15
           - platform: windows-x86_64
             runner: windows-2022
     runs-on: ${{ matrix.runner }}
@@ -120,7 +120,7 @@ jobs:
   ios:
     needs: [mobile-oracle, package]
     if: ${{ always() && needs.mobile-oracle.result == 'success' && (!inputs.platform || inputs.platform == 'all' || inputs.platform == 'ios') }}
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 90
     defaults:
       run:
