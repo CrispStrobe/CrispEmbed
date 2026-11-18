@@ -2,6 +2,18 @@
 
 ## PCS main failure: confirmed stored-weight quality blocker — 18 November 2026
 
+**Final checkpoint:** [the PCS final handoff](docs/pcs-final-handoff.md) is the
+current continuation record. Canonical evidence remains `135665fc5` and the
+301-file inventory; no new experiments, runs, builds or broad sweeps start at
+this checkpoint. The separately user-authorized operator owner qualified observer
+`986037`/44347337837 and reported six scoped controls/QK contribution at
+`0b54ef8ba`. PCS remains decoded `oK`, with ten QK negatives and full gates
+unqualified. The newer held-fixed panel lacks casing fc1/fc2 weight payloads;
+exact casing-causing tensor/conversion remain unknown. Preserve that scoped
+result separately from the canonical all214-tensor replay. No production fix,
+repair PR/merge, fullstop or main-green closure is claimed.
+
+
 Dedicated PCS ownership continued the preserved `7d9a952f` diagnostic branch.
 The retained main `be20e497` push failure remains open: post/pre/segmentation
 67/67, casing 66/67, decoded 5/6 (`OK` → `oK`); fullstop was not reached.

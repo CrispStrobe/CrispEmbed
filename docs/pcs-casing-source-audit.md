@@ -129,8 +129,8 @@ SHA-256 `faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da`.
 This is a positive control, **not reproduction or repair** of the retained
 66/67, 5/6 failure. Production PCS, references and acceptance checks remain
 byte-identical. The [declared AVX2/original-graph follow-up](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44273793050)
-is pending; no CPU-specific cause, production fix, fullstop or main closure
-is established by this positive result.
+subsequently reproduced the negative described below; this positive control
+alone establishes no CPU-specific cause, production fix, fullstop or main closure.
 
 ## Actual failure and independent stored-weight blocker
 
@@ -181,3 +181,13 @@ offending tensor, conversion operation and conversion commit are **not proven**;
 no artifact repair or regeneration is authorized by this handoff. The next owner
 and artifact work require separate scope/authorization. Existing raw receipts
 suffice for bounded review; no unchanged model execution is requested.
+
+
+## Final checkpoint
+
+[The final PCS handoff](pcs-final-handoff.md) records the latest user-reported
+separate operator continuation, its qualified corrected observer, scoped QK
+contribution, missing casing fc1/fc2 payload blocker and remaining closure gates.
+Canonical `135665fc5` and every positive/negative boundary remain retained.
+No new experiment, build, model run, broad sweep or duplicate audit was started
+for this checkpoint. Production and acceptance bytes remain unchanged.

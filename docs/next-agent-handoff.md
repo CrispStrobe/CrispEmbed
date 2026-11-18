@@ -873,3 +873,16 @@ singleton-axis failure44276100741, and corrected negative replay44276378964.
 Do not rebuild or replay those unchanged sources for a checkpoint. Public PLAN
 and the [source/actual audit](pcs-casing-source-audit.md) give exact margins,
 identities and gates. No source-only workaround, waiver or main closure is valid.
+
+
+## PCS final checkpoint
+
+Use [PCS final handoff](pcs-final-handoff.md) before any resumed PCS work.
+Canonical `135665fc5`/301-file evidence remains unchanged. Separate operator
+observer986037/44347337837 is qualified for the frozen CPU/AVX2 request; later
+0b54ef8ba is a scoped QK contribution, while decoded `oK`, ten QK negatives and
+unqualified full gates remain. Missing casing fc1/fc2 weight payloads block the
+newer held-fixed panel. Exact casing-causing tensor/conversion remain unknown.
+No new runs/builds/sweeps start from this final checkpoint; no repair, fullstop
+or main-green closure is claimed. The final handoff separates scopes and exact
+remaining steps without private machine/access details.

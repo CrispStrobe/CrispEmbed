@@ -25,3 +25,10 @@ runtime. The exact offending tensor, conversion operation and conversion commit
 are not proven. No artifact repair/regeneration or new owner is authorized by this
 handoff. Artifact/model remediation requires separate scope; existing raw receipts
 support bounded review. Preserve every positive and negative boundary.
+
+
+The [final checkpoint handoff](../../../docs/pcs-final-handoff.md) records the
+separately authorized operator continuation and its narrower qualification limits.
+Its missing casing-projection payloads do not change this canonical stored-weight
+replay result, and its scoped QK contribution is not a PCS repair. No repeated
+execution or audit is needed to preserve these existing receipts.
