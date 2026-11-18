@@ -93,29 +93,32 @@ release, app pins, mobile and model distribution remain separate.
 
 | Lane | Owner/branch | Current boundary | Next gate |
 | --- | --- | --- | --- |
-| German spaCy CPU/F32 | `feat/native-spacy-w7-20261118` in both repositories; W6 heads remain preserved | W0–W5 acceptance/analysis preserved; first sealed W6 qualification passes: baseline 5/30, native and combined 22/30 exact errors (+17), zero findings on 42 valid and 10 guard inputs; [W6 evidence and limits](docs/validation/native-spacy-w6-20261117/README.md) | W7 target packaging, device qualification and immutable model/native distribution; manual provider API stays default off, with no automatic Studio registration |
+| German spaCy CPU/F32 | `feat/native-spacy-w7-20261118` in both repositories | W6 acceptance/grammar evidence preserved; bounded Linux package reproduction/install and current Python/Dart operational consumers independently audited complete | Immutable hosted publication/download readback, portable dependencies and other platforms/devices; manual provider stays default off |
 
 The [W7 continuation](docs/validation/native-spacy-w7-20261118/README.md) now
 implements immutable Linux packaging and freezes actual dependency/loading/cleanup
 controls. It preserves the native/model bytes and both consumed panels.
 
-The [18 November fresh-workspace continuation](docs/validation/native-spacy-w7-20261118/resume-20261118/source-refresh.json)
-has fetched all available origin branch and PR heads in both repositories;
-both current mains are already included and all 342 sealed W6 source blobs
-remain unchanged. The corrected Python consumer now passes its 21 controls,
-and its printed protocol matches the frozen bytes. Exact-input package
-reproduction and the first Python/Dart operational consumers are in progress;
-these checks do not rerun either consumed linguistic panel.
+The [paired W7 local completion](docs/validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json)
+now authenticates 25 package controls, two byte-identical full-input package
+builds, immutable installation, 21 current Python controls and its 102-pair
+operational run, plus 17 compiled Dart controls and the corrected-source
+installed worker's eight operational cases. The retained evidence passes an
+independent 1,031-check Python/package audit and a separate Dart coordinate,
+source and dependency audit. These are source-bound engineering checks; neither
+consumed linguistic panel was rerun.
 
-The later [remote reconciliation](docs/validation/native-spacy-w7-20261118/completion-20261118/source-refresh.json)
-recovers the newer passing package, Python and Dart receipts from both W7
-branches before any further work. All 245 CrispEmbed and 191 Quds branches,
-available PR heads and recent PR metadata are refreshed. Main `be20e497`
-(worksheet PR #235) is integrated into this branch; the accepted spaCy archive,
-consumer/converter sources and prior evidence are unchanged. Quds already
-contains its current main. Independent retained-evidence audits are in progress;
-the old filesystem-exhaustion handoff is historical and will be reconciled with
-the verified results. GitHub Actions are not queried or awaited.
+The [complete remote reconciliation](docs/validation/native-spacy-w7-20261118/completion-20261118/source-refresh.json)
+records all 245 CrispEmbed and 191 Quds branches, 217 and 154 fetched PR heads,
+and recent PR metadata. Main `be20e497` (worksheet PR #235) is included at
+`d18efcaf`, preserving the accepted spaCy archive, implementation and previous
+receipts. Quds main is already included; all 342 sealed W6 sources match.
+The independent Office PR #154 remains outside this candidate. The updated
+[continuation instructions](docs/validation/native-spacy-w7-20261118/CONTINUE.md)
+supersede the historical ENOSPC/pending-consumer handoff. Next: immutable hosted
+publication and empty-cache consumer readback, then separately declared
+portable/dependency and platform/device qualification. Both PRs remain draft
+for that broader distribution work.
 
 The user requires incremental remote checkpoints and local validation without
 querying or waiting for Actions. Preserve all unrelated paths/defaults. This

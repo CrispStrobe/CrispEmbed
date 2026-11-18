@@ -101,17 +101,27 @@ python3 -B tools/spacy/distribution.py install \
   --cache /path/to/private-cache
 ```
 
-The preserved candidate archive is 7,808,129 bytes. A second complete build-byte
-comparison remains pending, although fixture determinism controls passed.
-The generated archive is not a hosted model/native release.
+The preserved candidate archive is 7,808,129 bytes. Two subsequent full-input
+builds were compared byte for byte and both match its original recorded hash
+and size. The immutable installed tree also passed complete verification. The
+generated archive remains outside ordinary Git and is not a hosted release.
 
-The corrected Python operational driver and the paired Dart worker driver are
-saved source-only checkpoints: their current tests/compilation and actual
-operational runs were blocked by workspace exhaustion. Follow the
+The current Python consumer passes 21 controls and the frozen operational run:
+one disabled and three enabled processes, 24 panel executions, 78 warmup/cycle
+executions and 102 fully freed context/document pairs. Each enabled process
+records at most 102,400 bytes of sampled post-warmup RSS growth, with final
+file descriptors unchanged at three. The paired current Dart driver compiled
+17 controls and passed its installed-worker eight-case run, including explicit
+locale and worker lifecycle assertions.
+
+The [paired completion](../../docs/validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json)
+links independent retained-source/evidence audits. These supersede the old
+source-only ENOSPC status; historical first outcomes remain intact. Follow the
 [continuation instructions](../../docs/validation/native-spacy-w7-20261118/CONTINUE.md)
-before using them. Earlier 18-control evidence applies only to the earlier Python
-source, not its reconstructed/corrected checkpoint. No application/default or
-accepted native/model changes accompany these developer tools.
+for read-only audit commands and the next publication/readback lane. This
+completion loads no new model and changes no application default or accepted
+native/model bytes. Other platforms, portable dependencies, Flutter/device
+behavior and physical compute interruption are not qualified by these results.
 
 ## Contract and reference evidence
 
@@ -235,8 +245,9 @@ prompt interruption of native compute through Dart is not claimed.
 
 ## Next implementation steps
 
-1. W7 packaging: prepare target-specific native/model packages with exact
-   identities, native dependency closure and notices. Preserve the accepted
+1. W7 packaging: the preserved Linux package and Python/Dart operational
+   consumers are complete. Prepare separately declared portable/platform
+   candidates with exact dependency closure and notices; preserve the accepted
    native candidate and both consumed first qualification results.
 2. W7 device qualification: verify actual loading, offline operation, worker
    cleanup/cancellation and resource budgets on each intended target. The

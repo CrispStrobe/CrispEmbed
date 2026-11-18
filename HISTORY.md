@@ -1,3 +1,20 @@
+## 18 November 2026 — Native spaCy Linux package and worker evidence closed
+
+The [paired W7 completion](docs/validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json)
+authenticates the saved package and consumer work: 25 package controls, two
+byte-identical complete-input archives matching the original hash/length,
+immutable installation, 21 current Python controls and a four-process
+operational run, and 17 compiled Dart controls with an eight-case owned-worker
+run. The first Dart outcome and subsequent source-label correction are retained.
+
+Independent retained-evidence review passes 1,031 Python/package assertions and
+recomputes Dart coordinates, all 38 source/configuration identities and all 342
+sealed W6 sources. The fresh closure performs no native inference, model rebuild,
+linguistic qualification or Actions operation. It integrates main `be20e497`,
+retains the original native/model bytes and corrects stale ENOSPC handoffs.
+Hosted publication/readback, portable dependencies, other platforms/devices and
+production activation remain separate. No runtime release is published here.
+
 ## 15 November 2026 — Worksheet cleanup component validation
 
 The straightness follow-up replaces the single-angle assumption for explicitly
