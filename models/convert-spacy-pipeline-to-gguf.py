@@ -260,9 +260,13 @@ def extract(nlp, source: Path):
                         "morph": str(MorphAnalysis(nlp.vocab, morph.cfg["labels_morph"][label]))}
                        for label in morph.labels]}
     parser_moves, parser_upper = export_transition(nlp, "parser", "parser.", tensors, origins, 8)
-    labels["parser"] = {"moves": parser_moves, "has_upper": parser_upper,
+    labels["parser"] = {"moves": parser_moves,
                         "learn_tokens": nlp.get_pipe("parser").cfg.get("learn_tokens", False),
                         "features": ["B0", "B1", "S0", "S1", "S2", "L(B0,1)", "L(S0,1)", "R(S0,1)"]}
+    if not parser_upper:
+        # Only written when False, so CNN bundles stay byte-identical to the
+        # published v2 bundles (the runtime treats a missing key as True).
+        labels["parser"]["has_upper"] = False
     require(labels["parser"]["learn_tokens"] is False, "Subtoken learning parser unsupported")
     if "ner" in pipes:
         ner_rows = export_tok2vec(nlp, nlp.get_pipe("ner").model, "ner.", "ner", NER_FEATURES, tensors, origins)

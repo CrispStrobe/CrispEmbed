@@ -486,6 +486,79 @@ crispembed::spacy::NumericOutput run_numeric(const crispembed_spacy_context & co
 
 } // namespace
 
+// Kept outside extern "C": MSVC /EHsc assumes extern "C" functions never
+// throw, so exceptions from these helpers would escape the ABI catch blocks.
+namespace {
+
+// Authenticate the model bytes first, then read only its GGUF architecture.
+bool is_v2_model(const char * model_path, const char * expected_sha256) {
+    require(model_path && *model_path && valid_sha(expected_sha256),
+            "Explicit model path and trusted lowercase SHA-256 required");
+    // Streamed hash: v2 transformer models are several hundred MB.
+    std::ifstream probe(model_path, std::ios::binary | std::ios::ate);
+    require(static_cast<bool>(probe), "Cannot open spaCy GGUF file");
+    const auto length = probe.tellg();
+    require(length >= 24 && length <= static_cast<std::streamoff>(1024u * 1024u * 1024u),
+            "GGUF file size outside admitted bounds");
+    probe.close();
+    require(core_sha256::file(model_path) == expected_sha256, "GGUF SHA-256 mismatch");
+    gguf_init_params params{ true, nullptr };
+    std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(gguf_init_from_file(model_path, params), gguf_free);
+    require(meta != nullptr, "Invalid spaCy GGUF container");
+    const auto key = gguf_find_key(meta.get(), "general.architecture");
+    return key >= 0 && gguf_get_kv_type(meta.get(), key) == GGUF_TYPE_STRING &&
+           std::string(gguf_get_val_str(meta.get(), key)) == "spacy_pipeline_v2";
+}
+
+// Version-2 pipelines (models/convert-spacy-pipeline-to-gguf.py). The model
+// pins its resources by SHA-256; every tensor must be finite F32.
+crispembed_spacy_context * create_v2(const char * model_path, const char * expected_sha256,
+                                     const std::string & resources, const char * expected_resources_sha256) {
+    gguf_init_params params{ true, nullptr };
+    std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(gguf_init_from_file(model_path, params), gguf_free);
+    require(meta != nullptr, "Invalid spaCy v2 GGUF container");
+    auto string_value = [&](const char * name) {
+        const auto key = gguf_find_key(meta.get(), name);
+        require(key >= 0 && gguf_get_kv_type(meta.get(), key) == GGUF_TYPE_STRING,
+                (std::string("Missing spaCy v2 metadata ") + name).c_str());
+        return std::string(gguf_get_val_str(meta.get(), key));
+    };
+    const auto format = gguf_find_key(meta.get(), "spacy.format_version");
+    require(format >= 0 && gguf_get_kv_type(meta.get(), format) == GGUF_TYPE_UINT32 &&
+                gguf_get_val_u32(meta.get(), format) == 2,
+            "Unsupported spaCy v2 format version");
+    require(string_value("spacy.resources.sha256") == expected_resources_sha256,
+            "spaCy v2 resources do not belong to this model");
+    require(string_value("spacy.precision") == "f32", "Only F32 spaCy v2 models are admitted");
+    const auto language = string_value("spacy.language");
+    require(language == "en" || language == "fr", "Unsupported spaCy v2 language");
+    auto context = std::make_unique<crispembed_spacy_context>();
+    context->model_sha256 = expected_sha256;
+    context->backend = ggml_backend_cpu_init();
+    if (!context->backend) throw std::bad_alloc();
+    ggml_backend_cpu_set_n_threads(context->backend, spacy_threads());
+    require(core_gguf::load_weights(model_path, context->backend, "spacy-v2", context->weights, false),
+            "Cannot load admitted spaCy v2 weights");
+    require(!context->weights.used_mmap, "Unexpected spaCy v2 weight ownership");
+    std::map<std::string, ggml_tensor *> weights;
+    for (const auto & item : context->weights.tensors) {
+        const auto * tensor = item.second;
+        require(tensor->type == GGML_TYPE_F32 && ggml_is_contiguous(tensor),
+                ("Non-F32 spaCy v2 tensor: " + item.first).c_str());
+        const auto * values = static_cast<const float *>(tensor->data);
+        for (int64_t i = 0; i < ggml_nelements(tensor); ++i)
+            if (!std::isfinite(values[i])) require(false, ("Nonfinite spaCy v2 tensor: " + item.first).c_str());
+        weights.emplace(item.first, item.second);
+    }
+    require(core_sha256::file(model_path) == expected_sha256, "GGUF file changed while opening");
+    context->lexical = std::make_unique<crispembed::spacy::LexicalModel>(resources);
+    context->v2 = std::make_unique<crispembed::spacy::PipelineV2>(resources, std::move(weights), context->backend,
+                                                                  *context->lexical);
+    return context.release();
+}
+
+} // namespace
+
 extern "C" {
 
 uint32_t crispembed_spacy_set_enabled(uint32_t flags) {
@@ -739,76 +812,6 @@ void crispembed_spacy_free(crispembed_spacy_context * context) {
     delete context;
 }
 
-namespace {
-
-// Authenticate the model bytes first, then read only its GGUF architecture.
-bool is_v2_model(const char * model_path, const char * expected_sha256) {
-    require(model_path && *model_path && valid_sha(expected_sha256),
-            "Explicit model path and trusted lowercase SHA-256 required");
-    // Streamed hash: v2 transformer models are several hundred MB.
-    std::ifstream probe(model_path, std::ios::binary | std::ios::ate);
-    require(static_cast<bool>(probe), "Cannot open spaCy GGUF file");
-    const auto length = probe.tellg();
-    require(length >= 24 && length <= static_cast<std::streamoff>(1024u * 1024u * 1024u),
-            "GGUF file size outside admitted bounds");
-    probe.close();
-    require(core_sha256::file(model_path) == expected_sha256, "GGUF SHA-256 mismatch");
-    gguf_init_params params{ true, nullptr };
-    std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(gguf_init_from_file(model_path, params), gguf_free);
-    require(meta != nullptr, "Invalid spaCy GGUF container");
-    const auto key = gguf_find_key(meta.get(), "general.architecture");
-    return key >= 0 && gguf_get_kv_type(meta.get(), key) == GGUF_TYPE_STRING &&
-           std::string(gguf_get_val_str(meta.get(), key)) == "spacy_pipeline_v2";
-}
-
-// Version-2 pipelines (models/convert-spacy-pipeline-to-gguf.py). The model
-// pins its resources by SHA-256; every tensor must be finite F32.
-crispembed_spacy_context * create_v2(const char * model_path, const char * expected_sha256,
-                                     const std::string & resources, const char * expected_resources_sha256) {
-    gguf_init_params params{ true, nullptr };
-    std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(gguf_init_from_file(model_path, params), gguf_free);
-    require(meta != nullptr, "Invalid spaCy v2 GGUF container");
-    auto string_value = [&](const char * name) {
-        const auto key = gguf_find_key(meta.get(), name);
-        require(key >= 0 && gguf_get_kv_type(meta.get(), key) == GGUF_TYPE_STRING,
-                (std::string("Missing spaCy v2 metadata ") + name).c_str());
-        return std::string(gguf_get_val_str(meta.get(), key));
-    };
-    const auto format = gguf_find_key(meta.get(), "spacy.format_version");
-    require(format >= 0 && gguf_get_kv_type(meta.get(), format) == GGUF_TYPE_UINT32 &&
-                gguf_get_val_u32(meta.get(), format) == 2,
-            "Unsupported spaCy v2 format version");
-    require(string_value("spacy.resources.sha256") == expected_resources_sha256,
-            "spaCy v2 resources do not belong to this model");
-    require(string_value("spacy.precision") == "f32", "Only F32 spaCy v2 models are admitted");
-    const auto language = string_value("spacy.language");
-    require(language == "en" || language == "fr", "Unsupported spaCy v2 language");
-    auto context = std::make_unique<crispembed_spacy_context>();
-    context->model_sha256 = expected_sha256;
-    context->backend = ggml_backend_cpu_init();
-    if (!context->backend) throw std::bad_alloc();
-    ggml_backend_cpu_set_n_threads(context->backend, spacy_threads());
-    require(core_gguf::load_weights(model_path, context->backend, "spacy-v2", context->weights, false),
-            "Cannot load admitted spaCy v2 weights");
-    require(!context->weights.used_mmap, "Unexpected spaCy v2 weight ownership");
-    std::map<std::string, ggml_tensor *> weights;
-    for (const auto & item : context->weights.tensors) {
-        const auto * tensor = item.second;
-        require(tensor->type == GGML_TYPE_F32 && ggml_is_contiguous(tensor),
-                ("Non-F32 spaCy v2 tensor: " + item.first).c_str());
-        const auto * values = static_cast<const float *>(tensor->data);
-        for (int64_t i = 0; i < ggml_nelements(tensor); ++i)
-            if (!std::isfinite(values[i])) require(false, ("Nonfinite spaCy v2 tensor: " + item.first).c_str());
-        weights.emplace(item.first, item.second);
-    }
-    require(core_sha256::file(model_path) == expected_sha256, "GGUF file changed while opening");
-    context->lexical = std::make_unique<crispembed::spacy::LexicalModel>(resources);
-    context->v2 = std::make_unique<crispembed::spacy::PipelineV2>(resources, std::move(weights), context->backend,
-                                                                  *context->lexical);
-    return context.release();
-}
-
-} // namespace
 
 crispembed_spacy_context * crispembed_spacy_create_with_resources(const char * model_path,
                                                                   const char * expected_model_sha256,
