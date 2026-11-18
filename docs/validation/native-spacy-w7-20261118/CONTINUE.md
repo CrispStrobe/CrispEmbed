@@ -1,5 +1,21 @@
 # Continue W7 after the verified Linux package and consumer gates
 
+## Current owner execution — 18 November 2026
+
+The user has now authorized completing W7: merge the independently valid Linux
+packaging scope, immutable hosted publication/readback, real macOS ARM64 and
+signed-app qualification, paired Quds/CrispCloud integration with the provider
+default OFF, a separately frozen new grammar panel, and separately gated
+quantization/optimized execution. This supersedes the historical no-Actions and
+keep-everything-draft instructions below. Do not rerun consumed native/W6
+acceptance panels. Keep this accepted F32 package and its evidence unchanged.
+
+The owner independently revalidated all 1,031 retained Python/package assertions
+and 25 archive/installer controls. A focused model-free workflow now checks
+archive/consumer engineering and retained evidence at the exact PR head.
+Linux packaging is eligible to land independently of unqualified macOS work.
+No hosted artifact, macOS, quantization or signed-app success is claimed yet.
+
 The old ENOSPC handoff is superseded. The saved package, current Python consumer
 and corrected current Dart consumer have completed their declared local checks.
 Start from the remote branch and the [paired completion record](completion-20261118/paired-completion.json);

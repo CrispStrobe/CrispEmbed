@@ -1,5 +1,19 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## W7 completion ownership — 18 November 2026
+
+Owner `owner/spacy-w7-finish-20261118` continues PR237 from `f22662cf` and
+paired Quds PR153 from `2e013f26`, preserving the consumed native and W6 panels.
+The retained Linux audit passes all 1,031 assertions and the 25 archive/installer
+controls pass locally. Focused exact-head model-free CI is added before owner
+merge; Linux packaging is not held for macOS. Next execute immutable hosted
+publication with empty-cache hash/tree/install readback, real macOS ARM64 and
+signed-app worker controls, default-OFF CrispCloud settings/provider wiring,
+separately frozen additional grammar cases, and separately gated quantization
+and optimized execution. Keep accepted F32, all failures and old evidence intact.
+Publication/other-platform/quantized/grammar claims require actual source-bound
+runs. No runtime/app release or default activation follows from preparatory work.
+
 ## PR235 post-OOM owner repair — 18 November 2026
 
 At `6dffe3029`, artifact validation and clang-format pass; current Build
