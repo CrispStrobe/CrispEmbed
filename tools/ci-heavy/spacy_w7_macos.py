@@ -37,6 +37,7 @@ def main():
               'consumed_acceptance_or_W6_replayed': False, 'signed_app_qualified': False,
               'source': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
               'model_revision': args.revision, 'architecture': platform.machine(), 'system': platform.platform(),
+              'python': sys.version,
               'pcre2_commit': PCRE2, 'development_oracle_commit': ORACLE}
 
     def save():

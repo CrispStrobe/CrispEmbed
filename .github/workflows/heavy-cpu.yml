@@ -134,7 +134,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ startsWith(inputs.script, 'tools/ci-heavy/spacy_w7_') && '3.12.14' || '3.12' }}
+          python-version: ${{ startsWith(inputs.script, 'tools/ci-heavy/spacy_w7_') && runner.os == 'Linux' && '3.12.14' || '3.12' }}
 
       - name: Install extra pip packages
         if: inputs.pip != ''
