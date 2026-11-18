@@ -97,6 +97,40 @@ def publish_commit(api, repository, uploads, message, scratch):
             'fresh_readback': readback}, fresh
 
 
+def published_bundle(api, repository, pins, scratch):
+    """An existing commit whose bundle/* equals these pins, read back fresh; else None.
+
+    Prefers the commit that introduced the files (consumers pin the bundle
+    commit, not a later card commit); falls back to the current head.
+    """
+    head = api.model_info(repository).sha
+    if not set(pins) <= set(api.list_repo_files(repository, revision=head)):
+        return None
+    candidates = []
+    for commit in api.list_repo_commits(repository):  # newest first
+        if not set(pins) <= set(api.list_repo_files(repository, revision=commit.commit_id)):
+            break
+        candidates.append(commit.commit_id)
+    for revision in ([candidates[-1]] if candidates else []) + [head]:
+        fresh = scratch / f'fresh-existing-{revision[:12]}'
+        fresh.mkdir(exist_ok=True)
+        readback = {}
+        try:
+            for path, pin in pins.items():
+                local = fresh / path
+                local.parent.mkdir(parents=True, exist_ok=True)
+                if local.exists():
+                    local.unlink()
+                url = f'https://huggingface.co/{repository}/resolve/{revision}/' + urllib.parse.quote(path, safe='/')
+                readback[path] = common.download(url, local, pin['sha256'], pin['bytes'])
+        except AssertionError:
+            continue
+        tree = sorted(api.list_repo_files(repository, revision=revision))
+        return {'repository': repository, 'revision': revision, 'head_at_check': head,
+                'reused_existing_commit': True, 'tree': tree, 'pins': pins, 'fresh_readback': readback}, fresh
+    return None
+
+
 def build(args, entry, out, scratch, report, run):
     assert sys.platform == 'linux' and host.machine() == 'x86_64', 'Linux x86-64 only'
     assert host.python_version() == '3.12.14', 'Canonical conversion needs CPython 3.12.14'
@@ -158,10 +192,17 @@ def build(args, entry, out, scratch, report, run):
     api = hub_api()
     report['publisher'] = api.whoami()['name']
     api.create_repo(entry['repository'], repo_type='model', private=False, exist_ok=True)
-    report['publication'], fresh = publish_commit(
-        api, entry['repository'], {path: payload / path for path in report['bundle_files']},
-        f"Publish {args.model} {entry['version']} native spaCy v2 bundle from CrispEmbed {report['source'][:12]}",
-        scratch)
+    reused = published_bundle(api, entry['repository'], report['bundle_files'], scratch)
+    if reused:
+        # Re-runs (e.g. to add consumers once more capsules exist) keep the
+        # already published, byte-identical bundle commit instead of an
+        # empty commit; it is still read back fresh and verified.
+        report['publication'], fresh = reused
+    else:
+        report['publication'], fresh = publish_commit(
+            api, entry['repository'], {path: payload / path for path in report['bundle_files']},
+            f"Publish {args.model} {entry['version']} native spaCy v2 bundle from CrispEmbed {report['source'][:12]}",
+            scratch)
     fresh_manifest = json.loads((fresh / 'bundle/manifest.json').read_text(encoding='utf-8'))
     for name, pin in entry['expected_files'].items():
         assert fresh_manifest['files'][name] == {'sha256': pin['sha256'], 'size_bytes': pin['bytes']}
