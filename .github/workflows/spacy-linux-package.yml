@@ -10,6 +10,10 @@ on:
       - 'tools/ci-heavy/spacy_w7_platform_package.py'
       - 'tests/test_spacy_distribution*.py'
       - 'tests/test_spacy_platform_distribution.py'
+      - 'tests/test_spacy_language_bundles.py'
+      - 'tools/spacy/language_bundles.json'
+      - 'tools/spacy/bundle_card.py'
+      - 'tools/ci-heavy/spacy_v2_bundle.py'
       - 'docs/validation/native-spacy-w7-20261118/**'
       - '.github/workflows/spacy-linux-package.yml'
   workflow_dispatch:
@@ -38,6 +42,8 @@ jobs:
         run: python3 -B tests/test_spacy_distribution_consumer.py -v
       - name: Platform capsule, catalog and model-card controls (no native/model load)
         run: python3 -B tests/test_spacy_platform_distribution.py -v
+      - name: Language-bundle catalog and model-card controls (no native/model load)
+        run: python3 -B tests/test_spacy_language_bundles.py -v
       - name: Independently authenticate retained Linux evidence
         run: >-
           python3 -B docs/validation/native-spacy-w7-20261118/completion-20261118/audit_retained_python_package.py
