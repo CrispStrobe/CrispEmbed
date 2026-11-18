@@ -39,6 +39,9 @@ add_subdirectory("${CRISPEMBED_ROOT}/ggml" "${CMAKE_CURRENT_BINARY_DIR}/ggml" EX
 find_package(Threads REQUIRED)
 find_path(SPACY_PCRE2_INCLUDE_DIR NAMES pcre2.h REQUIRED)
 find_library(SPACY_PCRE2_LIBRARY NAMES pcre2-8 REQUIRED)
+# A static PCRE2 on Windows must be consumed with PCRE2_STATIC (no dllimport).
+# Other platforms ignore the define; their builds are unchanged.
+option(SPACY_PCRE2_STATIC "SPACY_PCRE2_LIBRARY is a static PCRE2 (Windows needs PCRE2_STATIC)" OFF)
 
 add_library(crispembed-spacy SHARED
     "${CRISPEMBED_ROOT}/src/spacy_pipeline.cpp"
@@ -52,6 +55,9 @@ target_include_directories(crispembed-spacy PUBLIC "${CRISPEMBED_ROOT}/src")
 target_include_directories(crispembed-spacy PRIVATE "${SPACY_PCRE2_INCLUDE_DIR}")
 target_link_libraries(crispembed-spacy PRIVATE ggml ggml-cpu Threads::Threads "${SPACY_PCRE2_LIBRARY}")
 target_compile_definitions(crispembed-spacy PRIVATE CRISPEMBED_SPACY_BUILD PUBLIC CRISPEMBED_SPACY_SHARED)
+if(SPACY_PCRE2_STATIC)
+    target_compile_definitions(crispembed-spacy PRIVATE PCRE2_STATIC)
+endif()
 if(MSVC)
     target_compile_options(crispembed-spacy PRIVATE /W4 /fp:strict /utf-8)
 else()
@@ -92,6 +98,9 @@ if(BUILD_TESTING)
             if(component STREQUAL "lexical")
                 target_include_directories(test-spacy-${component} PRIVATE "${SPACY_PCRE2_INCLUDE_DIR}")
                 target_link_libraries(test-spacy-${component} PRIVATE "${SPACY_PCRE2_LIBRARY}")
+                if(SPACY_PCRE2_STATIC)
+                    target_compile_definitions(test-spacy-${component} PRIVATE PCRE2_STATIC)
+                endif()
             endif()
             add_test(NAME spacy-${component}-contract COMMAND test-spacy-${component})
         endif()

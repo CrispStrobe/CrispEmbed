@@ -15,6 +15,7 @@
 #include "spacy_decode.h"
 
 #include <algorithm>
+#include <atomic>
 #include <array>
 #include <cmath>
 #include <cstdlib>
@@ -28,6 +29,22 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+// Process-wide enablement set by crispembed_spacy_set_enabled(). A host that
+// enables analysis through this call need not mutate its process environment
+// (setenv is not thread-safe against concurrent getenv). The environment gates
+// keep working unchanged; either source enables a service.
+static std::atomic<uint32_t> g_spacy_enabled_flags{ 0 };
+
+static bool spacy_enabled() {
+    return (g_spacy_enabled_flags.load(std::memory_order_acquire) & CRISPEMBED_SPACY_ENABLE_ANALYSIS) != 0 ||
+           core_env::on("CRISPEMBED_SPACY");
+}
+
+static bool spacy_ner_enabled() {
+    return (g_spacy_enabled_flags.load(std::memory_order_acquire) & CRISPEMBED_SPACY_ENABLE_NER) != 0 ||
+           core_env::on("CRISPEMBED_SPACY_NER");
+}
 
 namespace {
 
@@ -461,6 +478,11 @@ crispembed::spacy::NumericOutput run_numeric(const crispembed_spacy_context & co
 
 extern "C" {
 
+uint32_t crispembed_spacy_set_enabled(uint32_t flags) {
+    return g_spacy_enabled_flags.exchange(flags & (CRISPEMBED_SPACY_ENABLE_ANALYSIS | CRISPEMBED_SPACY_ENABLE_NER),
+                                          std::memory_order_acq_rel);
+}
+
 uint32_t crispembed_spacy_abi_version(void) {
     return CRISPEMBED_SPACY_ABI_VERSION;
 }
@@ -486,7 +508,7 @@ crispembed_spacy_context * crispembed_spacy_create(const char * model_path, cons
     error_text(error, error_capacity, "");
     if (error_capacity && !error) return nullptr;
     try {
-        if (!core_env::on("CRISPEMBED_SPACY")) {
+        if (!spacy_enabled()) {
             error_text(error, error_capacity,
                        "Native spaCy numeric development backend is disabled; set CRISPEMBED_SPACY=1");
             return nullptr;
@@ -583,7 +605,7 @@ int crispembed_spacy_attach_ner(crispembed_spacy_context * context, const char *
         return CRISPEMBED_SPACY_INVALID_ARGUMENT;
     }
     try {
-        if (!core_env::on("CRISPEMBED_SPACY") || !core_env::on("CRISPEMBED_SPACY_NER")) {
+        if (!spacy_enabled() || !spacy_ner_enabled()) {
             error_text(error, error_capacity, "Native spaCy NER is disabled; set CRISPEMBED_SPACY_NER=1");
             return CRISPEMBED_SPACY_DISABLED;
         }
@@ -704,7 +726,7 @@ crispembed_spacy_context * crispembed_spacy_create_with_resources(const char * m
     error_text(error, error_capacity, "");
     if (error_capacity && !error) return nullptr;
     try {
-        if (!core_env::on("CRISPEMBED_SPACY")) {
+        if (!spacy_enabled()) {
             error_text(error, error_capacity, "Native spaCy backend is disabled; set CRISPEMBED_SPACY=1");
             return nullptr;
         }
@@ -738,7 +760,7 @@ int crispembed_spacy_tokenize_utf8(crispembed_spacy_context * context, const cha
         return CRISPEMBED_SPACY_INVALID_ARGUMENT;
     }
     try {
-        if (!core_env::on("CRISPEMBED_SPACY")) {
+        if (!spacy_enabled()) {
             error_text(error, error_capacity, "Native spaCy backend is disabled");
             return CRISPEMBED_SPACY_DISABLED;
         }
@@ -781,7 +803,7 @@ int crispembed_spacy_analyze_utf8(crispembed_spacy_context * context, const char
         return CRISPEMBED_SPACY_INVALID_ARGUMENT;
     }
     try {
-        if (!core_env::on("CRISPEMBED_SPACY")) {
+        if (!spacy_enabled()) {
             error_text(error, error_capacity, "Native spaCy backend is disabled");
             return CRISPEMBED_SPACY_DISABLED;
         }
@@ -945,7 +967,7 @@ int crispembed_spacy_forward_features(crispembed_spacy_context * context, const 
         return CRISPEMBED_SPACY_INVALID_ARGUMENT;
     }
     try {
-        if (!core_env::on("CRISPEMBED_SPACY")) {
+        if (!spacy_enabled()) {
             error_text(error, error_capacity, "Native spaCy numeric development backend is disabled");
             return CRISPEMBED_SPACY_DISABLED;
         }
@@ -1023,7 +1045,7 @@ int crispembed_spacy_parser_scores(crispembed_spacy_context * context, const cri
         return CRISPEMBED_SPACY_INVALID_ARGUMENT;
     }
     try {
-        if (!core_env::on("CRISPEMBED_SPACY")) {
+        if (!spacy_enabled()) {
             error_text(error, error_capacity, "Native spaCy numeric development backend is disabled");
             return CRISPEMBED_SPACY_DISABLED;
         }

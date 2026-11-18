@@ -57,6 +57,14 @@ typedef int (*crispembed_spacy_trace_callback)(void * user, const char * stage, 
                                                const size_t * shape, size_t rank);
 typedef int (*crispembed_spacy_cancel_callback)(void * user);
 
+// Process-wide enablement without environment variables. Flags replace the
+// previous set (returned); 0 clears them. Either a flag or its environment gate
+// (CRISPEMBED_SPACY=1 / CRISPEMBED_SPACY_NER=1) enables the service, so existing
+// environment-driven hosts are unchanged. Safe to call from any thread; it does
+// not affect contexts already created except for later per-call gate checks.
+enum crispembed_spacy_enable_flag { CRISPEMBED_SPACY_ENABLE_ANALYSIS = 1, CRISPEMBED_SPACY_ENABLE_NER = 2 };
+CRISPEMBED_SPACY_API uint32_t crispembed_spacy_set_enabled(uint32_t flags);
+
 CRISPEMBED_SPACY_API uint32_t crispembed_spacy_abi_version(void);
 // Legacy numeric-service mask, retained for existing prepared-feature clients.
 CRISPEMBED_SPACY_API uint32_t crispembed_spacy_capabilities(void);
