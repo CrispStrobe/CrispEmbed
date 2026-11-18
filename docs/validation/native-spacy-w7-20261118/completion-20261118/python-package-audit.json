@@ -1,0 +1,4423 @@
+{
+  "auditor_sha256": "ad0233a8acecade32d807488e8a6049a0025e3282b6610cae218ba66cd0d3f9b",
+  "checked": 1031,
+  "checks": [
+    {
+      "check": "protocol external pin",
+      "passed": true
+    },
+    {
+      "check": "protocol equals pre-execution freeze",
+      "passed": true
+    },
+    {
+      "check": "package index hash: README.md",
+      "passed": true
+    },
+    {
+      "check": "package index size: README.md",
+      "passed": true
+    },
+    {
+      "check": "package index hash: bundle-files.json",
+      "passed": true
+    },
+    {
+      "check": "package index size: bundle-files.json",
+      "passed": true
+    },
+    {
+      "check": "package index hash: conversion.log",
+      "passed": true
+    },
+    {
+      "check": "package index size: conversion.log",
+      "passed": true
+    },
+    {
+      "check": "package index hash: dependency-preflight.json",
+      "passed": true
+    },
+    {
+      "check": "package index size: dependency-preflight.json",
+      "passed": true
+    },
+    {
+      "check": "package index hash: distribution-build-a.json",
+      "passed": true
+    },
+    {
+      "check": "package index size: distribution-build-a.json",
+      "passed": true
+    },
+    {
+      "check": "package index hash: distribution-build-b.json",
+      "passed": true
+    },
+    {
+      "check": "package index size: distribution-build-b.json",
+      "passed": true
+    },
+    {
+      "check": "package index hash: distribution-byte-comparison.json",
+      "passed": true
+    },
+    {
+      "check": "package index size: distribution-byte-comparison.json",
+      "passed": true
+    },
+    {
+      "check": "package index hash: distribution-controls.txt",
+      "passed": true
+    },
+    {
+      "check": "package index size: distribution-controls.txt",
+      "passed": true
+    },
+    {
+      "check": "package index hash: distribution-install.json",
+      "passed": true
+    },
+    {
+      "check": "package index size: distribution-install.json",
+      "passed": true
+    },
+    {
+      "check": "package index hash: distribution-verify-install.json",
+      "passed": true
+    },
+    {
+      "check": "package index size: distribution-verify-install.json",
+      "passed": true
+    },
+    {
+      "check": "package index hash: elf-dynamic.txt",
+      "passed": true
+    },
+    {
+      "check": "package index size: elf-dynamic.txt",
+      "passed": true
+    },
+    {
+      "check": "package index hash: elf-header.txt",
+      "passed": true
+    },
+    {
+      "check": "package index size: elf-header.txt",
+      "passed": true
+    },
+    {
+      "check": "package index hash: elf-versions.txt",
+      "passed": true
+    },
+    {
+      "check": "package index size: elf-versions.txt",
+      "passed": true
+    },
+    {
+      "check": "package index hash: loader-resolution.txt",
+      "passed": true
+    },
+    {
+      "check": "package index size: loader-resolution.txt",
+      "passed": true
+    },
+    {
+      "check": "package index hash: model-wheel-download.json",
+      "passed": true
+    },
+    {
+      "check": "package index size: model-wheel-download.json",
+      "passed": true
+    },
+    {
+      "check": "package index hash: native-restore.json",
+      "passed": true
+    },
+    {
+      "check": "package index size: native-restore.json",
+      "passed": true
+    },
+    {
+      "check": "package index hash: package-result.json",
+      "passed": true
+    },
+    {
+      "check": "package index size: package-result.json",
+      "passed": true
+    },
+    {
+      "check": "package index hash: reference-environment.json",
+      "passed": true
+    },
+    {
+      "check": "package index size: reference-environment.json",
+      "passed": true
+    },
+    {
+      "check": "package index hash: reference-install.log",
+      "passed": true
+    },
+    {
+      "check": "package index size: reference-install.log",
+      "passed": true
+    },
+    {
+      "check": "manifest recomputed digest",
+      "passed": true
+    },
+    {
+      "check": "original archive identity",
+      "passed": true
+    },
+    {
+      "check": "original archive length",
+      "passed": true
+    },
+    {
+      "check": "original manifest identity",
+      "passed": true
+    },
+    {
+      "check": "original manifest content",
+      "passed": true
+    },
+    {
+      "check": "original payload count",
+      "passed": true
+    },
+    {
+      "check": "original verification outcome",
+      "passed": true
+    },
+    {
+      "check": "rebuild-a archive identity",
+      "passed": true
+    },
+    {
+      "check": "rebuild-a archive length",
+      "passed": true
+    },
+    {
+      "check": "rebuild-a manifest identity",
+      "passed": true
+    },
+    {
+      "check": "rebuild-a manifest content",
+      "passed": true
+    },
+    {
+      "check": "rebuild-a payload count",
+      "passed": true
+    },
+    {
+      "check": "rebuild-a verification outcome",
+      "passed": true
+    },
+    {
+      "check": "rebuild-b archive identity",
+      "passed": true
+    },
+    {
+      "check": "rebuild-b archive length",
+      "passed": true
+    },
+    {
+      "check": "rebuild-b manifest identity",
+      "passed": true
+    },
+    {
+      "check": "rebuild-b manifest content",
+      "passed": true
+    },
+    {
+      "check": "rebuild-b payload count",
+      "passed": true
+    },
+    {
+      "check": "rebuild-b verification outcome",
+      "passed": true
+    },
+    {
+      "check": "two complete rebuilds compared byte for byte",
+      "passed": true
+    },
+    {
+      "check": "both rebuilds match original frozen digest",
+      "passed": true
+    },
+    {
+      "check": "first_restored_build digest",
+      "passed": true
+    },
+    {
+      "check": "first_restored_build length",
+      "passed": true
+    },
+    {
+      "check": "second_restored_build digest",
+      "passed": true
+    },
+    {
+      "check": "second_restored_build length",
+      "passed": true
+    },
+    {
+      "check": "current package source hash: models/convert-spacy-to-gguf.py",
+      "passed": true
+    },
+    {
+      "check": "current package source size: models/convert-spacy-to-gguf.py",
+      "passed": true
+    },
+    {
+      "check": "current package source hash: models/spacy_bundle.py",
+      "passed": true
+    },
+    {
+      "check": "current package source size: models/spacy_bundle.py",
+      "passed": true
+    },
+    {
+      "check": "current package source hash: tests/test_spacy_distribution.py",
+      "passed": true
+    },
+    {
+      "check": "current package source size: tests/test_spacy_distribution.py",
+      "passed": true
+    },
+    {
+      "check": "current package source hash: tools/spacy/distribution.py",
+      "passed": true
+    },
+    {
+      "check": "current package source size: tools/spacy/distribution.py",
+      "passed": true
+    },
+    {
+      "check": "current package source hash: tools/spacy/requirements-reference.txt",
+      "passed": true
+    },
+    {
+      "check": "current package source size: tools/spacy/requirements-reference.txt",
+      "passed": true
+    },
+    {
+      "check": "distribution-install.json digest",
+      "passed": true
+    },
+    {
+      "check": "distribution-install.json manifest",
+      "passed": true
+    },
+    {
+      "check": "distribution-install.json payload count",
+      "passed": true
+    },
+    {
+      "check": "distribution-install.json result",
+      "passed": true
+    },
+    {
+      "check": "distribution-verify-install.json digest",
+      "passed": true
+    },
+    {
+      "check": "distribution-verify-install.json manifest",
+      "passed": true
+    },
+    {
+      "check": "distribution-verify-install.json payload count",
+      "passed": true
+    },
+    {
+      "check": "distribution-verify-install.json result",
+      "passed": true
+    },
+    {
+      "check": "install transport authenticated",
+      "passed": true
+    },
+    {
+      "check": "install newly published",
+      "passed": true
+    },
+    {
+      "check": "retained 25 package controls",
+      "passed": true
+    },
+    {
+      "check": "native archive actual bytes",
+      "passed": true
+    },
+    {
+      "check": "native archive actual length",
+      "passed": true
+    },
+    {
+      "check": "native archive frozen digest",
+      "passed": true
+    },
+    {
+      "check": "native archive file count",
+      "passed": true
+    },
+    {
+      "check": "native archive distinct regular files",
+      "passed": true
+    },
+    {
+      "check": "native bytes: include/spacy_pipeline.h",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: include/spacy_pipeline.h",
+      "passed": true
+    },
+    {
+      "check": "native bytes: lib/libcrispembed-spacy.so",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: lib/libcrispembed-spacy.so",
+      "passed": true
+    },
+    {
+      "check": "native bytes: share/licenses/crispembed-spacy/CrispEmbed-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: share/licenses/crispembed-spacy/CrispEmbed-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "native bytes: share/licenses/crispembed-spacy/THIRD_PARTY_NOTICES",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: share/licenses/crispembed-spacy/THIRD_PARTY_NOTICES",
+      "passed": true
+    },
+    {
+      "check": "native bytes: share/licenses/crispembed-spacy/ggml-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: share/licenses/crispembed-spacy/ggml-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "native bytes: share/licenses/crispembed-spacy/notices/CPython-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: share/licenses/crispembed-spacy/notices/CPython-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "native bytes: share/licenses/crispembed-spacy/notices/PCRE2-LICENCE.md",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: share/licenses/crispembed-spacy/notices/PCRE2-LICENCE.md",
+      "passed": true
+    },
+    {
+      "check": "native bytes: share/licenses/crispembed-spacy/notices/Thinc-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: share/licenses/crispembed-spacy/notices/Thinc-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "native bytes: share/licenses/crispembed-spacy/notices/Unicode-15.0.0-ReadMe.txt",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: share/licenses/crispembed-spacy/notices/Unicode-15.0.0-ReadMe.txt",
+      "passed": true
+    },
+    {
+      "check": "native bytes: share/licenses/crispembed-spacy/notices/Unicode-LICENSE.txt",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: share/licenses/crispembed-spacy/notices/Unicode-LICENSE.txt",
+      "passed": true
+    },
+    {
+      "check": "native bytes: share/licenses/crispembed-spacy/notices/continuation-notice-sources.json",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: share/licenses/crispembed-spacy/notices/continuation-notice-sources.json",
+      "passed": true
+    },
+    {
+      "check": "native bytes: share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "native bytes: share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSES_SOURCES",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSES_SOURCES",
+      "passed": true
+    },
+    {
+      "check": "native bytes: share/licenses/crispembed-spacy/notices/ggml-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: share/licenses/crispembed-spacy/notices/ggml-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "native bytes: share/licenses/crispembed-spacy/notices/spaCy-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "native-to-package pin: share/licenses/crispembed-spacy/notices/spaCy-LICENSE",
+      "passed": true
+    },
+    {
+      "check": "bundle five members",
+      "passed": true
+    },
+    {
+      "check": "bundle frozen pin: LICENSE",
+      "passed": true
+    },
+    {
+      "check": "bundle-to-package pin: LICENSE",
+      "passed": true
+    },
+    {
+      "check": "bundle frozen pin: LICENSES_SOURCES",
+      "passed": true
+    },
+    {
+      "check": "bundle-to-package pin: LICENSES_SOURCES",
+      "passed": true
+    },
+    {
+      "check": "bundle frozen pin: manifest.json",
+      "passed": true
+    },
+    {
+      "check": "bundle-to-package pin: manifest.json",
+      "passed": true
+    },
+    {
+      "check": "bundle frozen pin: model.gguf",
+      "passed": true
+    },
+    {
+      "check": "bundle-to-package pin: model.gguf",
+      "passed": true
+    },
+    {
+      "check": "bundle frozen pin: resources.json",
+      "passed": true
+    },
+    {
+      "check": "bundle-to-package pin: resources.json",
+      "passed": true
+    },
+    {
+      "check": "official wheel frozen sha256",
+      "passed": true
+    },
+    {
+      "check": "official wheel frozen size_bytes",
+      "passed": true
+    },
+    {
+      "check": "official wheel frozen url",
+      "passed": true
+    },
+    {
+      "check": "21-control exit",
+      "passed": true
+    },
+    {
+      "check": "retained 21 consumer controls",
+      "passed": true
+    },
+    {
+      "check": "printed protocol exact bytes",
+      "passed": true
+    },
+    {
+      "check": "retained driver report digest",
+      "passed": true
+    },
+    {
+      "check": "prior retained audit report digest",
+      "passed": true
+    },
+    {
+      "check": "driver stdout successful",
+      "passed": true
+    },
+    {
+      "check": "driver stderr empty",
+      "passed": true
+    },
+    {
+      "check": "controls source unchanged during run",
+      "passed": true
+    },
+    {
+      "check": "controls current source: docs/validation/native-spacy-w7-20261118/operational-protocol.json",
+      "passed": true
+    },
+    {
+      "check": "controls recorded commit source: docs/validation/native-spacy-w7-20261118/operational-protocol.json",
+      "passed": true
+    },
+    {
+      "check": "controls current source: tests/test_spacy_distribution_consumer.py",
+      "passed": true
+    },
+    {
+      "check": "controls recorded commit source: tests/test_spacy_distribution_consumer.py",
+      "passed": true
+    },
+    {
+      "check": "controls current source: tools/spacy/distribution.py",
+      "passed": true
+    },
+    {
+      "check": "controls recorded commit source: tools/spacy/distribution.py",
+      "passed": true
+    },
+    {
+      "check": "controls current source: tools/spacy/distribution_consumer.py",
+      "passed": true
+    },
+    {
+      "check": "controls recorded commit source: tools/spacy/distribution_consumer.py",
+      "passed": true
+    },
+    {
+      "check": "execution source unchanged during run",
+      "passed": true
+    },
+    {
+      "check": "execution current source: docs/validation/native-spacy-w7-20261118/operational-protocol.json",
+      "passed": true
+    },
+    {
+      "check": "execution recorded commit source: docs/validation/native-spacy-w7-20261118/operational-protocol.json",
+      "passed": true
+    },
+    {
+      "check": "execution current source: tests/test_spacy_distribution_consumer.py",
+      "passed": true
+    },
+    {
+      "check": "execution recorded commit source: tests/test_spacy_distribution_consumer.py",
+      "passed": true
+    },
+    {
+      "check": "execution current source: tools/spacy/distribution.py",
+      "passed": true
+    },
+    {
+      "check": "execution recorded commit source: tools/spacy/distribution.py",
+      "passed": true
+    },
+    {
+      "check": "execution current source: tools/spacy/distribution_consumer.py",
+      "passed": true
+    },
+    {
+      "check": "execution recorded commit source: tools/spacy/distribution_consumer.py",
+      "passed": true
+    },
+    {
+      "check": "launch source commit",
+      "passed": true
+    },
+    {
+      "check": "launch source hashes",
+      "passed": true
+    },
+    {
+      "check": "driver successful",
+      "passed": true
+    },
+    {
+      "check": "driver native not loaded",
+      "passed": true
+    },
+    {
+      "check": "driver external return code",
+      "passed": true
+    },
+    {
+      "check": "driver external timeout absent",
+      "passed": true
+    },
+    {
+      "check": "payload reverified after all children",
+      "passed": true
+    },
+    {
+      "check": "driver initial source binding",
+      "passed": true
+    },
+    {
+      "check": "driver final source binding",
+      "passed": true
+    },
+    {
+      "check": "manifest and protocol dependency identity",
+      "passed": true
+    },
+    {
+      "check": "driver verified transport/payload",
+      "passed": true
+    },
+    {
+      "check": "driver archive",
+      "passed": true
+    },
+    {
+      "check": "driver manifest",
+      "passed": true
+    },
+    {
+      "check": "driver payloads",
+      "passed": true
+    },
+    {
+      "check": "driver six resolved dependency pins",
+      "passed": true
+    },
+    {
+      "check": "driver dependencies all matched",
+      "passed": true
+    },
+    {
+      "check": "driver ELF floors",
+      "passed": true
+    },
+    {
+      "check": "driver ELF no rpath/runpath",
+      "passed": true
+    },
+    {
+      "check": "driver ELF closure",
+      "passed": true
+    },
+    {
+      "check": "driver target",
+      "passed": true
+    },
+    {
+      "check": "driver cpu flags",
+      "passed": true
+    },
+    {
+      "check": "driver loader overrides absent",
+      "passed": true
+    },
+    {
+      "check": "child 0 file digest",
+      "passed": true
+    },
+    {
+      "check": "child 0 embedded report exact",
+      "passed": true
+    },
+    {
+      "check": "child 0 stdout successful",
+      "passed": true
+    },
+    {
+      "check": "child 0 stderr empty",
+      "passed": true
+    },
+    {
+      "check": "child 0 return code",
+      "passed": true
+    },
+    {
+      "check": "child 0 timeout absent",
+      "passed": true
+    },
+    {
+      "check": "child 0 frozen timeout",
+      "passed": true
+    },
+    {
+      "check": "child 0 expected index",
+      "passed": true
+    },
+    {
+      "check": "child 0 expected mode",
+      "passed": true
+    },
+    {
+      "check": "child 0 passed",
+      "passed": true
+    },
+    {
+      "check": "child 0 before sources",
+      "passed": true
+    },
+    {
+      "check": "child 0 after sources",
+      "passed": true
+    },
+    {
+      "check": "child 0 protocol",
+      "passed": true
+    },
+    {
+      "check": "child 0 installed payload recheck",
+      "passed": true
+    },
+    {
+      "check": "child 0 verified transport/payload",
+      "passed": true
+    },
+    {
+      "check": "child 0 archive",
+      "passed": true
+    },
+    {
+      "check": "child 0 manifest",
+      "passed": true
+    },
+    {
+      "check": "child 0 payloads",
+      "passed": true
+    },
+    {
+      "check": "child 0 six resolved dependency pins",
+      "passed": true
+    },
+    {
+      "check": "child 0 dependencies all matched",
+      "passed": true
+    },
+    {
+      "check": "child 0 ELF floors",
+      "passed": true
+    },
+    {
+      "check": "child 0 ELF no rpath/runpath",
+      "passed": true
+    },
+    {
+      "check": "child 0 ELF closure",
+      "passed": true
+    },
+    {
+      "check": "child 0 target",
+      "passed": true
+    },
+    {
+      "check": "child 0 cpu flags",
+      "passed": true
+    },
+    {
+      "check": "child 0 loader overrides absent",
+      "passed": true
+    },
+    {
+      "check": "child 0 actual_loaded_closure pins",
+      "passed": true
+    },
+    {
+      "check": "child 0 actual_loaded_closure inode checks",
+      "passed": true
+    },
+    {
+      "check": "child 0 refused disabled context",
+      "passed": true
+    },
+    {
+      "check": "child 0 disabled zero ownership",
+      "passed": true
+    },
+    {
+      "check": "child 0 disabled no inference",
+      "passed": true
+    },
+    {
+      "check": "child 0 disabled no cases/cycles",
+      "passed": true
+    },
+    {
+      "check": "child 1 file digest",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded report exact",
+      "passed": true
+    },
+    {
+      "check": "child 1 stdout successful",
+      "passed": true
+    },
+    {
+      "check": "child 1 stderr empty",
+      "passed": true
+    },
+    {
+      "check": "child 1 return code",
+      "passed": true
+    },
+    {
+      "check": "child 1 timeout absent",
+      "passed": true
+    },
+    {
+      "check": "child 1 frozen timeout",
+      "passed": true
+    },
+    {
+      "check": "child 1 expected index",
+      "passed": true
+    },
+    {
+      "check": "child 1 expected mode",
+      "passed": true
+    },
+    {
+      "check": "child 1 passed",
+      "passed": true
+    },
+    {
+      "check": "child 1 before sources",
+      "passed": true
+    },
+    {
+      "check": "child 1 after sources",
+      "passed": true
+    },
+    {
+      "check": "child 1 protocol",
+      "passed": true
+    },
+    {
+      "check": "child 1 installed payload recheck",
+      "passed": true
+    },
+    {
+      "check": "child 1 verified transport/payload",
+      "passed": true
+    },
+    {
+      "check": "child 1 archive",
+      "passed": true
+    },
+    {
+      "check": "child 1 manifest",
+      "passed": true
+    },
+    {
+      "check": "child 1 payloads",
+      "passed": true
+    },
+    {
+      "check": "child 1 six resolved dependency pins",
+      "passed": true
+    },
+    {
+      "check": "child 1 dependencies all matched",
+      "passed": true
+    },
+    {
+      "check": "child 1 ELF floors",
+      "passed": true
+    },
+    {
+      "check": "child 1 ELF no rpath/runpath",
+      "passed": true
+    },
+    {
+      "check": "child 1 ELF closure",
+      "passed": true
+    },
+    {
+      "check": "child 1 target",
+      "passed": true
+    },
+    {
+      "check": "child 1 cpu flags",
+      "passed": true
+    },
+    {
+      "check": "child 1 loader overrides absent",
+      "passed": true
+    },
+    {
+      "check": "child 1 actual_loaded_closure pins",
+      "passed": true
+    },
+    {
+      "check": "child 1 actual_loaded_closure inode checks",
+      "passed": true
+    },
+    {
+      "check": "child 1 actual_loaded_closure_after_cycles pins",
+      "passed": true
+    },
+    {
+      "check": "child 1 actual_loaded_closure_after_cycles inode checks",
+      "passed": true
+    },
+    {
+      "check": "child 1 case order",
+      "passed": true
+    },
+    {
+      "check": "child 1 empty input hash",
+      "passed": true
+    },
+    {
+      "check": "child 1 empty input length",
+      "passed": true
+    },
+    {
+      "check": "child 1 empty annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 1 empty freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 1 empty source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 1 empty derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji input hash",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji input length",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji token coordinates/flags 7",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji token coordinates/flags 8",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji tree reaches sentence root 7",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji tree reaches sentence root 8",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 1 unicode_emoji derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul input hash",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul input length",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 1 embedded_nul derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences input hash",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences input length",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences token coordinates/flags 7",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences token coordinates/flags 8",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences token coordinates/flags 9",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences tree reaches sentence root 7",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences tree reaches sentence root 8",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences tree reaches sentence root 9",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 1 multiple_sentences derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 1 whitespace input hash",
+      "passed": true
+    },
+    {
+      "check": "child 1 whitespace input length",
+      "passed": true
+    },
+    {
+      "check": "child 1 whitespace annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 1 whitespace freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 1 whitespace token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 whitespace sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 whitespace tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 whitespace source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 1 whitespace derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word input hash",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word input length",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 1 repeated_word derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation input hash",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation input length",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation token coordinates/flags 7",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation token coordinates/flags 8",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation token coordinates/flags 9",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation token coordinates/flags 10",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation token coordinates/flags 11",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation token coordinates/flags 12",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation tree reaches sentence root 7",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation tree reaches sentence root 8",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation tree reaches sentence root 9",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation tree reaches sentence root 10",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation tree reaches sentence root 11",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation tree reaches sentence root 12",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 1 quotation_punctuation derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph input hash",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph input length",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 7",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 8",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 7",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 8",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 9",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 10",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 11",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 12",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 13",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 14",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 15",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph sentence root 9",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 9",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 10",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 11",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 12",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 13",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 14",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 15",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 16",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 17",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 18",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 19",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 20",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 21",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 22",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 23",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 24",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph sentence root 16",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 16",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 17",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 18",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 19",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 20",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 21",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 22",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 23",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 24",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 25",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 26",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 27",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 28",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 29",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 30",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph token coordinates/flags 31",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph sentence root 25",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 25",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 26",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 27",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 28",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 29",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 30",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph tree reaches sentence root 31",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 1 moderate_paragraph derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup input hash",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup input length",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 1 warmup derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 1 cycle count",
+      "passed": true
+    },
+    {
+      "check": "child 1 cycle index sequence",
+      "passed": true
+    },
+    {
+      "check": "child 1 cycle repeat exact hashes",
+      "passed": true
+    },
+    {
+      "check": "child 1 full drained ownership",
+      "passed": true
+    },
+    {
+      "check": "child 1 derived RSS growth",
+      "passed": true
+    },
+    {
+      "check": "child 1 RSS budget",
+      "passed": true
+    },
+    {
+      "check": "child 1 final sample",
+      "passed": true
+    },
+    {
+      "check": "child 1 final FD bound",
+      "passed": true
+    },
+    {
+      "check": "child 2 file digest",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded report exact",
+      "passed": true
+    },
+    {
+      "check": "child 2 stdout successful",
+      "passed": true
+    },
+    {
+      "check": "child 2 stderr empty",
+      "passed": true
+    },
+    {
+      "check": "child 2 return code",
+      "passed": true
+    },
+    {
+      "check": "child 2 timeout absent",
+      "passed": true
+    },
+    {
+      "check": "child 2 frozen timeout",
+      "passed": true
+    },
+    {
+      "check": "child 2 expected index",
+      "passed": true
+    },
+    {
+      "check": "child 2 expected mode",
+      "passed": true
+    },
+    {
+      "check": "child 2 passed",
+      "passed": true
+    },
+    {
+      "check": "child 2 before sources",
+      "passed": true
+    },
+    {
+      "check": "child 2 after sources",
+      "passed": true
+    },
+    {
+      "check": "child 2 protocol",
+      "passed": true
+    },
+    {
+      "check": "child 2 installed payload recheck",
+      "passed": true
+    },
+    {
+      "check": "child 2 verified transport/payload",
+      "passed": true
+    },
+    {
+      "check": "child 2 archive",
+      "passed": true
+    },
+    {
+      "check": "child 2 manifest",
+      "passed": true
+    },
+    {
+      "check": "child 2 payloads",
+      "passed": true
+    },
+    {
+      "check": "child 2 six resolved dependency pins",
+      "passed": true
+    },
+    {
+      "check": "child 2 dependencies all matched",
+      "passed": true
+    },
+    {
+      "check": "child 2 ELF floors",
+      "passed": true
+    },
+    {
+      "check": "child 2 ELF no rpath/runpath",
+      "passed": true
+    },
+    {
+      "check": "child 2 ELF closure",
+      "passed": true
+    },
+    {
+      "check": "child 2 target",
+      "passed": true
+    },
+    {
+      "check": "child 2 cpu flags",
+      "passed": true
+    },
+    {
+      "check": "child 2 loader overrides absent",
+      "passed": true
+    },
+    {
+      "check": "child 2 actual_loaded_closure pins",
+      "passed": true
+    },
+    {
+      "check": "child 2 actual_loaded_closure inode checks",
+      "passed": true
+    },
+    {
+      "check": "child 2 actual_loaded_closure_after_cycles pins",
+      "passed": true
+    },
+    {
+      "check": "child 2 actual_loaded_closure_after_cycles inode checks",
+      "passed": true
+    },
+    {
+      "check": "child 2 case order",
+      "passed": true
+    },
+    {
+      "check": "child 2 empty input hash",
+      "passed": true
+    },
+    {
+      "check": "child 2 empty input length",
+      "passed": true
+    },
+    {
+      "check": "child 2 empty annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 2 empty freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 2 empty source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 2 empty derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji input hash",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji input length",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji token coordinates/flags 7",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji token coordinates/flags 8",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji tree reaches sentence root 7",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji tree reaches sentence root 8",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 2 unicode_emoji derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul input hash",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul input length",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 2 embedded_nul derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences input hash",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences input length",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences token coordinates/flags 7",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences token coordinates/flags 8",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences token coordinates/flags 9",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences tree reaches sentence root 7",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences tree reaches sentence root 8",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences tree reaches sentence root 9",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 2 multiple_sentences derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 2 whitespace input hash",
+      "passed": true
+    },
+    {
+      "check": "child 2 whitespace input length",
+      "passed": true
+    },
+    {
+      "check": "child 2 whitespace annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 2 whitespace freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 2 whitespace token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 whitespace sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 whitespace tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 whitespace source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 2 whitespace derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word input hash",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word input length",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 2 repeated_word derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation input hash",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation input length",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation token coordinates/flags 7",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation token coordinates/flags 8",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation token coordinates/flags 9",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation token coordinates/flags 10",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation token coordinates/flags 11",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation token coordinates/flags 12",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation tree reaches sentence root 7",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation tree reaches sentence root 8",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation tree reaches sentence root 9",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation tree reaches sentence root 10",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation tree reaches sentence root 11",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation tree reaches sentence root 12",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 2 quotation_punctuation derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph input hash",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph input length",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 7",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 8",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 7",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 8",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 9",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 10",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 11",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 12",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 13",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 14",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 15",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph sentence root 9",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 9",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 10",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 11",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 12",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 13",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 14",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 15",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 16",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 17",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 18",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 19",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 20",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 21",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 22",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 23",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 24",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph sentence root 16",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 16",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 17",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 18",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 19",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 20",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 21",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 22",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 23",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 24",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 25",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 26",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 27",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 28",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 29",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 30",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph token coordinates/flags 31",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph sentence root 25",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 25",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 26",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 27",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 28",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 29",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 30",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph tree reaches sentence root 31",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 2 moderate_paragraph derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup input hash",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup input length",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 2 warmup derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 2 cycle count",
+      "passed": true
+    },
+    {
+      "check": "child 2 cycle index sequence",
+      "passed": true
+    },
+    {
+      "check": "child 2 cycle repeat exact hashes",
+      "passed": true
+    },
+    {
+      "check": "child 2 full drained ownership",
+      "passed": true
+    },
+    {
+      "check": "child 2 derived RSS growth",
+      "passed": true
+    },
+    {
+      "check": "child 2 RSS budget",
+      "passed": true
+    },
+    {
+      "check": "child 2 final sample",
+      "passed": true
+    },
+    {
+      "check": "child 2 final FD bound",
+      "passed": true
+    },
+    {
+      "check": "child 3 file digest",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded report exact",
+      "passed": true
+    },
+    {
+      "check": "child 3 stdout successful",
+      "passed": true
+    },
+    {
+      "check": "child 3 stderr empty",
+      "passed": true
+    },
+    {
+      "check": "child 3 return code",
+      "passed": true
+    },
+    {
+      "check": "child 3 timeout absent",
+      "passed": true
+    },
+    {
+      "check": "child 3 frozen timeout",
+      "passed": true
+    },
+    {
+      "check": "child 3 expected index",
+      "passed": true
+    },
+    {
+      "check": "child 3 expected mode",
+      "passed": true
+    },
+    {
+      "check": "child 3 passed",
+      "passed": true
+    },
+    {
+      "check": "child 3 before sources",
+      "passed": true
+    },
+    {
+      "check": "child 3 after sources",
+      "passed": true
+    },
+    {
+      "check": "child 3 protocol",
+      "passed": true
+    },
+    {
+      "check": "child 3 installed payload recheck",
+      "passed": true
+    },
+    {
+      "check": "child 3 verified transport/payload",
+      "passed": true
+    },
+    {
+      "check": "child 3 archive",
+      "passed": true
+    },
+    {
+      "check": "child 3 manifest",
+      "passed": true
+    },
+    {
+      "check": "child 3 payloads",
+      "passed": true
+    },
+    {
+      "check": "child 3 six resolved dependency pins",
+      "passed": true
+    },
+    {
+      "check": "child 3 dependencies all matched",
+      "passed": true
+    },
+    {
+      "check": "child 3 ELF floors",
+      "passed": true
+    },
+    {
+      "check": "child 3 ELF no rpath/runpath",
+      "passed": true
+    },
+    {
+      "check": "child 3 ELF closure",
+      "passed": true
+    },
+    {
+      "check": "child 3 target",
+      "passed": true
+    },
+    {
+      "check": "child 3 cpu flags",
+      "passed": true
+    },
+    {
+      "check": "child 3 loader overrides absent",
+      "passed": true
+    },
+    {
+      "check": "child 3 actual_loaded_closure pins",
+      "passed": true
+    },
+    {
+      "check": "child 3 actual_loaded_closure inode checks",
+      "passed": true
+    },
+    {
+      "check": "child 3 actual_loaded_closure_after_cycles pins",
+      "passed": true
+    },
+    {
+      "check": "child 3 actual_loaded_closure_after_cycles inode checks",
+      "passed": true
+    },
+    {
+      "check": "child 3 case order",
+      "passed": true
+    },
+    {
+      "check": "child 3 empty input hash",
+      "passed": true
+    },
+    {
+      "check": "child 3 empty input length",
+      "passed": true
+    },
+    {
+      "check": "child 3 empty annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 3 empty freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 3 empty source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 3 empty derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji input hash",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji input length",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji token coordinates/flags 7",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji token coordinates/flags 8",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji tree reaches sentence root 7",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji tree reaches sentence root 8",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 3 unicode_emoji derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul input hash",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul input length",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 3 embedded_nul derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences input hash",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences input length",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences token coordinates/flags 7",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences token coordinates/flags 8",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences token coordinates/flags 9",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences tree reaches sentence root 7",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences tree reaches sentence root 8",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences tree reaches sentence root 9",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 3 multiple_sentences derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 3 whitespace input hash",
+      "passed": true
+    },
+    {
+      "check": "child 3 whitespace input length",
+      "passed": true
+    },
+    {
+      "check": "child 3 whitespace annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 3 whitespace freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 3 whitespace token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 whitespace sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 whitespace tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 whitespace source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 3 whitespace derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word input hash",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word input length",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 3 repeated_word derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation input hash",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation input length",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation token coordinates/flags 7",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation token coordinates/flags 8",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation token coordinates/flags 9",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation token coordinates/flags 10",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation token coordinates/flags 11",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation token coordinates/flags 12",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation tree reaches sentence root 7",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation tree reaches sentence root 8",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation tree reaches sentence root 9",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation tree reaches sentence root 10",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation tree reaches sentence root 11",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation tree reaches sentence root 12",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 3 quotation_punctuation derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph input hash",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph input length",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 7",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 8",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 7",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 8",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 9",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 10",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 11",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 12",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 13",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 14",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 15",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph sentence root 9",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 9",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 10",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 11",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 12",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 13",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 14",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 15",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 16",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 17",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 18",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 19",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 20",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 21",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 22",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 23",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 24",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph sentence root 16",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 16",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 17",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 18",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 19",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 20",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 21",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 22",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 23",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 24",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 25",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 26",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 27",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 28",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 29",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 30",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph token coordinates/flags 31",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph sentence root 25",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 25",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 26",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 27",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 28",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 29",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 30",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph tree reaches sentence root 31",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 3 moderate_paragraph derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup input hash",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup input length",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup annotation digest",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup freed-before-read ownership",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup token coordinates/flags 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup token coordinates/flags 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup token coordinates/flags 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup token coordinates/flags 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup token coordinates/flags 4",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup token coordinates/flags 5",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup token coordinates/flags 6",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup tree reaches sentence root 0",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup tree reaches sentence root 1",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup tree reaches sentence root 2",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup tree reaches sentence root 3",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup tree reaches sentence root 4",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup tree reaches sentence root 5",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup tree reaches sentence root 6",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup source fully partitioned",
+      "passed": true
+    },
+    {
+      "check": "child 3 warmup derived sentences",
+      "passed": true
+    },
+    {
+      "check": "child 3 cycle count",
+      "passed": true
+    },
+    {
+      "check": "child 3 cycle index sequence",
+      "passed": true
+    },
+    {
+      "check": "child 3 cycle repeat exact hashes",
+      "passed": true
+    },
+    {
+      "check": "child 3 full drained ownership",
+      "passed": true
+    },
+    {
+      "check": "child 3 derived RSS growth",
+      "passed": true
+    },
+    {
+      "check": "child 3 RSS budget",
+      "passed": true
+    },
+    {
+      "check": "child 3 final sample",
+      "passed": true
+    },
+    {
+      "check": "child 3 final FD bound",
+      "passed": true
+    },
+    {
+      "check": "four children retained",
+      "passed": true
+    },
+    {
+      "check": "cross-process full annotations exact",
+      "passed": true
+    },
+    {
+      "check": "cross-process warmup full annotations exact",
+      "passed": true
+    },
+    {
+      "check": "independently derived case_executions",
+      "passed": true
+    },
+    {
+      "check": "independently derived short_cycle_executions_including_warmup",
+      "passed": true
+    },
+    {
+      "check": "independently derived native_contexts_created_and_freed",
+      "passed": true
+    },
+    {
+      "check": "independently derived native_documents_created_and_freed",
+      "passed": true
+    }
+  ],
+  "child_metrics": [
+    {
+      "baseline_fds": 3,
+      "case_executions": 8,
+      "context_document_pairs": 34,
+      "final_fds": 3,
+      "final_threads": 1,
+      "index": 1,
+      "maximum_sampled_rss_growth_bytes": 102400,
+      "measured_cycles": 25,
+      "warmup_cycles": 1
+    },
+    {
+      "baseline_fds": 3,
+      "case_executions": 8,
+      "context_document_pairs": 34,
+      "final_fds": 3,
+      "final_threads": 1,
+      "index": 2,
+      "maximum_sampled_rss_growth_bytes": 102400,
+      "measured_cycles": 25,
+      "warmup_cycles": 1
+    },
+    {
+      "baseline_fds": 3,
+      "case_executions": 8,
+      "context_document_pairs": 34,
+      "final_fds": 3,
+      "final_threads": 1,
+      "index": 3,
+      "maximum_sampled_rss_growth_bytes": 102400,
+      "measured_cycles": 25,
+      "warmup_cycles": 1
+    }
+  ],
+  "documentation_findings": [
+    "Top-level W7 README, CONTINUE and checkpoint-status still describe pending consumers; newer retained passing evidence supersedes that status."
+  ],
+  "evidence": {
+    "docs/validation/native-spacy-20261117/acceptance-candidate-linux-x86_64.tar.gz": {
+      "bytes": 825745,
+      "sha256": "b0cd3ae4d47af442d32a6d2382143c36f8b019470cff7c509f97e4682b67489b"
+    },
+    "docs/validation/native-spacy-w7-20261118/distribution-build.json": {
+      "bytes": 7666,
+      "sha256": "b42f4b346408ab3e7619e0b64f50f13734368274f52ff9229a7af358f1d449b2"
+    },
+    "docs/validation/native-spacy-w7-20261118/operational-protocol.json": {
+      "bytes": 4014,
+      "sha256": "60f85df220bb05ff467c6036ce465c841cff3480103720d5139af0644cfd3934"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/README.md": {
+      "bytes": 2383,
+      "sha256": "51c5afe923cd1c6125ed8ff45216007b149794c4d7f905ca9cfcc95d62ad823a"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/bundle-files.json": {
+      "bytes": 1022,
+      "sha256": "ca256652506cf7c57f31f08d472e9820870a2269d48898397cf1a5814533bd5d"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/conversion.log": {
+      "bytes": 169,
+      "sha256": "c65f19db7bf69a1031e2f925535d8664f59d8de5a0db91ba7d1f3e2911f1978c"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/dependency-preflight.json": {
+      "bytes": 3007,
+      "sha256": "719ea37f3e38d3c2446aeb1ddf8bada4214987b4f0eb19f4a0552f14b55b3988"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/distribution-build-a.json": {
+      "bytes": 7707,
+      "sha256": "ac79a1b678e9e871f5459c8dc6405e8e645506e09952e2fcadf72e908f075699"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/distribution-build-b.json": {
+      "bytes": 7707,
+      "sha256": "1e24341b16d0c89501c50fcc0ddfbc9e6c420c59af527e66e4d0b3d3906eadab"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/distribution-byte-comparison.json": {
+      "bytes": 974,
+      "sha256": "3c2b6f61c546d929ee5b747d597e3aac956f559f634fea08c3d5c4d725228769"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/distribution-controls.txt": {
+      "bytes": 3820,
+      "sha256": "b9593e1f4b476531a6efb1a17fbf51d250d1e53bf6baad12b87a9c94c00a9358"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/distribution-install.json": {
+      "bytes": 914,
+      "sha256": "d9c016859c8d65623af6e1735fadde88a4a35762027f5b2a62b4eafe3f7cbd59"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/distribution-verify-install.json": {
+      "bytes": 863,
+      "sha256": "5ddb16058a200278165efc4486150d7f5743cdc43bb5b72d3421ea42eb4ffe3a"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/elf-dynamic.txt": {
+      "bytes": 1771,
+      "sha256": "d0a9fe1de2d379f14abc5ba014d398e466e2012c4c98b9fe4d7633a11923c7f7"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/elf-header.txt": {
+      "bytes": 955,
+      "sha256": "b544a20ba7a41667b88ff0e1e572c68e82e8efba0ed78ae703d1a3720a097742"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/elf-versions.txt": {
+      "bytes": 30701,
+      "sha256": "c3bf35c2ea6d120fe20972a91721ce40b8631c18e9380b25f8de98cbbf41a7f4"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/evidence-index.json": {
+      "bytes": 3143,
+      "sha256": "efc0c6b17b7be1d1ef800f6f341ef90624fa0138da7397243cd88e7f8f9cd0ae"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/loader-resolution.txt": {
+      "bytes": 453,
+      "sha256": "cd59f8be183a26995bfbbd82394520af001381c185b71665356cfbd1e87e0508"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/model-wheel-download.json": {
+      "bytes": 350,
+      "sha256": "3f91081a5d19f8105eb6519004748438c3452a5e2ece73ba8d22d9127595cbb8"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/native-restore.json": {
+      "bytes": 3495,
+      "sha256": "75e728edc0d732845351a2937ae56fc0095dd3ad864d76bf5298e5b37a60477d"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/package-result.json": {
+      "bytes": 1754,
+      "sha256": "6ad42c97511f9e6465a29344c5a253c04d86b36b47ba5709c87ec361728ea93e"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/reference-environment.json": {
+      "bytes": 1251,
+      "sha256": "aea0b20ab3ee4b7879f98db2466bf5c31d891bbb0eeb35bf19656a20a0815bdc"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/package/reference-install.log": {
+      "bytes": 10133,
+      "sha256": "2cc7e3ee1c782e102116acf6256058b229229e20d90ef2ecdb70cf3aa6d74b4b"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/0-disabled.json": {
+      "bytes": 6691,
+      "sha256": "71981354142ea2cc0b7580074c984f376ff08eb6fd6a7041731b1fcd5a3ddbad"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/0-disabled.stderr.txt": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/0-disabled.stdout.txt": {
+      "bytes": 37,
+      "sha256": "6c538b54900a8a7b7451804df0580f2d138c2eab4fc94940e81b8f5e8a8d680c"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/1-enabled.json": {
+      "bytes": 92866,
+      "sha256": "7dc5b1326392918bb42e7d733c0f66dd4301e0bf7bf0544feea8ff79f167f610"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/1-enabled.stderr.txt": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/1-enabled.stdout.txt": {
+      "bytes": 37,
+      "sha256": "6c538b54900a8a7b7451804df0580f2d138c2eab4fc94940e81b8f5e8a8d680c"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/2-enabled.json": {
+      "bytes": 92870,
+      "sha256": "31570f9f4c4386171d7992d9dfef75d1ff7a923d73a28f2fda3414edc951e7cf"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/2-enabled.stderr.txt": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/2-enabled.stdout.txt": {
+      "bytes": 37,
+      "sha256": "6c538b54900a8a7b7451804df0580f2d138c2eab4fc94940e81b8f5e8a8d680c"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/3-enabled.json": {
+      "bytes": 92868,
+      "sha256": "1b4c7148a53b320faac2567cdbdab8bcdf42036d081870ba06cfd055b2489614"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/3-enabled.stderr.txt": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-children/3-enabled.stdout.txt": {
+      "bytes": 37,
+      "sha256": "6c538b54900a8a7b7451804df0580f2d138c2eab4fc94940e81b8f5e8a8d680c"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-execution.json": {
+      "bytes": 2968,
+      "sha256": "8c0e2192e512c5bb4b328d82829ad47f992333608d050cd69fd87a353154e265"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-launch.json": {
+      "bytes": 1655,
+      "sha256": "a39cf4c73d09ea59d9f0b5173fc2d6300b67d28c88c751152e3f28066b7c6e93"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first-retained-audit.json": {
+      "bytes": 6313,
+      "sha256": "d1a579468d4fbb942e14861a671d979078cf9783d3f83265317db84fee0b1a0b"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first.json": {
+      "bytes": 331153,
+      "sha256": "8274bfdb36a3181846f9e460b23f6b81b049f202ba0204d4956e4e9f3c18fc87"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first.stderr.txt": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first.stdout.txt": {
+      "bytes": 433,
+      "sha256": "0b148a7ad6efb36229c431e45326e4f23ca922d316c12f15f0b2cf0953d406af"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-controls/initial-controls.stderr.txt": {
+      "bytes": 120,
+      "sha256": "b211c196b32f5794ebf78765ec45a90037c1277bd7de2fd5320684476716aea1"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-controls/initial-printed-protocol.json": {
+      "bytes": 4014,
+      "sha256": "60f85df220bb05ff467c6036ce465c841cff3480103720d5139af0644cfd3934"
+    },
+    "docs/validation/native-spacy-w7-20261118/resume-20261118/python-controls/initial-receipt.json": {
+      "bytes": 1928,
+      "sha256": "5580da9dd5b740c92661af3772880afdbcdf74eef50e540d3af82dc759bbbc99"
+    },
+    "docs/validation/native-spacy-w7-20261118/runtime-restoration.json": {
+      "bytes": 11485,
+      "sha256": "e86b96168fb50bb606064afe83e4147c73dbda18e96bd62ea3229048f14ca41f"
+    },
+    "models/convert-spacy-to-gguf.py": {
+      "bytes": 922,
+      "sha256": "ab719cb5145a94797f14c2350f7e0da0431c5bb087581d4dc52b3d00859eeed5"
+    },
+    "models/spacy_bundle.py": {
+      "bytes": 30611,
+      "sha256": "142171d33f06dfc67322e2ca813bf433953112e78222b81ed826103063ce4fb6"
+    },
+    "tests/test_spacy_distribution.py": {
+      "bytes": 19344,
+      "sha256": "cd0c9cfb177ec705d7e7cc98dabbde76efbc36e370448b1fb7b812a33c0c08f3"
+    },
+    "tests/test_spacy_distribution_consumer.py": {
+      "bytes": 18229,
+      "sha256": "c9d127ef2b9144b66ffcfa4c6ed4aa6348c345315e0380cb0628285d2e08bfa2"
+    },
+    "tools/spacy/distribution.py": {
+      "bytes": 27196,
+      "sha256": "327f68ea67e0179caf017477054aafab322b84b9e7c6f998da8eee5aa95402d5"
+    },
+    "tools/spacy/distribution_consumer.py": {
+      "bytes": 41366,
+      "sha256": "a9241a3c701ab7c4a03381f9a98df18fe47f047dd2b8cbebc6be71d3a3477172"
+    },
+    "tools/spacy/requirements-reference.txt": {
+      "bytes": 106951,
+      "sha256": "e1bd56aef4aba0c45135fb2b51961c0d94c3be99a785be71a46c698cd22cc98a"
+    }
+  },
+  "failed": 0,
+  "findings": [],
+  "github_actions_queries_waits_reruns_dispatches": 0,
+  "inspected_head": "d18efcaf0469199a576b7271cfa27a4c5f543af3",
+  "limitations": [
+    "Package/model binary archives are not retained in ordinary Git; this audit verifies retained build/install identities, input pins, source identity and native archive bytes, not a new full package reconstruction.",
+    "RSS, inode mapping, allocation/free and execution observations are retained reports tied to audited source, not a new runtime observation.",
+    "Cycle reports retain annotation digests rather than full annotations; all 75 measured digests bind to the fully retained warmups.",
+    "Bounds cover Linux x86-64/AVX2 and six fixed dependency hashes; no other platform, target device, hosted distribution, activation or added linguistic-quality qualification follows."
+  ],
+  "model_builds": 0,
+  "native_executions": 0,
+  "package": {
+    "archive_sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+    "archive_size_bytes": 7808129,
+    "bundle_files_bound_by_retained_receipts": 5,
+    "manifest_sha256": "e043af51e247368931f23fa0d9b931453e174f105b021fe2053e8e3029fd3d8d",
+    "native_payload_files_actually_rehashed": 15,
+    "retained_package_controls": 25,
+    "retained_python_consumer_controls": 21
+  },
+  "schema": "crispembed.spacy.w7.independent_retained_python_package_audit.v1",
+  "scope": "Retained evidence audit; no consumer, model, native or CI execution",
+  "status": "passed",
+  "targeted_source_review": {
+    "actionable_findings": [],
+    "areas": [
+      "External archive hash precedes decompression; canonical USTAR and all payload pins are closed and bounded.",
+      "Installation stages read-only files, verifies the closed tree and publishes with Linux no-replace rename.",
+      "Current consumer authenticates protocol, installed tree, ELF baseline, six dependency hashes and actual loaded mappings.",
+      "Real calls increment ownership counters; contexts free before document views and documents free before copied-data validation.",
+      "Child launch identity, current source hashes and original report bytes remain bound to the parent receipt."
+    ],
+    "boundary": "Private caller-owned immutable cache and trusted host; no hostile concurrent-writer security claim."
+  },
+  "tests_rerun": 0,
+  "totals": {
+    "case_executions": 24,
+    "full_annotation_documents_recomputed": 27,
+    "native_contexts_created_and_freed": 102,
+    "native_documents_created_and_freed": 102,
+    "sentence_rows_recomputed": 39,
+    "short_cycle_executions_including_warmup": 78,
+    "token_annotation_rows_recomputed": 246
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "accepted_native_or_model_changed": false,
+  "application_defaults_changed": false,
+  "branch": "feat/native-spacy-w7-20261118",
+  "concurrent_remote_audits_preserved": [
+    {
+      "audit_path": "docs/validation/native-spacy-w7-20261118/completion-20261118/python-package-audit.json",
+      "audit_sha256": "f4fd970e19f0844a3ec9bd7f81b18875f7bf170d15ed6255f386de9660949357",
+      "preserved_commit": "24aba65adc3633366fe4b3cf20818ca2965dfefd",
+      "repository": "CrispStrobe/CrispEmbed"
+    },
+    {
+      "audit_path": "docs/validation/native-spacy-w7-20261118/completion-20261118/dart-audit.json",
+      "audit_sha256": "a147c4c639b66963d6bf5fc20268f4c0da27d3235540d1cfa10b9661d1b42571",
+      "preserved_commit": "ef22a83b6aef4aa4383f14415c42c7aba67f4873",
+      "repository": "CrispStrobe/quds_office_suite"
+    }
+  ],
+  "controls": {
+    "current_dart_consumer": 17,
+    "package": 25,
+    "python_consumer": 21
+  },
+  "dart": {
+    "additional_worker_requests": 5,
+    "corrected_source_execution_passed": true,
+    "correctly_named_quds_library_entries": 14,
+    "driver_sha256": "cecbc3a4c52dc8880c9eae7add5a925b0c74660e9d1ba1aee7aaae0ffe02cdf6",
+    "initial_execution_preserved": true,
+    "mapped_external_dependency_entries": 6,
+    "operational_cases": 8,
+    "public_report_sha256": "10f56d4dca10291e7b7bd7db5f9761749bebfc5652057036ace726dfefb58a68",
+    "report": "docs/validation/native-spacy-w7-20261118/resume-20261118/dart-consumer/corrected-source.json",
+    "result_commit": "a6143772f048644187080ee6a1a44c070802af15",
+    "scope": "Actual owned Quds worker with checked nonzero UTF-16 origins, exact saved outputs and executed repeat/cancellation/disposal assertions; no Flutter observation or native compute-interruption measurement.",
+    "sentence_count": 12,
+    "source_commit": "71e87486489200f7e259594d2967bba8c0682143",
+    "source_configuration_entries": 38,
+    "token_count": 75
+  },
+  "final_main_reconciliation": {
+    "frozen_native_source_files_verified": 22,
+    "incoming_commit_count": 13,
+    "integrated_main": "be20e49797c68c4a9fcc765d2f3b719257b48580",
+    "path": "final-main-reconciliation.json",
+    "tested_consumer_sources_unchanged": true
+  },
+  "github_actions_queries_waits_reruns_dispatches": 0,
+  "grammar_qualification_rerun": false,
+  "independent_evidence_review": {
+    "coordinate_loops_also_checked": true,
+    "named_readback_checks": 615,
+    "new_native_executions": 0,
+    "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/independent-review.json",
+    "repository": "CrispStrobe/CrispEmbed",
+    "sha256": "76ac42dba455a166cf189e7658ad1c70ea536e842d7004ca73ee3d63685d0978",
+    "status": "passed"
+  },
+  "native_acceptance_rerun": false,
+  "package": {
+    "archive_sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+    "archive_size_bytes": 7808129,
+    "bundle_files": 5,
+    "external_dependencies": 6,
+    "immutable_install_and_full_tree_verification": true,
+    "native_files": 15,
+    "native_rebuilt": false,
+    "new_build_bytes_equal": true,
+    "new_full_input_builds": 2,
+    "original_old_workspace_archive_available": false,
+    "original_saved_hash_and_length_match": true,
+    "payload_files": 20
+  },
+  "preceding_w6_source_preservation": {
+    "all_match": true,
+    "direct_git_paths": 341,
+    "documented_lockfile_aliases": 1,
+    "initial_inventory_wording_correction": "source-refresh.json used overly broad all_git_blobs wording; see source-refresh-audit.json. Missing direct pubspec.lock is accounted for by its published mapping, not absent/absent equality.",
+    "lockfile_artifact": "docs/validation/native-spacy-w5-20261117/workspace-pubspec.lock",
+    "lockfile_logical_path": "pubspec.lock",
+    "lockfile_sha256": "344190a0224b9e6dcc2161cbfb1be3b7a9569a3a03a809f42801d99f9052e130",
+    "sealed_logical_sources": 342
+  },
+  "preservation_limits": [
+    "Initial and corrected Dart public reports preserve complete annotations; only declared host metadata paths and JSON key ordering differ from privately retained raw captures. Raw/public digests and the exact transformation are recorded.",
+    "Request snapshot, repeat and lifecycle verdicts include authenticated executed source assertions; separate request snapshots and repeat-output arrays are not all stored in Dart JSON.",
+    "Python saves full panel and warmup outputs plus all cycle hashes/resources; measured cycles do not add independent linguistic observations.",
+    "Fresh evidence closes the local execution gap; it does not reconstruct unavailable raw logs from the earlier exhausted workspace or establish that earlier local files were deleted."
+  ],
+  "python": {
+    "annotations_exact_across_processes_and_cycles": true,
+    "case_types": 8,
+    "context_document_pairs_created_and_freed": 102,
+    "cycle_and_warmup_executions": 78,
+    "disabled_children": 1,
+    "distinct_texts_including_cycle": 9,
+    "enabled_children": 3,
+    "final_fd_growth": 0,
+    "first_execution_passed": true,
+    "fresh_children": 4,
+    "maximum_sampled_rss_growth_bytes": 102400,
+    "panel_executions": 24,
+    "report": "docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first.json",
+    "report_sha256": "8274bfdb36a3181846f9e460b23f6b81b049f202ba0204d4956e4e9f3c18fc87",
+    "result_commit": "482786cce5450e5e9532f5917e2007bbe1c120db",
+    "rss_growth_budget_bytes": 33554432,
+    "source_commit": "a71c3ce5326346310289db70953f5e300d9c1aaf"
+  },
+  "recorded_date": "2026-11-18",
+  "remaining": [
+    "Immutable hosted model/native publication and empty-cache consumer download readback.",
+    "Portable dependency packaging and separate platform/device qualification.",
+    "Production activation, runtime release and application pins remain separate decisions."
+  ],
+  "schema": "crispembed.quds.spacy.w7.local_completion.v1",
+  "scope": "Exact preserved Linux x86-64/AVX2 de-DE CPU/F32 candidate with the six qualified external dependency builds; bounded package/worker operations, no new linguistic-quality qualification.",
+  "source_corrections": [
+    "Dart consumer rejects four loader override variables, including empty values, and invokes the fixed /usr/bin/ldd path.",
+    "Normalize source directory separators before deriving receipt labels; retain the initial 14 truncated labels and independent mapping to the exact source bytes."
+  ],
+  "source_publication_before_execution": "pre-native-publication.json; corrected Dart source published at 71e87486489200f7e259594d2967bba8c0682143 before its operational run",
+  "source_refresh_audit": {
+    "path": "source-refresh-audit.json",
+    "sha256": "3e044f7f8ad6fb8b209f2fdcd47fc0d825314978c5e7226df3d0258c6caccf37"
+  },
+  "status": "local_linux_package_and_installed_consumer_gates_complete"
+}

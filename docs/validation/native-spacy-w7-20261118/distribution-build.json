@@ -1,0 +1,195 @@
+{
+  "archive_sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+  "archive_size_bytes": 7808129,
+  "entrypoints": {
+    "bundle": "bundle",
+    "library": "native/ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977/libcrispembed-spacy.so"
+  },
+  "manifest": {
+    "archive_format": {
+      "compression": "gzip-level-9",
+      "file_mode": "0644",
+      "gid": 0,
+      "order": "lexical path",
+      "tar": "USTAR",
+      "timestamp": 0,
+      "uid": 0
+    },
+    "bundle_manifest_sha256": "d599768375de3dc56abcca5cf1d49da0015857f9d3a10640aebb5317ef5d427e",
+    "entrypoints": {
+      "bundle": "bundle",
+      "library": "native/ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977/libcrispembed-spacy.so"
+    },
+    "files": {
+      "bundle/LICENSE": {
+        "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+        "size_bytes": 1056
+      },
+      "bundle/LICENSES_SOURCES": {
+        "sha256": "0c3ab78745569d848b7c83a486183bce42b9643561084d6d6f67eb0229c79869",
+        "size_bytes": 13470
+      },
+      "bundle/manifest.json": {
+        "sha256": "d599768375de3dc56abcca5cf1d49da0015857f9d3a10640aebb5317ef5d427e",
+        "size_bytes": 23762
+      },
+      "bundle/model.gguf": {
+        "sha256": "fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd",
+        "size_bytes": 7383104
+      },
+      "bundle/resources.json": {
+        "sha256": "b42496cc373ada57a67ed2f4c2c25f8d22f80c08db5841a7cdb91c8a6e18562a",
+        "size_bytes": 1404948
+      },
+      "native/ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977/libcrispembed-spacy.so": {
+        "sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977",
+        "size_bytes": 1959256
+      },
+      "native/include/spacy_pipeline.h": {
+        "sha256": "756c25b664b38d26d1da13264d47417d9914f8dd805c588a539fe6f3681f7e62",
+        "size_bytes": 10045
+      },
+      "native/share/licenses/crispembed-spacy/CrispEmbed-LICENSE": {
+        "sha256": "a70d0ab5fb2dbab83d1a63071776891e6dfc7ba6e3063b3940c21274c1225a3e",
+        "size_bytes": 4739
+      },
+      "native/share/licenses/crispembed-spacy/THIRD_PARTY_NOTICES": {
+        "sha256": "9386f6a62a3220da9c082dfceea4a018d2a73c1a0dbd03e28e1804912cf0115f",
+        "size_bytes": 2188
+      },
+      "native/share/licenses/crispembed-spacy/ggml-LICENSE": {
+        "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+        "size_bytes": 1078
+      },
+      "native/share/licenses/crispembed-spacy/notices/CPython-LICENSE": {
+        "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf",
+        "size_bytes": 13936
+      },
+      "native/share/licenses/crispembed-spacy/notices/PCRE2-LICENCE.md": {
+        "sha256": "9cf7ac6976099a1d856826d3ef1b093bd6b84489dc6100628ac79e740cf9885a",
+        "size_bytes": 3867
+      },
+      "native/share/licenses/crispembed-spacy/notices/Thinc-LICENSE": {
+        "sha256": "d7192459f33a5d8c66358e2115ccbd3265478750f0b9d15f0c22e68e3ce6cc1e",
+        "size_bytes": 1123
+      },
+      "native/share/licenses/crispembed-spacy/notices/Unicode-15.0.0-ReadMe.txt": {
+        "sha256": "53672c0d0b5185e3cf04c8e970d544c3af81ae7c8eeba0b9cf6d355aa954ae1f",
+        "size_bytes": 635
+      },
+      "native/share/licenses/crispembed-spacy/notices/Unicode-LICENSE.txt": {
+        "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+        "size_bytes": 1995
+      },
+      "native/share/licenses/crispembed-spacy/notices/continuation-notice-sources.json": {
+        "sha256": "2f71d905ddbb8ea162a13c89e4e1d4e1f9858fcb4f82c967911912c79c4bf62f",
+        "size_bytes": 2408
+      },
+      "native/share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSE": {
+        "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+        "size_bytes": 1056
+      },
+      "native/share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSES_SOURCES": {
+        "sha256": "0c3ab78745569d848b7c83a486183bce42b9643561084d6d6f67eb0229c79869",
+        "size_bytes": 13470
+      },
+      "native/share/licenses/crispembed-spacy/notices/ggml-LICENSE": {
+        "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+        "size_bytes": 1078
+      },
+      "native/share/licenses/crispembed-spacy/notices/spaCy-LICENSE": {
+        "sha256": "3f4378e67708fecacd3e27651c8bc0f977cf20789e19da0d81a2840e7cf573a2",
+        "size_bytes": 1128
+      }
+    },
+    "installed_permissions": {
+      "directories": "0555",
+      "files": "0444"
+    },
+    "native": {
+      "abi_version": 1,
+      "acceptance_commit": "2176c896dc6bb8c832a9d03b04fd07c7c991fdc5",
+      "archive_sha256": "b0cd3ae4d47af442d32a6d2382143c36f8b019470cff7c509f97e4682b67489b",
+      "archive_size_bytes": 825745,
+      "library_sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977",
+      "source_commit": "51c2ac328ef40b00f18eb9b03130fb67c3f11313",
+      "text_abi_version": 1
+    },
+    "profile": "de_core_news_sm-3.8.0-f32-linux-x86_64-avx2-validation",
+    "schema": "crispembed.spacy.distribution.v1",
+    "scope": {
+      "automatic_download": false,
+      "default_enabled": false,
+      "model_alias": false,
+      "production_activation": false,
+      "qualification": "unchanged bounded Linux validation candidate",
+      "requires_explicit_environment_gate": "CRISPEMBED_SPACY=1",
+      "runtime_release": false
+    },
+    "system_dependencies": {
+      "bundled": false,
+      "direct_symbol_version_floors": {
+        "CXXABI": "1.3.9",
+        "GLIBC": "2.38",
+        "GLIBCXX": "3.4.29"
+      },
+      "elf_needed": [
+        "libpcre2-8.so.0",
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "pcre2_version": "10.46",
+      "qualification": "Only the recorded dependency bytes are qualified. Symbol version floors alone do not establish portability. The host must verify actual loader resolution separately.",
+      "qualified_resolved_files": [
+        {
+          "bytes": 225672,
+          "sha256": "c8438e4fde1934e61c88311633f00949ff645d5c04cdb8671fa3d78164d2f307",
+          "soname": "ld-linux-x86-64.so.2"
+        },
+        {
+          "bytes": 1995216,
+          "sha256": "9792e3cbb541c8f44c7acf5f14f4022ea62998ecc787d326bed4d8b6547dfd92",
+          "soname": "libc.so.6"
+        },
+        {
+          "bytes": 182856,
+          "sha256": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af",
+          "soname": "libgcc_s.so.1"
+        },
+        {
+          "bytes": 977112,
+          "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3",
+          "soname": "libm.so.6"
+        },
+        {
+          "bytes": 711216,
+          "sha256": "92e9b4167f9bbc237ca8f5526d82ee99ec9f8dbd0270ef1dd0ab24e2217f48e3",
+          "soname": "libpcre2-8.so.0"
+        },
+        {
+          "bytes": 2497768,
+          "sha256": "972bb2a18b71140dab0240f8a1f68ab3fb1d56bcd4c4f824a91b70888faf5a00",
+          "soname": "libstdc++.so.6"
+        }
+      ],
+      "rpath": null,
+      "runpath": null
+    },
+    "target": {
+      "cpu_baseline": "AVX2",
+      "locale": "de-DE",
+      "machine": "x86_64",
+      "precision": "F32",
+      "system": "Linux"
+    }
+  },
+  "manifest_sha256": "e043af51e247368931f23fa0d9b931453e174f105b021fe2053e8e3029fd3d8d",
+  "native_library_loaded": false,
+  "payload_file_count": 20,
+  "status": "verified",
+  "system_dependencies_verified": false,
+  "verification_scope": "archive identity and fixed payload bytes"
+}

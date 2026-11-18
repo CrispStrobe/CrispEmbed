@@ -1,0 +1,16 @@
+{
+  "archive_sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+  "entrypoints": {
+    "bundle": "VALIDATION_RUNTIME/installed/4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01/bundle",
+    "library": "VALIDATION_RUNTIME/installed/4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01/native/ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977/libcrispembed-spacy.so"
+  },
+  "installed": true,
+  "manifest_sha256": "e043af51e247368931f23fa0d9b931453e174f105b021fe2053e8e3029fd3d8d",
+  "native_library_loaded": false,
+  "payload_file_count": 20,
+  "root": "VALIDATION_RUNTIME/installed/4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+  "status": "verified",
+  "system_dependencies_verified": false,
+  "transport_verified": true,
+  "verification_scope": "fixed installed payload bytes; transport requires verify_archive"
+}

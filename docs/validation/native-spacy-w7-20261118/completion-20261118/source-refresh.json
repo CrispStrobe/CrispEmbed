@@ -1,0 +1,105 @@
+{
+  "all_branch_heads_reconciled": true,
+  "audit_status": "Newer operational receipts recovered; independent retained-evidence audit in progress. Previous ENOSPC status is historical.",
+  "branch": "feat/native-spacy-w7-20261118",
+  "branch_counts": {
+    "CrispEmbed": 245,
+    "quds_office_suite": 191
+  },
+  "branch_delta": {
+    "previous_inventory": {
+      "path": "docs/validation/native-spacy-w7-20261118/resume-20261118/source-refresh-full.json.gz",
+      "sha256": "7d28b2b07152a586f97352c4f3bb4fc828a90cafa50bfa5f91472ba8d8b627b5"
+    },
+    "repositories": [
+      {
+        "added": [],
+        "changed": [
+          {
+            "after": "482786cce5450e5e9532f5917e2007bbe1c120db",
+            "before": "c8b76b42540e5890a3792de518397659f1e9d610",
+            "name": "feat/native-spacy-w7-20261118"
+          },
+          {
+            "after": "be20e49797c68c4a9fcc765d2f3b719257b48580",
+            "before": "04e8445823d82591120203e953365582d7ba33be",
+            "name": "main"
+          }
+        ],
+        "current_count": 245,
+        "previous_count": 245,
+        "removed": [],
+        "repository": "CrispStrobe/CrispEmbed",
+        "unchanged_count": 243
+      },
+      {
+        "added": [],
+        "changed": [
+          {
+            "after": "7b449f1b2fde63d7c9c5f138a84f09358b6a7c20",
+            "before": "9d060658ee6be8ec97d73f56b9aec10d346b7952",
+            "name": "codex/office-local-qualification-20261118"
+          },
+          {
+            "after": "a6143772f048644187080ee6a1a44c070802af15",
+            "before": "995a8cd500787f2fe3ae5f268201efa73a15dea6",
+            "name": "feat/native-spacy-w7-20261118"
+          }
+        ],
+        "current_count": 191,
+        "previous_count": 191,
+        "removed": [],
+        "repository": "CrispStrobe/quds_office_suite",
+        "unchanged_count": 189
+      }
+    ],
+    "schema": "crispembed.quds.spacy.w7.branch_delta.v1",
+    "scope": "Compare only actual origin branch refs; refs/remotes/origin/pr/* are fetched PR aliases and excluded from branch comparison."
+  },
+  "github_actions_queries_waits_reruns_dispatches": 0,
+  "integration": {
+    "CrispEmbed": {
+      "changed_paths_in_preserved_scopes": [],
+      "conflicts": [
+        "PLAN.md: equivalent PR236 closure text, resolved retaining both facts"
+      ],
+      "incoming_commits": 13,
+      "merged_main": "be20e49797c68c4a9fcc765d2f3b719257b48580",
+      "preserved_scope_paths": [
+        "tools/spacy",
+        "models/spacy_bundle.py",
+        "models/convert-spacy-to-gguf.py",
+        "src/spacy",
+        "tests/test_spacy_distribution.py",
+        "tests/test_spacy_distribution_consumer.py",
+        "docs/validation/native-spacy-20261117",
+        "docs/validation/native-spacy-w6-20261117",
+        "docs/validation/native-spacy-w7-20261118"
+      ],
+      "previous_head": "482786cce5450e5e9532f5917e2007bbe1c120db"
+    },
+    "quds_office_suite": {
+      "current_main": "482e08176dea6bd8f5fc80d1c0064d96b712db43",
+      "main_already_ancestor": true,
+      "previous_head": "a6143772f048644187080ee6a1a44c070802af15",
+      "unmerged_independent_lane": "PR154 Office qualification (inventoried; not part of W7)"
+    }
+  },
+  "inventory": {
+    "bytes": 57108,
+    "path": "source-refresh-full.json.gz",
+    "sha256": "6dfbdd4a56237467f762c07ff039bf66ba7651f30c07af1b532d8d556673475e"
+  },
+  "native_acceptance_and_w6_grammar_rerun": false,
+  "native_inference_executions_this_checkpoint": 0,
+  "pr_head_counts": {
+    "CrispEmbed": 217,
+    "quds_office_suite": 154
+  },
+  "recorded_at": "2026-11-18T06:05:16.098218+00:00",
+  "schema": "crispembed.quds.spacy.w7.completion.source_refresh.v1",
+  "tag_counts": {
+    "CrispEmbed": 54,
+    "quds_office_suite": 17
+  }
+}

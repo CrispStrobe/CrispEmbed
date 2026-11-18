@@ -1,0 +1,194 @@
+{
+  "archive_and_installed_payloads_unchanged": true,
+  "audit_scope": "Readback of retained first-run reports; no execution rerun",
+  "children": [
+    {
+      "diagnostic": "Native spaCy backend is disabled; set CRISPEMBED_SPACY=1",
+      "explicitly_unavailable": true,
+      "identity_check": {
+        "comparison": "Exact launched identity and initial driver source hashes",
+        "mismatched_fields": [],
+        "passed": true
+      },
+      "index": 0,
+      "installed_unchanged": true,
+      "mode": "disabled",
+      "ownership": {
+        "contexts_created": 0,
+        "contexts_freed": 0,
+        "documents_created": 0,
+        "documents_freed": 0
+      },
+      "passed": true,
+      "process": {
+        "elapsed_seconds": 0.19435380099980648,
+        "report": "first-children/0-disabled.json",
+        "report_sha256": "71981354142ea2cc0b7580074c984f376ff08eb6fd6a7041731b1fcd5a3ddbad",
+        "returncode": 0,
+        "timed_out": false,
+        "timeout_seconds": 60
+      },
+      "raw_report_passed": true,
+      "raw_report_sha256_verified": true,
+      "resource_summary": null,
+      "source_unchanged": true
+    },
+    {
+      "diagnostic": null,
+      "explicitly_unavailable": null,
+      "identity_check": {
+        "comparison": "Exact launched identity and initial driver source hashes",
+        "mismatched_fields": [],
+        "passed": true
+      },
+      "index": 1,
+      "installed_unchanged": true,
+      "mode": "enabled",
+      "ownership": {
+        "contexts_created": 34,
+        "contexts_freed": 34,
+        "documents_created": 34,
+        "documents_freed": 34
+      },
+      "passed": true,
+      "process": {
+        "elapsed_seconds": 3.6094431290000557,
+        "report": "first-children/1-enabled.json",
+        "report_sha256": "7dc5b1326392918bb42e7d733c0f66dd4301e0bf7bf0544feea8ff79f167f610",
+        "returncode": 0,
+        "timed_out": false,
+        "timeout_seconds": 60
+      },
+      "raw_report_passed": true,
+      "raw_report_sha256_verified": true,
+      "resource_summary": {
+        "fd_final_within_baseline": true,
+        "final": {
+          "open_file_descriptors": 3,
+          "rss_bytes": 43200512,
+          "threads": 1
+        },
+        "interpretation": "Post-free samples for these bounded cycles; not a leak proof or device benchmark",
+        "maximum_sampled_rss_growth_bytes": 102400,
+        "post_warmup_baseline": {
+          "open_file_descriptors": 3,
+          "rss_bytes": 43098112,
+          "threads": 1
+        },
+        "rss_growth_budget_bytes": 33554432,
+        "rss_within_budget": true
+      },
+      "source_unchanged": true
+    },
+    {
+      "diagnostic": null,
+      "explicitly_unavailable": null,
+      "identity_check": {
+        "comparison": "Exact launched identity and initial driver source hashes",
+        "mismatched_fields": [],
+        "passed": true
+      },
+      "index": 2,
+      "installed_unchanged": true,
+      "mode": "enabled",
+      "ownership": {
+        "contexts_created": 34,
+        "contexts_freed": 34,
+        "documents_created": 34,
+        "documents_freed": 34
+      },
+      "passed": true,
+      "process": {
+        "elapsed_seconds": 3.509148750000122,
+        "report": "first-children/2-enabled.json",
+        "report_sha256": "31570f9f4c4386171d7992d9dfef75d1ff7a923d73a28f2fda3414edc951e7cf",
+        "returncode": 0,
+        "timed_out": false,
+        "timeout_seconds": 60
+      },
+      "raw_report_passed": true,
+      "raw_report_sha256_verified": true,
+      "resource_summary": {
+        "fd_final_within_baseline": true,
+        "final": {
+          "open_file_descriptors": 3,
+          "rss_bytes": 43085824,
+          "threads": 1
+        },
+        "interpretation": "Post-free samples for these bounded cycles; not a leak proof or device benchmark",
+        "maximum_sampled_rss_growth_bytes": 102400,
+        "post_warmup_baseline": {
+          "open_file_descriptors": 3,
+          "rss_bytes": 42983424,
+          "threads": 1
+        },
+        "rss_growth_budget_bytes": 33554432,
+        "rss_within_budget": true
+      },
+      "source_unchanged": true
+    },
+    {
+      "diagnostic": null,
+      "explicitly_unavailable": null,
+      "identity_check": {
+        "comparison": "Exact launched identity and initial driver source hashes",
+        "mismatched_fields": [],
+        "passed": true
+      },
+      "index": 3,
+      "installed_unchanged": true,
+      "mode": "enabled",
+      "ownership": {
+        "contexts_created": 34,
+        "contexts_freed": 34,
+        "documents_created": 34,
+        "documents_freed": 34
+      },
+      "passed": true,
+      "process": {
+        "elapsed_seconds": 4.042545345000008,
+        "report": "first-children/3-enabled.json",
+        "report_sha256": "1b4c7148a53b320faac2567cdbdab8bcdf42036d081870ba06cfd055b2489614",
+        "returncode": 0,
+        "timed_out": false,
+        "timeout_seconds": 60
+      },
+      "raw_report_passed": true,
+      "raw_report_sha256_verified": true,
+      "resource_summary": {
+        "fd_final_within_baseline": true,
+        "final": {
+          "open_file_descriptors": 3,
+          "rss_bytes": 43085824,
+          "threads": 1
+        },
+        "interpretation": "Post-free samples for these bounded cycles; not a leak proof or device benchmark",
+        "maximum_sampled_rss_growth_bytes": 102400,
+        "post_warmup_baseline": {
+          "open_file_descriptors": 3,
+          "rss_bytes": 42983424,
+          "threads": 1
+        },
+        "rss_growth_budget_bytes": 33554432,
+        "rss_within_budget": true
+      },
+      "source_unchanged": true
+    }
+  ],
+  "original_child_report_files_unchanged": true,
+  "repeat_checks": {
+    "annotations_exact_across_processes": true,
+    "case_executions": 24,
+    "case_input_types": 8,
+    "complete": true,
+    "cycle_annotations_exact_across_processes": true,
+    "independent_linguistic_observations": false,
+    "native_contexts_created_and_freed": 102,
+    "native_documents_created_and_freed": 102,
+    "short_cycle_executions_including_warmup": 78,
+    "unique_text_inputs_including_cycle": 9
+  },
+  "report_sha256": "8274bfdb36a3181846f9e460b23f6b81b049f202ba0204d4956e4e9f3c18fc87",
+  "schema": "crispembed.spacy.w7.python_consumer_retained_audit.v1",
+  "source_unchanged": true
+}

@@ -1,0 +1,36 @@
+{
+  "archive_sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+  "command": [
+    "python3",
+    "-B",
+    "tools/spacy/distribution_consumer.py",
+    "--archive",
+    "ARCHIVE",
+    "--sha256",
+    "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+    "--installed",
+    "INSTALLED_PACKAGE",
+    "--protocol",
+    "docs/validation/native-spacy-w7-20261118/operational-protocol.json",
+    "--protocol-sha256",
+    "60f85df220bb05ff467c6036ce465c841cff3480103720d5139af0644cfd3934",
+    "--report",
+    "REPOSITORY/docs/validation/native-spacy-w7-20261118/resume-20261118/python-consumer/first.json"
+  ],
+  "external_process_timeout_seconds": 300,
+  "frozen_child_timeout_seconds": 60,
+  "github_actions_queried_or_waited": false,
+  "grammar_qualification_rerun": false,
+  "native_acceptance_rerun": false,
+  "protocol_sha256": "60f85df220bb05ff467c6036ce465c841cff3480103720d5139af0644cfd3934",
+  "python_version": "3.12.14",
+  "schema": "crispembed.spacy.w7.python_consumer_launch.v1",
+  "source_commit": "a71c3ce5326346310289db70953f5e300d9c1aaf",
+  "source_hashes_before": {
+    "docs/validation/native-spacy-w7-20261118/operational-protocol.json": "60f85df220bb05ff467c6036ce465c841cff3480103720d5139af0644cfd3934",
+    "tests/test_spacy_distribution_consumer.py": "c9d127ef2b9144b66ffcfa4c6ed4aa6348c345315e0380cb0628285d2e08bfa2",
+    "tools/spacy/distribution.py": "327f68ea67e0179caf017477054aafab322b84b9e7c6f998da8eee5aa95402d5",
+    "tools/spacy/distribution_consumer.py": "a9241a3c701ab7c4a03381f9a98df18fe47f047dd2b8cbebc6be71d3a3477172"
+  },
+  "started_utc": "2026-11-18T05:52:58.638345+00:00"
+}
