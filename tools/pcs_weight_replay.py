@@ -44,6 +44,9 @@ def main():
     initializers = {i.name: i for i in graph.graph.initializer}
     reader = gguf.GGUFReader(str(ROOT / '.pcs-models/pcs-xlmr-base-q4_k-imatrix.gguf'))
     tensors = {t.name: t for t in reader.tensors}
+    (out / 'inventory.json').write_text(json.dumps({
+        'original': [{'name': i.name, 'shape': list(i.dims), 'type': i.data_type} for i in graph.graph.initializer],
+        'native': [{'name': t.name, 'shape': list(map(int, t.shape)), 'type': str(t.tensor_type)} for t in reader.tensors]}, indent=2))
     mapped, used = {}, set()
     manifest = []
 
@@ -53,8 +56,14 @@ def main():
         if transpose:
             array = array.T
         dst = initializers[name]
+        # GGUF omits trailing singleton GGML axes, e.g. [768,1] is stored
+        # as a vector while ONNX retains the [1,768] embedding table.
+        if tuple(x for x in array.shape if x != 1) == tuple(x for x in dst.dims if x != 1):
+            array = array.reshape(tuple(dst.dims))
         if list(array.shape) != list(dst.dims) or dst.data_type != TensorProto.FLOAT:
-            raise ValueError('Original/native tensor geometry/type differs: ' + name + ' / ' + source)
+            raise ValueError('Original/native tensor geometry/type differs: ' + name + ' / ' + source +
+                             ' native=' + str(array.shape) + ' original=' + str(list(dst.dims)) +
+                             ' original_type=' + str(dst.data_type))
         digest = hashlib.sha256(array.tobytes()).hexdigest()
         if name in mapped and mapped[name] != digest:
             raise ValueError('Conflicting original alias replacement')
