@@ -86,16 +86,45 @@ even when the view itself is marked as output. These context captures cannot
 be interpreted as native arithmetic errors. Independent raw inspection finds
 the entire layer-0 context capture identical to the later attention-bias capture;
 none of the six token/head/channel permutations explains it. At full-sequence
-token0/channel720 it reads8.556599617 instead of−0.09441738576. Other reported
+token 0/channel 720 it reads 8.556599617 instead of −0.09441738576. Other reported
 negatives, including small QK absolute-budget exceedances, remain preserved.
 
 The observer now prepares independent DUP output tensors. Their future graph
 consumers retain the source allocation until copying; the copies then own
-retained storage. This changes diagnostic observation only. Fresh actual
-neutrality and capture qualification of this correction remain pending; the
-first panel is never relabelled as having used the corrected observer.
+retained storage. This changes diagnostic observation only. The fresh
+qualification below applies to the correction; the first panel is never
+relabelled as having used the corrected observer.
 
 The first panel independently confirms four-head/decoded OFF/ON equality for
 both native paths. Original-driver versus legacy OFF captured decoded equality
-only, not original four-head bytes. The controller now prepares that missing
-four-head control too; its execution remains pending.
+only, not original four-head bytes. The corrected controller includes that
+missing four-head control, measured in the next panel.
+
+## Corrected observer: actual frozen-request qualification
+
+Run [44347337837](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44347337837)
+uses exact corrected source `9860370c46b93fd311259d37f307c5903e6a1d24`.
+Build and all 13 controls pass; both original graph arms, all six native arms
+and all five 266-stage comparisons complete. Independent raw-array review
+verifies source/input identities, the same 214 stored tensors, shapes, numerical
+metrics and unchanged reference anchors.
+
+Original-driver versus legacy observer OFF now matches all four head dump bytes
+and decoded bytes exactly. Both legacy and F32-materialized OFF/ON pairs match
+those same bytes exactly. All 12 composed F32 attention-context snapshots pass;
+their largest absolute error is 5.185604095e-6, with no later-bias aliases. This
+qualifies the corrected observer for this one frozen request and CPU profile.
+
+The numerical and quality failures remain. Composed F32 has 256/266 passing
+boundaries and ten QK absolute-budget failures: first layer1 QK, maximum
+0.0002994537354; largest at layer4 QK, 0.0003986358643. Independent-input F32
+replay passes 266/266 with maximum 9.155273438e-5, below the unchanged 0.0001
+budget. Legacy same-weight computation still first differs at layer0 query
+multiplication; original versus stored weights still first differs at token
+lookup. No threshold, original scorer or reference is changed.
+
+Row37's original `o` logit remains +1.083245516, stored-graph −0.238312081,
+legacy native −0.098158233 and materialized native −0.238311455. Native composed
+output remains `I'm oK, how are you? I'm fine.` Numeric operator passes and
+observer qualification do not fix PCS or replace the original full PCS/fullstop
+gates. Those full gates were not rerun by this single-request diagnostic.

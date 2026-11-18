@@ -12,12 +12,17 @@ original layer-boundary and stored-weight quality failures stay open.
 Prepared source is not a numerical result; record actual source-bound runs
 before claiming a finer first divergence or repair.
 
-The first scoped operator run44334585175 completed all arms and13 source
+The first scoped operator run 44334585175 completed all arms and 13 source
 controls. Independent raw metrics locate the stored-weight difference at token
 lookup and the legacy same-weight difference at layer0 query multiplication.
 The composed context capture exposed a view/backing-allocation lifetime limit;
-the diagnostic now prepares owned snapshots. Its fresh actual qualification is
-pending. Keep all first-run negatives, original gates and production bytes.
+the diagnostic now uses owned snapshots. Corrected source `9860370c4` is
+qualified on the frozen request by run 44347337837: original-driver/OFF and
+OFF/ON four-head/decoded bytes match; all 12 context snapshots pass, max
+5.185604095e-6. Independent raw-array checks verify the full panel. Ten composed
+F32 QK budget exceedances and the decoded `oK` failure remain. Keep all first-run
+negatives, original gates and production bytes; this is observer qualification,
+not a PCS model fix or full-gate closure.
 
 ## Free OCR model priorities from ParseBench 2 — 18 November 2026
 
