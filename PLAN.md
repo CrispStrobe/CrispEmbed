@@ -24,6 +24,18 @@ F32 QK budget exceedances and the decoded `oK` failure remain. Keep all first-ru
 negatives, original gates and production bytes; this is observer qualification,
 not a PCS model fix or full-gate closure.
 
+Offline captured-operand analysis now separates carried Q/K differences from
+local arithmetic at all 12 QK boundaries. At the first failing coordinate,
+layer1/head8/query11/key9, operand propagation contributes +0.0002894699423
+to the +0.0002994537354 discrepancy; the measured reference-input local error
+is +0.00001907348633, with -0.000009089693243 input-dependent remainder.
+Six new algebra/axis/refusal controls pass. All four retained head biases match
+their original bytes. Token and position table contributions are isolated at
+the pre-normalization embedding sum only. The unique tensor/conversion cause
+of decoded `oK` remains unresolved; the admitted activation panel lacks casing
+projection weight payloads for a parameter-held-fixed intervention. No model,
+capture, production artifact or original full gate was rerun by this analysis.
+
 ## Free OCR model priorities from ParseBench 2 — 18 November 2026
 
 The [updated OCR expansion roadmap](docs/ocr-benchmark-expansion.md#parsebench-2-model-priorities--18-november-2026)

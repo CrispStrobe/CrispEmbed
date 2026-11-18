@@ -138,3 +138,50 @@ legacy native −0.098158233 and materialized native −0.238311455. Native comp
 output remains `I'm oK, how are you? I'm fine.` Numeric operator passes and
 observer qualification do not fix PCS or replace the original full PCS/fullstop
 gates. Those full gates were not rerun by this single-request diagnostic.
+
+## Captured-operand causal split
+
+`tools/pcs_operand_cause.py` reads the admitted panel and the already measured
+reference-input native arm. It runs no model or conversion. For each of the 12
+original QK MatMul nodes, canonical `[head,query,key]` axes are checked against
+the captured Q/K dimensions. Float64 dot products separate the Q perturbation,
+K perturbation and their cross term. The measured reference-input native error
+and an input-dependent arithmetic remainder complete the decomposition. Algebra
+closure is a consistency check, not an independent accuracy pass. Six new
+controls exercise nonzero cross/local terms, axes, malformed inputs and bounded
+embedding-table interventions.
+
+For source `9860370c4`, the first composed QK budget failure is layer1,
+head8/query11/key9. Its signed difference `+0.0002994537354` separates into:
+
+| Component | Signed contribution |
+| --- | ---: |
+| Q operand difference | +0.0001753040127 |
+| K operand difference | +0.0001141659887 |
+| Cross term | -5.911182654e-11 |
+| Measured native error with reference inputs | +0.00001907348633 |
+| Input-dependent arithmetic remainder | -0.000009089693243 |
+
+At the largest QK failure, layer4/head3/query2/key2, the observed
+`+0.0003986358643` includes `+0.0003953697908` from operand propagation,
+`+0.000005722045898` from the reference-input local error and
+`-0.000002455972488` remainder. Thus carried operand differences account for
+most of these two exceedances; this does not identify which earlier differences
+caused them, or establish the one-ULP embedding sum as their sole cause. All ten
+budget failures remain failures under the original `0.0001` budget.
+
+The original and stored graph embedding sums are separately reproduced
+bit-for-bit from captured lookup operands. At their largest sum difference,
+full-token0/channel734, `+0.07831604406` comprises token-table difference
+`+0.03245828301`, position-table difference `+0.04585775733` and addition rounding
+`+3.725290298e-9`. This isolates two parameter contributions before normalization;
+it does not attribute the final decoded error. All four retained original head
+bias vectors have exactly the stored dequantized bytes, excluding a direct
+representation change in those biases only.
+
+The remaining product blocker is unresolved tensor/conversion causality for
+the stored-weight decoded `oK` failure. The admitted activation panel contains
+parameter hashes and selected embedding rows, but not the casing projection
+weight payloads needed for a parameter-held-fixed intervention. No single
+conversion or tensor is established as the unique cause. This analysis neither
+regenerates weights nor substitutes for original PCS/fullstop qualification.
