@@ -30,6 +30,12 @@ is unchanged: 1,776/1,776 GSD sentences, NER 1,758/1,758, CTest 4/4, text API.
 
 French `resources.json` is 35 MB (217k-entry lemma lookup).
 
+Hosted Linux x86-64 (converted on the runner from the pinned wheels, built from
+source, compared through the C ABI) reproduces both results exactly and
+produces byte-identical `model.gguf` files:
+[English run 44363961502](linux-en-run-44363961502.json),
+[French run 44363955799](linux-fr-run-44363955799.json).
+
 ## What v2 adds
 
 - **Converter** `models/convert-spacy-pipeline-to-gguf.py`: layers found by

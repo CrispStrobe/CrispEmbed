@@ -1,0 +1,47 @@
+{
+  "schema": "crispembed.spacy.v2_ab.v1",
+  "model": "en_core_web_sm",
+  "source": "3bdcfedc3f20bf21c757879f0bfa5eaff9846c6e",
+  "run": "44363961502",
+  "passed": true,
+  "wheel": {
+    "url": "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
+    "sha256": "1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85",
+    "bytes": 12806118,
+    "http_status": 200,
+    "response_repo_commit": null,
+    "fresh_empty_cache": true
+  },
+  "bundle_files": {
+    "LICENSE": {
+      "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+      "size_bytes": 1056
+    },
+    "LICENSES_SOURCES": {
+      "sha256": "20d9dfacd215112251f15341edd1a47b1f98bf393a212f10f194ffdc7ee98a90",
+      "size_bytes": 2347
+    },
+    "model.gguf": {
+      "sha256": "17b18871a2c1e766be4572c1dd9a9902ba01c4a46679797ccb3c4d0048d24e7d",
+      "size_bytes": 12752960
+    },
+    "resources.json": {
+      "sha256": "d585e59b9b2f1aedfd5eb37716ff0d362969f6f8ba8535dad4ae50991567981a",
+      "size_bytes": 3451396
+    }
+  },
+  "comparison": {
+    "cases": 2077,
+    "exact_cases": 2077,
+    "tokens": 25531,
+    "differences": [],
+    "entities": {
+      "oracle": 1876,
+      "matched": 1876
+    }
+  },
+  "controls": {
+    "returncode": 0,
+    "output": "{\n \"disabled_without_gate\": true,\n \"wrong_model_hash_rejected\": true,\n \"wrong_resource_hash_rejected\": true,\n \"admitted\": true,\n \"text_only_capabilities\": true,\n \"numeric_service_rejected\": true,\n \"attach_ner_rejected\": true\n}\n"
+  }
+}
