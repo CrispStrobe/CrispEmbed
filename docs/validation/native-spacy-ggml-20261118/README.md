@@ -178,7 +178,12 @@ identical** to original spaCy (spans and labels) with both main engines; NER
 tok2vec max abs 5.7e-6 and lower cache 1.05e-5 against the original thinc
 layers on 300 texts; +31% analysis time with the default engine. Negative
 controls reject the gate off/`=0`, a wrong hash, the main model as NER, a second
-attach and a context without resources. Reports: [`gsd/`](gsd/).
+attach and a context without resources. Linux AVX2
+[run 44295825163](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44295825163)
+([receipt](gsd/linux-run-44295825163.json)) repeats the full A/B with a
+runner-converted `ner.gguf`: 1,776/1,776 sentences and 1,758/1,758 entities
+identical with both main engines (+34% time with the default engine), default
+engine again 1,776/1,776. Reports: [`gsd/`](gsd/).
 
 **senter** (disabled in this pipeline) is not ported; the parser already
 supplies sentence boundaries for every analysis.
