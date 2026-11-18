@@ -20,7 +20,7 @@
   },
   "runner_image": "https://github.com/actions/runner-images/blob/ubuntu26/20261111.196/images/ubuntu/Ubuntu2604-Readme.md",
   "runner_system_python": "3.14.4",
-  "diagnosis": "Pinned NumPy 2.2.6 ran under an unpinned system Python newer than its supported Python 3.10-3.13 range. Local Python 3.12 / NumPy 2.2.6 passes the unchanged probe. Attribution to a particular NumPy operation is not established.",
+  "diagnosis": "Pinned NumPy 2.2.6 ran under an unpinned system Python newer than its supported Python 3.10-3.13 range. Local Python 3.13 / NumPy 2.2.6 passes the unchanged probe. Attribution to a particular NumPy operation is not established.",
   "repair": "Select Python 3.12 with actions/setup-python before installing NumPy 2.2.6; retain the exact assertion, fixture, scorer and recipe.",
   "local_validation": {
     "quantizer_policy_and_synthetic_cosine": "pass",
