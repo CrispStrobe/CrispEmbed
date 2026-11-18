@@ -61,6 +61,7 @@ add_library(crispembed-spacy ${_spacy_library_kind}
     "${CRISPEMBED_ROOT}/src/spacy_numeric.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_ggml.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_ner.cpp"
+    "${CRISPEMBED_ROOT}/src/spacy_v2.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_lexical.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_decode.cpp"
     "${CRISPEMBED_ROOT}/src/core/gguf_loader.cpp")

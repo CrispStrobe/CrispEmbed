@@ -180,7 +180,11 @@ NumericOutput GgmlNumeric::run(const std::vector<FeatureRow> & features, std::si
     ggml_tensor * tok2vec =
         ggml_cont(ctx, ggml_view_2d(ctx, encoded, width, n, encoded->nb[1], encoded->nb[1] * padding));
     ggml_set_output(tok2vec);
-    auto head = [&](const char * name) {
+    // Classifier heads are optional for v2 pipelines (e.g. English has no
+    // morphologizer or trainable lemmatizer); a head without weights is skipped
+    // and its output matrix stays empty. The German v1 model has all of them.
+    auto head = [&](const char * name) -> ggml_tensor * {
+        if (weights_.find(std::string(name) + ".W") == weights_.end()) return nullptr;
         ggml_tensor * scores = ggml_add(ctx, ggml_mul_mat(ctx, weight(std::string(name) + ".W"), tok2vec),
                                         weight(std::string(name) + ".b"));
         ggml_set_output(scores);
@@ -190,13 +194,15 @@ NumericOutput GgmlNumeric::run(const std::vector<FeatureRow> & features, std::si
     ggml_tensor * morphologizer = head("morphologizer");
     ggml_tensor * lemmatizer = head("lemmatizer");
     ggml_tensor * reduced = head("parser.reduce");
+    if (!reduced) throw std::invalid_argument("Missing spaCy parser reduce layer");
     ggml_tensor * lower_w = weight("parser.lower.W");
     ggml_tensor * lower = ggml_mul_mat(ctx, ggml_reshape_2d(ctx, lower_w, lower_w->ne[0], parser_columns), reduced);
     ggml_set_output(lower);
 
     ggml_cgraph * graph = ggml_new_graph_custom(ctx, GGML_DEFAULT_GRAPH_SIZE, false);
     for (const auto & item : stages) ggml_build_forward_expand(graph, item.tensor);
-    for (ggml_tensor * output : { tagger, morphologizer, lemmatizer, lower }) ggml_build_forward_expand(graph, output);
+    for (ggml_tensor * output : { tagger, morphologizer, lemmatizer, lower })
+        if (output) ggml_build_forward_expand(graph, output);
     if (!ggml_gallocr_alloc_graph(allocator_, graph)) throw std::bad_alloc();
 
     std::vector<std::int32_t> indices(static_cast<std::size_t>(4 * n));
@@ -219,9 +225,12 @@ NumericOutput GgmlNumeric::run(const std::vector<FeatureRow> & features, std::si
 
     NumericOutput output;
     output.tok2vec = to_matrix(read(tok2vec), rows, static_cast<std::size_t>(width));
-    output.tagger = to_matrix(read(tagger), rows, static_cast<std::size_t>(tagger->ne[0]));
-    output.morphologizer = to_matrix(read(morphologizer), rows, static_cast<std::size_t>(morphologizer->ne[0]));
-    output.lemmatizer = to_matrix(read(lemmatizer), rows, static_cast<std::size_t>(lemmatizer->ne[0]));
+    auto head_matrix = [&](ggml_tensor * scores) {
+        return scores ? to_matrix(read(scores), rows, static_cast<std::size_t>(scores->ne[0])) : Matrix{};
+    };
+    output.tagger = head_matrix(tagger);
+    output.morphologizer = head_matrix(morphologizer);
+    output.lemmatizer = head_matrix(lemmatizer);
     const auto lower_values = read(lower);
     require_finite(lower_values);
     output.parser_cache.rows = rows + 1;
@@ -238,9 +247,9 @@ NumericOutput GgmlNumeric::run(const std::vector<FeatureRow> & features, std::si
             trace(item.name, TensorView{ item.shape, values.data(), values.size() });
         }
         trace("tok2vec.output", output.tok2vec.view());
-        trace("tagger.scores", output.tagger.view());
-        trace("morphologizer.scores", output.morphologizer.view());
-        trace("lemmatizer.scores", output.lemmatizer.view());
+        if (tagger) trace("tagger.scores", output.tagger.view());
+        if (morphologizer) trace("morphologizer.scores", output.morphologizer.view());
+        if (lemmatizer) trace("lemmatizer.scores", output.lemmatizer.view());
         const auto reduced_values = read(reduced);
         trace("parser.reduce", TensorView{ { rows, static_cast<std::size_t>(reduced->ne[0]) },
                                            reduced_values.data(),

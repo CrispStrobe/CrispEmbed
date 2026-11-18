@@ -33,12 +33,14 @@ class NerModel {
 public:
     // Weights (F32, "ner." names) stay owned by the caller and resident in a
     // buffer usable by the CPU backend for this object's lifetime.
-    NerModel(std::map<std::string, ggml_tensor *> weights, ggml_backend_t backend);
+    // class_names: the component's transition classes in source order.
+    NerModel(std::map<std::string, ggml_tensor *> weights, ggml_backend_t backend,
+             const std::vector<std::string> & class_names);
     ~NerModel();
     NerModel(const NerModel &) = delete;
     NerModel & operator=(const NerModel &) = delete;
 
-    static const std::vector<std::string> & labels(); // LOC, PER, ORG, MISC
+    const std::vector<std::string> & labels() const; // entity labels, first-appearance order
 
     // features use columns 0-3 (NORM..SHAPE) and 5 (IS_SPACE); sentence_starts
     // are the parser's final boundaries (token 0 is always a start).
@@ -52,6 +54,9 @@ private:
     ggml_backend_t backend_;
     mutable ggml_gallocr * allocator_ = nullptr;
     std::vector<float> lower_bias_, lower_pad_, upper_w_, upper_b_;
+    std::vector<std::string> labels_;
+    std::vector<int> class_moves_;
+    std::vector<std::uint32_t> class_labels_;
 };
 
 } // namespace spacy

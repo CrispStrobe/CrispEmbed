@@ -328,8 +328,15 @@ struct LexicalModel::Impl {
           suffix(field(field(root, "tokenizer", Json::object_t), "suffix_search", Json::string_t).s),
           infix(field(field(root, "tokenizer", Json::object_t), "infix_finditer", Json::string_t).s),
           url(field(field(root, "tokenizer", Json::object_t), "url_match", Json::string_t).s) {
-        require(field(root, "format_version", Json::int_t).i == 1 && field(root, "language", Json::string_t).s == "de",
+        // Format 1 is the closed German de_core_news_sm profile (exact inventory
+        // counts). Format 2 (models/convert-spacy-pipeline-to-gguf.py) admits
+        // other spaCy 3.8 pipelines with the same tokenizer/NORM structure and
+        // generic engineering bounds instead of fixed counts.
+        const auto format = field(root, "format_version", Json::int_t).i;
+        const auto & language = field(root, "language", Json::string_t).s;
+        require((format == 1 && language == "de") || (format == 2 && (language == "en" || language == "fr")),
                 "Unsupported lexical resource profile");
+        const bool closed = format == 1;
         const auto & source = field(root, "lexical_semantics_source", Json::object_t);
         require(field(source, "revision", Json::string_t).s == "43311999028032fd81bef77a75fdb4fa96803c98",
                 "Unsupported lexical source revision");
@@ -337,7 +344,8 @@ struct LexicalModel::Impl {
         field(tokenizer, "token_match", Json::null_t);
         require(field(tokenizer, "faster_heuristics", Json::bool_t).b, "Unsupported tokenizer special-case policy");
         const auto & cases = field(tokenizer, "exceptions", Json::object_t);
-        require(cases.o.size() == 417, "Changed tokenizer exception inventory");
+        require(closed ? cases.o.size() == 417 : !cases.o.empty() && cases.o.size() <= 20000,
+                "Changed tokenizer exception inventory");
         for (const auto & item : cases.o) {
             require(!item.first.empty() && item.first.size() <= 16384 && item.second.kind == Json::array_t &&
                         !item.second.a.empty() && item.second.a.size() <= 3,
@@ -372,7 +380,9 @@ struct LexicalModel::Impl {
             require(item.second.kind == Json::string_t, "Invalid normalization value");
             text_norms.emplace(item.first, item.second.s);
         }
-        require(hash_norms.size() == 2 && text_norms.size() == 45, "Changed normalization inventory");
+        require(closed ? hash_norms.size() == 2 && text_norms.size() == 45
+                       : hash_norms.size() <= 1000000 && text_norms.size() <= 100000,
+                "Changed normalization inventory");
         const auto & unicode = field(root, "unicode", Json::object_t);
         require(field(unicode, "unicode_version", Json::string_t).s == "15.0.0" &&
                     field(unicode, "normalization", Json::string_t).s == "none; preserve original UTF-8 source" &&
@@ -651,6 +661,36 @@ struct LexicalModel::Impl {
         return token;
     }
 };
+
+struct PythonRegex::Impl {
+    Regex regex;
+    explicit Impl(const std::string & pattern) : regex(pattern) {}
+};
+
+PythonRegex::PythonRegex(const std::string & pattern) : impl_(std::make_unique<Impl>(pattern)) {}
+PythonRegex::~PythonRegex() = default;
+PythonRegex::PythonRegex(PythonRegex &&) noexcept = default;
+PythonRegex & PythonRegex::operator=(PythonRegex &&) noexcept = default;
+
+bool PythonRegex::search(std::string_view text) const {
+    (void)decode_utf8(text);
+    return impl_->regex.search(text).found;
+}
+
+std::string LexicalModel::python_lower(std::string_view text) const {
+    require(impl_ != nullptr, "Moved-from lexical model");
+    const auto decoded = decode_utf8(text);
+    return impl_->lowered(decoded, 0, decoded.scalars.size());
+}
+
+bool LexicalModel::python_isalpha(std::string_view text) const {
+    require(impl_ != nullptr, "Moved-from lexical model");
+    const auto decoded = decode_utf8(text);
+    if (decoded.scalars.empty()) return false;
+    for (const auto cp : decoded.scalars)
+        if (!in_ranges(cp, impl_->alpha)) return false;
+    return true;
+}
 
 LexicalModel::LexicalModel(const std::string & authenticated_resource_json) {
     require(authenticated_resource_json.size() <= 32 * 1024 * 1024, "Lexical resource file exceeds bound");

@@ -9,6 +9,7 @@
 #include "ggml-cpu.h"
 #include "spacy_ggml.h"
 #include "spacy_ner.h"
+#include "spacy_v2.h"
 #include "gguf.h"
 #include "spacy_numeric.h"
 #include "spacy_lexical.h"
@@ -364,10 +365,12 @@ std::vector<uint8_t> read_model(const char * path) {
     return bytes;
 }
 
-std::string read_resources(const char * path, const char * expected_sha256) {
+// German v1 resources are pinned to the admitted profile; v2 resources are
+// pinned by their model's spacy.resources.sha256 metadata instead.
+std::string read_resources(const char * path, const char * expected_sha256, bool german_profile = true) {
     require(path && *path && valid_sha(expected_sha256),
             "Explicit resource path and trusted lowercase SHA-256 required");
-    require(std::strcmp(expected_sha256, k_resources_sha) == 0,
+    require(!german_profile || std::strcmp(expected_sha256, k_resources_sha) == 0,
             "Resource hash differs from the admitted model profile");
     std::ifstream stream(path, std::ios::binary | std::ios::ate);
     require(static_cast<bool>(stream), "Cannot open spaCy resources file");
@@ -436,8 +439,12 @@ struct crispembed_spacy_context {
     // Opt-in CRISPEMBED_SPACY_NER component from a separate ner.gguf.
     core_gguf::WeightLoad ner_weights;
     std::unique_ptr<crispembed::spacy::NerModel> ner;
+    // Version-2 pipelines (spacy_pipeline_v2: English/French sm); when set,
+    // model/ggml/decoder stay empty and only text services are available.
+    std::unique_ptr<crispembed::spacy::PipelineV2> v2;
 
     ~crispembed_spacy_context() {
+        v2.reset();
         ner.reset();
         core_gguf::free_weights(ner_weights);
         ggml.reset();
@@ -458,6 +465,8 @@ struct crispembed_spacy_document {
     std::vector<crispembed::spacy::LexicalToken> tokens;
     crispembed::spacy::DecodeOutput annotations;
     std::vector<crispembed::spacy::Entity> entities;
+    // Label names for `entities`, copied so documents may outlive their context.
+    std::vector<std::string> entity_labels;
     bool analyzed = false;
 };
 
@@ -497,10 +506,14 @@ uint32_t crispembed_spacy_text_abi_version(void) {
 
 uint32_t crispembed_spacy_context_capabilities(const crispembed_spacy_context * context) {
     if (!context) return 0;
-    return crispembed_spacy_capabilities() |
+    // v2 contexts expose text services only (no prepared-feature numeric API).
+    return (context->model ? crispembed_spacy_capabilities() : 0u) |
            (context->lexical ? static_cast<uint32_t>(CRISPEMBED_SPACY_TOKENIZE_UTF8) : 0u) |
-           (context->lexical && context->decoder ? static_cast<uint32_t>(CRISPEMBED_SPACY_ANALYZE_UTF8) : 0u) |
-           (context->ner ? static_cast<uint32_t>(CRISPEMBED_SPACY_ENTITIES_UTF8) : 0u);
+           (context->lexical && (context->decoder || context->v2) ? static_cast<uint32_t>(CRISPEMBED_SPACY_ANALYZE_UTF8)
+                                                                  : 0u) |
+           (context->ner || (context->v2 && context->v2->has_ner())
+                ? static_cast<uint32_t>(CRISPEMBED_SPACY_ENTITIES_UTF8)
+                : 0u);
 }
 
 crispembed_spacy_context * crispembed_spacy_create(const char * model_path, const char * expected_sha256, char * error,
@@ -695,7 +708,13 @@ int crispembed_spacy_attach_ner(crispembed_spacy_context * context, const char *
                 weights.emplace(item.first, found->second);
             }
             require(core_sha256::file(ner_path) == expected_sha256, "NER GGUF file changed while opening");
-            context->ner = std::make_unique<crispembed::spacy::NerModel>(std::move(weights), context->backend);
+            // The admitted metadata above pins this exact class order.
+            static const std::vector<std::string> german_classes = { "B-LOC",  "B-PER",  "B-ORG",  "B-MISC", "I-LOC",
+                                                                     "I-PER",  "I-ORG",  "I-MISC", "L-LOC",  "L-PER",
+                                                                     "L-ORG",  "L-MISC", "U-LOC",  "U-PER",  "U-ORG",
+                                                                     "U-MISC", "U-",     "O" };
+            context->ner =
+                std::make_unique<crispembed::spacy::NerModel>(std::move(weights), context->backend, german_classes);
         } catch (...) {
             core_gguf::free_weights(load);
             throw;
@@ -718,6 +737,71 @@ void crispembed_spacy_free(crispembed_spacy_context * context) {
     delete context;
 }
 
+namespace {
+
+// Authenticate the model bytes first, then read only its GGUF architecture.
+bool is_v2_model(const char * model_path, const char * expected_sha256) {
+    require(model_path && *model_path && valid_sha(expected_sha256),
+            "Explicit model path and trusted lowercase SHA-256 required");
+    const auto bytes = read_model(model_path);
+    require(core_sha256::bytes(bytes.data(), bytes.size()) == expected_sha256, "GGUF SHA-256 mismatch");
+    gguf_init_params params{ true, nullptr };
+    std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(gguf_init_from_file(model_path, params), gguf_free);
+    require(meta != nullptr, "Invalid spaCy GGUF container");
+    const auto key = gguf_find_key(meta.get(), "general.architecture");
+    return key >= 0 && gguf_get_kv_type(meta.get(), key) == GGUF_TYPE_STRING &&
+           std::string(gguf_get_val_str(meta.get(), key)) == "spacy_pipeline_v2";
+}
+
+// Version-2 pipelines (models/convert-spacy-pipeline-to-gguf.py). The model
+// pins its resources by SHA-256; every tensor must be finite F32.
+crispembed_spacy_context * create_v2(const char * model_path, const char * expected_sha256,
+                                     const std::string & resources, const char * expected_resources_sha256) {
+    gguf_init_params params{ true, nullptr };
+    std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(gguf_init_from_file(model_path, params), gguf_free);
+    require(meta != nullptr, "Invalid spaCy v2 GGUF container");
+    auto string_value = [&](const char * name) {
+        const auto key = gguf_find_key(meta.get(), name);
+        require(key >= 0 && gguf_get_kv_type(meta.get(), key) == GGUF_TYPE_STRING,
+                (std::string("Missing spaCy v2 metadata ") + name).c_str());
+        return std::string(gguf_get_val_str(meta.get(), key));
+    };
+    const auto format = gguf_find_key(meta.get(), "spacy.format_version");
+    require(format >= 0 && gguf_get_kv_type(meta.get(), format) == GGUF_TYPE_UINT32 &&
+                gguf_get_val_u32(meta.get(), format) == 2,
+            "Unsupported spaCy v2 format version");
+    require(string_value("spacy.resources.sha256") == expected_resources_sha256,
+            "spaCy v2 resources do not belong to this model");
+    require(string_value("spacy.precision") == "f32", "Only F32 spaCy v2 models are admitted");
+    const auto language = string_value("spacy.language");
+    require(language == "en" || language == "fr", "Unsupported spaCy v2 language");
+    auto context = std::make_unique<crispembed_spacy_context>();
+    context->model_sha256 = expected_sha256;
+    context->backend = ggml_backend_cpu_init();
+    if (!context->backend) throw std::bad_alloc();
+    ggml_backend_cpu_set_n_threads(context->backend, spacy_threads());
+    require(core_gguf::load_weights(model_path, context->backend, "spacy-v2", context->weights, false),
+            "Cannot load admitted spaCy v2 weights");
+    require(!context->weights.used_mmap, "Unexpected spaCy v2 weight ownership");
+    std::map<std::string, ggml_tensor *> weights;
+    for (const auto & item : context->weights.tensors) {
+        const auto * tensor = item.second;
+        require(tensor->type == GGML_TYPE_F32 && ggml_is_contiguous(tensor),
+                ("Non-F32 spaCy v2 tensor: " + item.first).c_str());
+        const auto * values = static_cast<const float *>(tensor->data);
+        for (int64_t i = 0; i < ggml_nelements(tensor); ++i)
+            require(std::isfinite(values[i]), ("Nonfinite spaCy v2 tensor: " + item.first).c_str());
+        weights.emplace(item.first, item.second);
+    }
+    require(core_sha256::file(model_path) == expected_sha256, "GGUF file changed while opening");
+    context->lexical = std::make_unique<crispembed::spacy::LexicalModel>(resources);
+    context->v2 = std::make_unique<crispembed::spacy::PipelineV2>(resources, std::move(weights), context->backend,
+                                                                  *context->lexical);
+    return context.release();
+}
+
+} // namespace
+
 crispembed_spacy_context * crispembed_spacy_create_with_resources(const char * model_path,
                                                                   const char * expected_model_sha256,
                                                                   const char * resources_path,
@@ -731,7 +815,9 @@ crispembed_spacy_context * crispembed_spacy_create_with_resources(const char * m
             return nullptr;
         }
         // Authenticate resource bytes before either resource parser sees them.
-        const auto resources = read_resources(resources_path, expected_resources_sha256);
+        const bool v2 = is_v2_model(model_path, expected_model_sha256);
+        const auto resources = read_resources(resources_path, expected_resources_sha256, !v2);
+        if (v2) return create_v2(model_path, expected_model_sha256, resources, expected_resources_sha256);
         std::unique_ptr<crispembed_spacy_context> context(
             crispembed_spacy_create(model_path, expected_model_sha256, error, error_capacity));
         if (!context) return nullptr;
@@ -797,7 +883,7 @@ int crispembed_spacy_analyze_utf8(crispembed_spacy_context * context, const char
     if (document) *document = nullptr;
     error_text(error, error_capacity, "");
     if (!context || !document || (error_capacity && !error) || (text_bytes && !text) ||
-        text_bytes > CRISPEMBED_SPACY_MAX_TEXT_BYTES || !context->lexical || !context->decoder) {
+        text_bytes > CRISPEMBED_SPACY_MAX_TEXT_BYTES || !context->lexical || (!context->decoder && !context->v2)) {
         error_text(error, error_capacity,
                    "Invalid text pointers/length or context without admitted analysis resources");
         return CRISPEMBED_SPACY_INVALID_ARGUMENT;
@@ -812,6 +898,17 @@ int crispembed_spacy_analyze_utf8(crispembed_spacy_context * context, const char
         check_cancel(cancelled);
         auto owned = std::make_unique<crispembed_spacy_document>();
         owned->tokens = context->lexical->tokenize(std::string_view(text ? text : "", text_bytes), cancelled);
+        if (context->v2) {
+            auto result = context->v2->run(owned->tokens, trace_sink(trace, trace_user), cancelled);
+            require(result.annotations.tokens.size() == owned->tokens.size(), "Incomplete spaCy annotation output");
+            owned->annotations = std::move(result.annotations);
+            owned->entities = std::move(result.entities);
+            owned->entity_labels = std::move(result.entity_labels);
+            check_cancel(cancelled);
+            owned->analyzed = true;
+            *document = owned.release();
+            return CRISPEMBED_SPACY_OK;
+        }
         std::vector<crispembed::spacy::FeatureRow> features;
         std::vector<crispembed::spacy::DecodeToken> tokens;
         features.reserve(owned->tokens.size());
@@ -853,6 +950,7 @@ int crispembed_spacy_analyze_utf8(crispembed_spacy_context * context, const char
             for (const auto & annotation : owned->annotations.tokens)
                 starts.push_back(annotation.is_sent_start ? 1 : 0);
             owned->entities = context->ner->run(features, starts, sink, cancelled);
+            owned->entity_labels = context->ner->labels();
         }
         check_cancel(cancelled);
         owned->analyzed = true;
@@ -933,7 +1031,7 @@ int crispembed_spacy_document_entity(const crispembed_spacy_document * document,
     if (!document || !entity || !document->analyzed || index >= document->entities.size())
         return CRISPEMBED_SPACY_INVALID_ARGUMENT;
     const auto & value = document->entities[index];
-    const auto & labels = crispembed::spacy::NerModel::labels();
+    const auto & labels = document->entity_labels;
     if (value.start >= value.end || value.end > document->tokens.size() || value.label >= labels.size())
         return CRISPEMBED_SPACY_INVALID_ARGUMENT;
     const auto & first = document->tokens[value.start];
@@ -961,8 +1059,9 @@ int crispembed_spacy_forward_features(crispembed_spacy_context * context, const 
                                       size_t error_capacity) {
     if (result) *result = nullptr;
     error_text(error, error_capacity, "");
-    if (!context || !result || (error_capacity && !error) || token_count > CRISPEMBED_SPACY_MAX_TOKENS ||
-        feature_count != token_count * CRISPEMBED_SPACY_FEATURE_COUNT || (feature_count && !features)) {
+    if (!context || !context->model || !result || (error_capacity && !error) ||
+        token_count > CRISPEMBED_SPACY_MAX_TOKENS || feature_count != token_count * CRISPEMBED_SPACY_FEATURE_COUNT ||
+        (feature_count && !features)) {
         error_text(error, error_capacity, "Invalid spaCy feature pointers/counts or token limit");
         return CRISPEMBED_SPACY_INVALID_ARGUMENT;
     }
@@ -1039,8 +1138,9 @@ int crispembed_spacy_parser_scores(crispembed_spacy_context * context, const cri
                                    crispembed_spacy_cancel_callback cancel, void * cancel_user, char * error,
                                    size_t error_capacity) {
     error_text(error, error_capacity, "");
-    if (!context || !result || !state_features || state_feature_count != 8 || !output || output_capacity < 137 ||
-        (error_capacity && !error) || !result->output.tok2vec.rows || result->model_sha256 != context->model_sha256) {
+    if (!context || !context->model || !result || !state_features || state_feature_count != 8 || !output ||
+        output_capacity < 137 || (error_capacity && !error) || !result->output.tok2vec.rows ||
+        result->model_sha256 != context->model_sha256) {
         error_text(error, error_capacity, "Invalid parser state/result/model identity or output capacity");
         return CRISPEMBED_SPACY_INVALID_ARGUMENT;
     }

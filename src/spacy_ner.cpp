@@ -5,6 +5,7 @@
 #include "ggml-cpu.h"
 #include "ggml.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <limits>
@@ -25,18 +26,12 @@ constexpr std::size_t hidden = 64;
 constexpr std::size_t hidden_pieces = 2;
 constexpr std::size_t slot = hidden * hidden_pieces;         // 128 per state feature
 constexpr std::size_t cache_columns = state_features * slot; // 384
-constexpr std::size_t classes = 18;
-constexpr std::size_t entity_labels = 4;
 constexpr std::size_t embedding_rows[features_count] = { 5000, 1000, 2500, 2500 };
 constexpr float layer_norm_epsilon = 1e-8f;
 
-// Source class order: B-x4, I-x4, L-x4, U-x4 (LOC, PER, ORG, MISC), U- (label 0), O.
+// Class names follow spaCy's BiluoPushDown order (get_class_name): "B-X",
+// "I-X", "L-X", "U-X", "U-" (label 0, valid only for preset blocks) and "O".
 enum Move { BEGIN, IN, LAST, UNIT, UNIT_BLOCKED, OUT };
-
-Move move_of(std::size_t c) {
-    if (c < 16) return static_cast<Move>(c / entity_labels);
-    return c == 16 ? UNIT_BLOCKED : OUT;
-}
 
 struct ContextDeleter {
     void operator()(ggml_context * context) const { ggml_free(context); }
@@ -67,13 +62,34 @@ std::vector<float> read(const ggml_tensor * tensor) {
 
 } // namespace
 
-const std::vector<std::string> & NerModel::labels() {
-    static const std::vector<std::string> names = { "LOC", "PER", "ORG", "MISC" };
-    return names;
+const std::vector<std::string> & NerModel::labels() const {
+    return labels_;
 }
 
-NerModel::NerModel(std::map<std::string, ggml_tensor *> weights, ggml_backend_t backend)
+NerModel::NerModel(std::map<std::string, ggml_tensor *> weights, ggml_backend_t backend,
+                   const std::vector<std::string> & class_names)
     : weights_(std::move(weights)), backend_(backend) {
+    if (class_names.empty() || class_names.size() > 1024)
+        throw std::invalid_argument("Invalid spaCy NER class inventory");
+    for (const auto & name : class_names) {
+        std::uint32_t label = 0;
+        int move = -1;
+        if (name == "O")
+            move = OUT;
+        else if (name == "U-")
+            move = UNIT_BLOCKED;
+        else if (name.size() > 2 && name[1] == '-') {
+            const char kind = name[0];
+            move = kind == 'B' ? BEGIN : kind == 'I' ? IN : kind == 'L' ? LAST : kind == 'U' ? UNIT : -1;
+            const auto text = name.substr(2);
+            const auto found = std::find(labels_.begin(), labels_.end(), text);
+            label = static_cast<std::uint32_t>(found - labels_.begin());
+            if (found == labels_.end()) labels_.push_back(text);
+        }
+        if (move < 0) throw std::invalid_argument("Unsupported spaCy NER class " + name);
+        class_moves_.push_back(move);
+        class_labels_.push_back(label);
+    }
     if (!backend_ || !ggml_backend_is_cpu(backend_)) throw std::invalid_argument("spaCy NER requires a CPU backend");
     for (const auto & item : weights_)
         if (!item.second || item.second->type != GGML_TYPE_F32)
@@ -82,6 +98,7 @@ NerModel::NerModel(std::map<std::string, ggml_tensor *> weights, ggml_backend_t 
     lower_pad_ = read(weight("ner.lower.pad"));
     upper_w_ = read(weight("ner.upper.W"));
     upper_b_ = read(weight("ner.upper.b"));
+    const std::size_t classes = class_moves_.size();
     if (lower_bias_.size() != slot || lower_pad_.size() != cache_columns || upper_w_.size() != classes * hidden ||
         upper_b_.size() != classes)
         throw std::invalid_argument("Invalid spaCy NER parser tensor geometry");
@@ -209,7 +226,8 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
     Entity current;
     std::array<float, slot> summed{};
     std::array<float, hidden> activation{};
-    std::array<float, classes> scores{};
+    const std::size_t classes = class_moves_.size();
+    std::vector<float> scores(classes);
     for (std::size_t b0 = 0; b0 < count; ++b0) {
         check_cancelled(cancelled);
         const std::size_t remaining = count - b0;
@@ -238,12 +256,12 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
             scores[c] = sum + upper_b_[c];
             if (!std::isfinite(scores[c])) throw std::runtime_error("spaCy NER produced a nonfinite score");
         }
-        std::array<float, classes> valid{};
+        std::vector<float> valid(classes);
         int best = -1;
         for (std::size_t c = 0; c < classes; ++c) {
-            const auto label = static_cast<std::uint32_t>(c % entity_labels);
+            const auto label = class_labels_[c];
             bool ok = false;
-            switch (move_of(c)) {
+            switch (static_cast<Move>(class_moves_[c])) {
             case BEGIN:
                 ok = !open && remaining >= 2 && !next_starts_sentence && !is_space;
                 break;
@@ -277,8 +295,8 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
             trace(prefix + "state.chosen_action", TensorView{ { 1 }, &choice, 1 });
         }
         const auto chosen = static_cast<std::size_t>(best);
-        const auto label = static_cast<std::uint32_t>(chosen % entity_labels);
-        switch (move_of(chosen)) {
+        const auto label = class_labels_[chosen];
+        switch (static_cast<Move>(class_moves_[chosen])) {
         case BEGIN:
             open = true;
             current = { static_cast<std::uint32_t>(b0), 0, label };
