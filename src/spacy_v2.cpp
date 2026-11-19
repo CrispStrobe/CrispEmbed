@@ -603,8 +603,10 @@ PipelineV2::PipelineV2(const std::string & resources_json, std::map<std::string,
     if (m.components.front() == "transformer") {
 #ifdef CRISPEMBED_SPACY_TRF
         const auto & spec = member(labels, "transformer");
-        require(text(member(spec, "architecture"), "architecture") == "camembert" &&
-                    text(member(spec, "piece_encoder"), "piece_encoder") == "camembert_sentencepiece" &&
+        const auto & architecture = text(member(spec, "architecture"), "architecture");
+        const auto & piece_encoder = text(member(spec, "piece_encoder"), "piece_encoder");
+        require(((architecture == "camembert" && piece_encoder == "camembert_sentencepiece") ||
+                 (architecture == "roberta" && piece_encoder == "roberta_byte_bpe")) &&
                     text(member(spec, "listener"), "listener") == "last_layer_reduce_mean",
                 "Unsupported spaCy transformer profile");
         auto number = [&](const char * key) {
@@ -625,7 +627,34 @@ PipelineV2::PipelineV2(const std::string & resources_json, std::map<std::string,
         const auto & eps = member(spec, "layer_norm_eps");
         require(eps.is_number() && eps.number() > 0, "Invalid layer_norm_eps");
         config.layer_norm_eps = static_cast<float>(eps.number());
-        config.sentencepiece_model = base64_decode(text(member(spec, "sentencepiece_model_base64"), "spm model"));
+        config.piece_encoder = piece_encoder;
+        if (piece_encoder == "camembert_sentencepiece") {
+            config.sentencepiece_model = base64_decode(text(member(spec, "sentencepiece_model_base64"), "spm model"));
+        } else {
+            const auto & bpe = member(spec, "byte_bpe");
+            const auto & pieces = member(bpe, "pieces");
+            require(pieces.kind == Json::array_t && !pieces.a.empty(), "Invalid byte-BPE pieces");
+            for (const auto & piece : pieces.a) config.bpe_pieces.push_back(text(piece, "byte-BPE piece"));
+            const auto & merges = member(bpe, "merges");
+            require(merges.kind == Json::array_t, "Invalid byte-BPE merges");
+            for (const auto & merge : merges.a) {
+                require(merge.kind == Json::array_t && merge.a.size() == 2, "Invalid byte-BPE merge");
+                config.bpe_merges.emplace_back(text(merge.a[0], "merge"), text(merge.a[1], "merge"));
+            }
+            config.bpe_split_pattern = text(member(bpe, "split_pattern"), "split_pattern");
+            auto special = [&](const char * key) {
+                const auto & value = member(bpe, key);
+                require(value.kind == Json::int_t && value.i >= 0, std::string("Invalid byte-BPE ") + key);
+                return static_cast<int>(value.i);
+            };
+            config.bos_id = special("bos");
+            config.eos_id = special("eos");
+            config.unk_id = special("unk");
+        }
+        // A transformer-listener NER's reduce/lower layers run in the heads graph.
+        for (const auto & item : ner_weights)
+            if (item.first.rfind("ner.reduce.", 0) == 0 || item.first.rfind("ner.lower.W", 0) == 0)
+                numeric_weights.insert(item);
         m.transformer = std::make_unique<TransformerPipeline>(std::move(config), std::move(numeric_weights), backend);
 #else
         throw std::invalid_argument("This build has no spaCy transformer support (CRISPEMBED_SPACY_TRF=OFF)");
@@ -737,7 +766,13 @@ PipelineV2::Output PipelineV2::run(const std::vector<LexicalToken> & tokens, con
         } else if (component == "ner") {
             std::vector<std::uint8_t> starts;
             for (const auto & annotation : annotations) starts.push_back(annotation.is_sent_start ? 1 : 0);
-            output.entities = m.ner->run(features, starts, trace, cancelled);
+            if (m.ner->listener()) {
+                std::vector<std::uint8_t> spaces;
+                for (const auto & token : tokens) spaces.push_back(token.is_space);
+                output.entities = m.ner->run_cached(numeric.ner_lower.data, spaces, starts, trace, cancelled);
+            } else {
+                output.entities = m.ner->run(features, starts, trace, cancelled);
+            }
             output.entity_labels = m.ner->labels();
         }
     }

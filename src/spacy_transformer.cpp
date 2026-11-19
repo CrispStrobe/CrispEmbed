@@ -12,6 +12,8 @@
 #include <sentencepiece_processor.h>
 
 #include <algorithm>
+#include <array>
+#include <unordered_map>
 #include <cmath>
 #include <cstring>
 #include <stdexcept>
@@ -57,6 +59,82 @@ struct TransformerPipeline::Impl {
     ggml_backend_t backend = nullptr;
     ggml_gallocr * allocator = nullptr;
     sentencepiece::SentencePieceProcessor spp;
+    // RoBERTa byte-level BPE (curated-tokenizers ByteBPEProcessor semantics).
+    bool byte_bpe = false;
+    std::unordered_map<std::string, int> piece_to_id;
+    std::unordered_map<std::string, std::size_t> merge_rank; // key: first + '\0' + second
+    std::array<std::string, 256> byte_encoder;
+    std::unique_ptr<PythonRegex> split;
+
+    // GPT-2 bytes_to_unicode().
+    void build_byte_encoder() {
+        std::vector<int> bs, cs;
+        for (int b = '!'; b <= '~'; ++b) bs.push_back(b);
+        for (int b = 0xA1; b <= 0xAC; ++b) bs.push_back(b);
+        for (int b = 0xAE; b <= 0xFF; ++b) bs.push_back(b);
+        cs = bs;
+        int n = 0;
+        for (int b = 0; b < 256; ++b)
+            if (std::find(bs.begin(), bs.end(), b) == bs.end()) {
+                bs.push_back(b);
+                cs.push_back(256 + n++);
+            }
+        for (std::size_t i = 0; i < bs.size(); ++i) {
+            const auto cp = static_cast<std::uint32_t>(cs[i]);
+            std::string utf8;
+            if (cp < 0x80)
+                utf8 += static_cast<char>(cp);
+            else {
+                utf8 += static_cast<char>(0xC0 | (cp >> 6));
+                utf8 += static_cast<char>(0x80 | (cp & 0x3F));
+            }
+            byte_encoder[static_cast<std::size_t>(bs[i])] = utf8;
+        }
+    }
+
+    // curated-tokenizers Merges::apply_merges: repeatedly merge every
+    // left-to-right occurrence of the lowest-ranked adjacent pair.
+    std::vector<std::string> apply_merges(std::vector<std::string> pieces) const {
+        while (pieces.size() > 1) {
+            std::size_t best_rank = merge_rank.size(), best = pieces.size();
+            for (std::size_t i = 0; i + 1 < pieces.size(); ++i) {
+                const auto found = merge_rank.find(pieces[i] + '\0' + pieces[i + 1]);
+                if (found != merge_rank.end() && found->second < best_rank) {
+                    best_rank = found->second;
+                    best = i;
+                }
+            }
+            if (best == pieces.size()) break;
+            const std::string first = pieces[best], second = pieces[best + 1];
+            std::vector<std::string> merged;
+            for (std::size_t i = 0; i < pieces.size();) {
+                if (i + 1 < pieces.size() && pieces[i] == first && pieces[i + 1] == second) {
+                    merged.push_back(pieces[i] + pieces[i + 1]);
+                    i += 2;
+                } else {
+                    merged.push_back(pieces[i]);
+                    ++i;
+                }
+            }
+            pieces = std::move(merged);
+        }
+        return pieces;
+    }
+
+    std::vector<int> encode_byte_bpe(const std::string & text) const {
+        std::vector<int> ids;
+        for (const auto & span : split->find_all(text)) {
+            std::vector<std::string> pieces;
+            for (std::size_t i = span.first; i < span.second; ++i)
+                pieces.push_back(byte_encoder[static_cast<unsigned char>(text[i])]);
+            for (const auto & piece : apply_merges(std::move(pieces))) {
+                const auto found = piece_to_id.find(piece);
+                require(found != piece_to_id.end(), "Byte-BPE piece is not in the vocabulary");
+                ids.push_back(found->second);
+            }
+        }
+        return ids;
+    }
     // Opt-in CRISPEMBED_SPACY_TRF_BLAS: encoder matrix products on ggml's BLAS
     // backend (Accelerate/OpenBLAS) through a scheduler; CPU for the rest.
     ggml_backend_t blas = nullptr;
@@ -259,8 +337,25 @@ TransformerPipeline::TransformerPipeline(TransformerConfig config, std::map<std:
         require(item.second && item.second->type == GGML_TYPE_F32,
                 "spaCy transformer tensors must be F32: " + item.first);
     require(m.weight("trf.embed.word")->ne[0] == m.config.width, "Transformer width mismatch");
-    const auto status = m.spp.LoadFromSerializedProto(m.config.sentencepiece_model);
-    require(status.ok(), "Invalid SentencePiece model: " + status.ToString());
+    if (m.config.piece_encoder == "roberta_byte_bpe") {
+        m.byte_bpe = true;
+        const auto & pieces = m.config.bpe_pieces;
+        require(!pieces.empty() && pieces.size() <= 1000000, "Invalid byte-BPE vocabulary");
+        for (std::size_t i = 0; i < pieces.size(); ++i)
+            require(m.piece_to_id.emplace(pieces[i], static_cast<int>(i)).second, "Duplicate byte-BPE piece");
+        for (std::size_t i = 0; i < m.config.bpe_merges.size(); ++i) {
+            const auto & merge = m.config.bpe_merges[i];
+            m.merge_rank[merge.first + '\0' + merge.second] = i; // later duplicates win, as in Merges()
+        }
+        m.build_byte_encoder();
+        m.split = std::make_unique<PythonRegex>(m.config.bpe_split_pattern);
+        for (const int id : { m.config.bos_id, m.config.eos_id, m.config.unk_id })
+            require(id >= 0 && static_cast<std::size_t>(id) < pieces.size(), "Invalid byte-BPE special id");
+    } else {
+        require(m.config.piece_encoder == "camembert_sentencepiece", "Unsupported spaCy piece encoder");
+        const auto status = m.spp.LoadFromSerializedProto(m.config.sentencepiece_model);
+        require(status.ok(), "Invalid SentencePiece model: " + status.ToString());
+    }
     m.allocator = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
     if (!m.allocator) throw std::bad_alloc();
     // Default since the hosted A/B (all 48 configurations exact on Linux x86-64,
@@ -288,12 +383,19 @@ TransformerPipeline::~TransformerPipeline() {
 std::vector<std::vector<int>> TransformerPipeline::pieces(const std::vector<LexicalToken> & tokens) const {
     std::vector<std::vector<int>> result;
     result.reserve(tokens.size());
-    for (const auto & token : tokens) {
+    for (std::size_t index = 0; index < tokens.size(); ++index) {
+        const auto & token = tokens[index];
         std::vector<int> ids;
         if (!token.is_space) {
-            const auto status = impl_->spp.Encode(token.text, &ids);
-            require(status.ok(), "SentencePiece encoding failed: " + status.ToString());
-            for (auto & id : ids) id = camembert_id(id);
+            if (impl_->byte_bpe) {
+                // GPT-2/RoBERTa keeps the preceding token's whitespace_ (" ").
+                const bool space = index > 0 && tokens[index - 1].space_after;
+                ids = impl_->encode_byte_bpe(space ? " " + token.text : token.text);
+            } else {
+                const auto status = impl_->spp.Encode(token.text, &ids);
+                require(status.ok(), "SentencePiece encoding failed: " + status.ToString());
+                for (auto & id : ids) id = camembert_id(id);
+            }
         }
         result.push_back(std::move(ids));
     }
@@ -308,13 +410,13 @@ NumericOutput TransformerPipeline::run(const std::vector<LexicalToken> & tokens,
     const auto n = tokens.size();
     if (n == 0) return output;
     const auto per_token = pieces(tokens);
-    std::vector<int> doc = { camembert_id(m.spp.bos_id()) };
+    std::vector<int> doc = { m.byte_bpe ? m.config.bos_id : camembert_id(m.spp.bos_id()) };
     std::vector<size_t> lengths;
     for (const auto & ids : per_token) {
         doc.insert(doc.end(), ids.begin(), ids.end());
         lengths.push_back(ids.size());
     }
-    doc.push_back(camembert_id(m.spp.eos_id()));
+    doc.push_back(m.byte_bpe ? m.config.eos_id : camembert_id(m.spp.eos_id()));
     const size_t L = doc.size(), W = static_cast<size_t>(m.config.width);
     const size_t window = static_cast<size_t>(m.config.window), stride = static_cast<size_t>(m.config.stride);
 
@@ -420,8 +522,17 @@ NumericOutput TransformerPipeline::run(const std::vector<LexicalToken> & tokens,
     const int64_t columns = lower_w->ne[1] * lower_w->ne[2] * lower_w->ne[3];
     ggml_tensor * lower = ggml_mul_mat(ctx, ggml_reshape_2d(ctx, lower_w, lower_w->ne[0], columns), reduced);
     ggml_set_output(lower);
+    // Transformer-listener NER: reduce + lower layer on the same vectors.
+    ggml_tensor * ner_lower = nullptr;
+    if (m.has("ner.reduce.W")) {
+        ggml_tensor * ner_reduced = head("ner.reduce");
+        ggml_tensor * ner_w = m.weight("ner.lower.W");
+        ner_lower = ggml_mul_mat(
+            ctx, ggml_reshape_2d(ctx, ner_w, ner_w->ne[0], ner_w->ne[1] * ner_w->ne[2] * ner_w->ne[3]), ner_reduced);
+        ggml_set_output(ner_lower);
+    }
     ggml_cgraph * graph = ggml_new_graph(ctx);
-    for (ggml_tensor * out : { tagger, morphologizer, lower })
+    for (ggml_tensor * out : { tagger, morphologizer, lower, ner_lower })
         if (out) ggml_build_forward_expand(graph, out);
     if (!ggml_gallocr_alloc_graph(m.allocator, graph)) throw std::bad_alloc();
     ggml_backend_tensor_set(input, vectors.data.data(), 0, vectors.data.size() * sizeof(float));
@@ -437,6 +548,7 @@ NumericOutput TransformerPipeline::run(const std::vector<LexicalToken> & tokens,
         return result;
     };
     output.tagger = read(tagger);
+    output.ner_lower = read(ner_lower);
     output.morphologizer = read(morphologizer);
     const auto lower_values = read(lower);
     output.parser_cache.rows = n + 1;

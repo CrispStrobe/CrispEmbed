@@ -29,7 +29,15 @@ struct TransformerConfig {
     float layer_norm_eps = 1e-5f;
     int padding_idx = 1, max_positions = 514, model_max_length = 512;
     int window = 128, stride = 96;
-    std::string sentencepiece_model; // serialized ModelProto bytes
+    // "camembert_sentencepiece" or "roberta_byte_bpe".
+    std::string piece_encoder = "camembert_sentencepiece";
+    std::string sentencepiece_model; // serialized ModelProto bytes (CamemBERT)
+    // GPT-2 byte-level BPE (RoBERTa): pieces in id order, ranked merges, the
+    // pre-split pattern and special ids.
+    std::vector<std::string> bpe_pieces;
+    std::vector<std::pair<std::string, std::string>> bpe_merges;
+    std::string bpe_split_pattern;
+    int bos_id = 0, eos_id = 2, unk_id = 3;
 };
 
 class TransformerPipeline {

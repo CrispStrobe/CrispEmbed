@@ -35,6 +35,8 @@ WHEELS = {
     "en_core_web_sm-3.8.0-py3-none-any.whl": ("1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85", 12806118),
     "fr_core_news_sm-3.8.0-py3-none-any.whl": ("7d6ad14cd5078e53147bfbf70fb9d433c6a3865b695fda2657140bbc59a27e29", 16271721),
     "fr_dep_news_trf-3.8.0-py3-none-any.whl": ("df243e539bbc365390744a411aa574fb03eb2ee2f948cf6149ad722c59ab419b", 397740844),
+    "en_core_web_trf-3.8.0-py3-none-any.whl": ("272a31e9d8530d1e075351d30a462d7e80e31da23574f1b274e200f3fff35bf5", 457421864),
+    "de_dep_news_trf-3.8.0-py3-none-any.whl": ("6da411d41d5b0465beb1725549039e05caf00fec9ae1dc41794c8f7555824905", 410449584),
 }
 SUPPORTED_COMPONENTS = {"tok2vec", "transformer", "tagger", "morphologizer", "parser", "attribute_ruler",
                         "lemmatizer", "ner"}
@@ -168,15 +170,19 @@ UNIVERSAL_POS = ["noun", "verb", "adj", "adv", "propn", "num", "pron", "det", "a
 
 
 def export_transformer(nlp, tensors, origins):
-    """spacy-curated-transformers CamemBERT (RoBERTa post-LN encoder) with the
-    CamemBERT SentencePiece piece encoder and WithStridedSpans."""
+    """spacy-curated-transformers RoBERTa-family post-LN encoders with
+    WithStridedSpans: CamemBERT + CamemBERT SentencePiece encoder, or RoBERTa +
+    GPT-2 byte-level BPE encoder."""
     import base64
     import numpy as np
     component = nlp.get_pipe("transformer")
     cfg = nlp.config["components"]["transformer"]["model"]
-    require(cfg["@architectures"] == "spacy-curated-transformers.CamembertTransformer.v1", "Unsupported transformer")
-    require(cfg["piece_encoder"]["@architectures"] == "spacy-curated-transformers.CamembertSentencepieceEncoder.v1",
-            "Unsupported piece encoder")
+    kinds = {("spacy-curated-transformers.CamembertTransformer.v1",
+              "spacy-curated-transformers.CamembertSentencepieceEncoder.v1"): ("camembert", "camembert_sentencepiece"),
+             ("spacy-curated-transformers.RobertaTransformer.v1",
+              "spacy-curated-transformers.ByteBpeEncoder.v1"): ("roberta", "roberta_byte_bpe")}
+    family = kinds.get((cfg["@architectures"], cfg["piece_encoder"]["@architectures"]))
+    require(family is not None, "Unsupported transformer/piece encoder")
     spans = cfg["with_spans"]
     require(spans["@architectures"] == "spacy-curated-transformers.WithStridedSpans.v1", "Unsupported span extractor")
     require(cfg["hidden_act"] == "gelu" and cfg["type_vocab_size"] == 1, "Unsupported transformer activation/types")
@@ -208,15 +214,33 @@ def export_transformer(nlp, tensors, origins):
         require(value.dtype == np.dtype("float32") and bool(np.isfinite(value).all()), f"Not finite F32: {key}")
         tensors[target] = np.array(value, dtype="<f4", order="C", copy=True)
         origins[target] = {"component": "transformer", "state_dict": prefix + key}
-    encoder = component.model.get_ref("piece_encoder").get_ref("encoder")
-    spp = encoder.attrs["sentencepiece_processor"]
-    return {"architecture": "camembert", "piece_encoder": "camembert_sentencepiece",
+    result = {"architecture": family[0], "piece_encoder": family[1],
             "layers": layers, "width": cfg["hidden_width"], "heads": cfg["num_attention_heads"],
             "intermediate": cfg["intermediate_width"], "layer_norm_eps": cfg["layer_norm_eps"],
             "padding_idx": cfg["padding_idx"], "max_positions": cfg["max_position_embeddings"],
             "model_max_length": cfg["model_max_length"], "window": spans["window"], "stride": spans["stride"],
-            "listener": "last_layer_reduce_mean",
-            "sentencepiece_model_base64": base64.b64encode(spp.to_protobuf()).decode("ascii")}
+            "listener": "last_layer_reduce_mean"}
+    if family[0] == "camembert":
+        spp = component.model.get_ref("piece_encoder").get_ref("encoder").attrs["sentencepiece_processor"]
+        result["sentencepiece_model_base64"] = base64.b64encode(spp.to_protobuf()).decode("ascii")
+    else:
+        encoder = component.model.get_ref("piece_encoder")
+        bbp = encoder.attrs["byte_bpe_processor"]
+        vocab = bbp.vocab
+        require(sorted(vocab.values()) == list(range(len(vocab))), "Byte-BPE vocabulary ids are not dense")
+        pieces = [None] * len(vocab)
+        for piece, index in vocab.items():
+            pieces[index] = piece
+        merges = [list(pair) for pair in bbp.merges]
+        require(len({tuple(m) for m in merges}) == len(merges), "Duplicate byte-BPE merges")
+        result["byte_bpe"] = {"pieces": pieces, "merges": merges,
+                              "split_pattern": r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""",
+                              "bos": bbp.piece_id(encoder.attrs["bos_piece"]),
+                              "eos": bbp.piece_id(encoder.attrs["eos_piece"]),
+                              "unk": bbp.piece_id(encoder.attrs["unk_piece"])}
+        import curated_tokenizers._bbpe as _bbpe
+        require(result["byte_bpe"]["split_pattern"] == _bbpe.SPLIT_PATTERN, "Byte-BPE split pattern changed")
+    return result
 
 
 def table_json(name, table):
@@ -269,11 +293,18 @@ def extract(nlp, source: Path):
         labels["parser"]["has_upper"] = False
     require(labels["parser"]["learn_tokens"] is False, "Subtoken learning parser unsupported")
     if "ner" in pipes:
-        ner_rows = export_tok2vec(nlp, nlp.get_pipe("ner").model, "ner.", "ner", NER_FEATURES, tensors, origins)
-        require(ner_rows == rows[:4], "NER embedding rows differ from the shared tok2vec rows")
-        ner_moves, ner_upper = export_transition(nlp, "ner", "ner.", tensors, origins, 3)
-        require(ner_upper, "NER without an upper layer is unsupported")
-        labels["ner"] = {"moves": ner_moves}
+        if pipes[0] == "transformer":
+            # NER listens to the shared transformer (no tok2vec of its own).
+            ner_moves, ner_upper = export_transition(nlp, "ner", "ner.", tensors, origins, 3)
+            labels["ner"] = {"moves": ner_moves, "listener": "transformer"}
+            if not ner_upper:
+                labels["ner"]["has_upper"] = False
+        else:
+            ner_rows = export_tok2vec(nlp, nlp.get_pipe("ner").model, "ner.", "ner", NER_FEATURES, tensors, origins)
+            require(ner_rows == rows[:4], "NER embedding rows differ from the shared tok2vec rows")
+            ner_moves, ner_upper = export_transition(nlp, "ner", "ner.", tensors, origins, 3)
+            require(ner_upper, "NER without an upper layer is unsupported")
+            labels["ner"] = {"moves": ner_moves}
     if "attribute_ruler" in pipes:
         from spacy.tokens import MorphAnalysis
         rules = nlp.get_pipe("attribute_ruler").patterns

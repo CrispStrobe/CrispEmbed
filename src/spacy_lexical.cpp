@@ -728,6 +728,13 @@ PythonRegex::~PythonRegex() = default;
 PythonRegex::PythonRegex(PythonRegex &&) noexcept = default;
 PythonRegex & PythonRegex::operator=(PythonRegex &&) noexcept = default;
 
+std::vector<std::pair<std::size_t, std::size_t>> PythonRegex::find_all(std::string_view text) const {
+    (void)decode_utf8(text);
+    std::vector<std::pair<std::size_t, std::size_t>> result;
+    for (const auto & match : impl_->regex.find_all(text, {})) result.emplace_back(match.start, match.end);
+    return result;
+}
+
 bool PythonRegex::search(std::string_view text) const {
     (void)decode_utf8(text);
     return impl_->regex.search(text).found;
