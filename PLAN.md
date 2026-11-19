@@ -147,7 +147,30 @@ release, app pins, mobile and model distribution remain separate.
 | --- | --- | --- | --- |
 | German spaCy CPU/F32 | `feat/native-spacy-w7-20261118` in both repositories | W6 acceptance/grammar evidence preserved; bounded Linux package reproduction/install and current Python/Dart operational consumers independently audited complete | Immutable hosted publication/download readback, portable dependencies and other platforms/devices; manual provider stays default off |
 | German spaCy ggml engine, precision and NER | `feat/spacy-default-ner-20261118` | ggml+SGEMM engine is the default (`CRISPEMBED_SPACY_GGML=0` keeps scalar); exact on 1,776/1,776 UD German GSD sentences on macOS arm64 and Linux AVX2 (6–7× faster); F16 changes 3/1,776 (reproduced by original spaCy) and stays gated, `CRISPEMBED_SPACY_GGML_UPCAST` gives F16 storage at F32 speed; opt-in NER (`CRISPEMBED_SPACY_NER`, separate `ner.gguf`) matches 1,758/1,758 original entities; [audit](docs/validation/native-spacy-ggml-20261118/README.md) | Rebuild and requalify the W7 package/capsule at this source before it carries the new default; publish `ner.gguf` with readback; Quds entity view; optional senter port only if a sentence-only consumer appears |
-| spaCy v2: English, French and more languages | `feat/spacy-en-v2-20261118` | v2 profile (converter, runtime, C-ABI dispatch): en_core_web_sm 2,077/2,077 EWT texts and fr_core_news_sm 416/416 GSD texts exact vs original spaCy incl. entities; [audit](docs/validation/native-spacy-v2-20261118/README.md) | Published: EN/FR bundles with v2 capsules for Linux x86-64/arm64 and macOS arm64 ([receipts](docs/validation/native-spacy-en-fr-distribution-20261118/README.md)); open: Windows v2 capsule (C++ exception across the C ABI on a wrong model hash), iOS SDK rerun, requalify bundles if the post-#247 converter output is to be published; transformer pipelines (fr/en/de trf via ggml BERT/RoBERTa/CamemBERT); Latin (LatinCy custom components); Hebrew (DictaBERT-joint); Arabic needs a commercially usable model |
+| spaCy v2: English, French and more languages | `feat/spacy-en-v2-20261118` | v2 profile (converter, runtime, C-ABI dispatch): en_core_web_sm 2,077/2,077 EWT texts and fr_core_news_sm 416/416 GSD texts exact vs original spaCy incl. entities; [audit](docs/validation/native-spacy-v2-20261118/README.md) | Published: EN/FR bundles with v2 capsules for Linux x86-64/arm64 and macOS arm64 ([receipts](docs/validation/native-spacy-en-fr-distribution-20261118/README.md)); open: Windows v2 capsule (C++ exception across the C ABI on a wrong model hash), iOS SDK rerun, requalify bundles if the post-#247 converter output is to be published; transformer pipelines: fr_dep_news_trf exact (#247/#252), en_core_web_trf (2,077/2,077 EWT texts, 1,905/1,905 entities) and de_dep_news_trf (977/977 GSD texts) exact on macOS arm64 in #253, hosted Linux x86/arm and macOS benches pending; Latin (LatinCy la_core_web_sm 3.9.8, MIT: custom tokenizer plus seven custom components, separate senter, parser hidden 128/maxout 3) and Hebrew (DictaBERT-joint, CC-BY-4.0, non-spaCy heads through the same C ABI) not started (first attempts stopped before any commit); Arabic: see below |
+
+### Arabic — 19 November 2026
+
+Product constraints (owner): the Quds app binary carries only MIT/MPL-compatible
+code; language resources are published by us on Hugging Face/GitHub under their
+own licences and downloaded by the user inside the app as **data** (no downloaded
+executable code; WebAssembly inside a WebView only as a fallback; no Python
+runtime); no paid data. Consequences for this repository:
+
+- No licence-clean Arabic treebank exists for a native spaCy-style model:
+  PADT (Stanza/UDPipe) is CC BY-NC-SA, UD Arabic-NYUAD needs the paid LDC Penn
+  Arabic Treebank, the Camel Treebank and QALB are internal-research-only without
+  redistribution, UD Arabic-PUD (CC BY-SA, 1,000 sentences) is evaluation-only.
+- Candidate port, owner decision pending: CAMeL Tools weights (CAMeLBERT-MSA
+  disambiguator, UD/CATiB biaffine parsers, NER; tagged MIT/Apache, trained on
+  LDC/QALB data; morphology database GPL v2 kept out of the binary). Same shape as
+  the spaCy transformer port.
+- Licence-clean alternative: train our own heads (synthetic-error detector on
+  permissive text with an MIT encoder such as XLM-R base; or silver-annotated
+  tagger). Compute fits free Kaggle GPU quota; data is the bottleneck.
+- Spelling and rule-based grammar live in Quds:
+  [Arabic proofing roadmap](https://github.com/CrispStrobe/quds_office_suite/blob/feat/arabic-proofing-20261119/docs/roadmaps/arabic-proofing.md)
+  (AyaSpell under MPL 1.1 first).
 
 The [W7 continuation](docs/validation/native-spacy-w7-20261118/README.md) now
 implements immutable Linux packaging and freezes actual dependency/loading/cleanup
