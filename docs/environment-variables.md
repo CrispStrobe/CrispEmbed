@@ -330,7 +330,7 @@ operator candidate has no decoded-quality or release qualification.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-510 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+511 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -369,6 +369,12 @@ operator candidate has no decoded-quality or release qualification.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_ADAIR_BENCH` | on | off | bool | debug | `src/adair.cpp` |  |
 | `CRISPEMBED_ADAIR_TILE` | value | unset | int | tuning / config | `src/adair.cpp` |  |
+
+### arabic_morph
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_AR_MORPH` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/arabic_morph.cpp` | Kill switch: CRISPEMBED_AR_MORPH=0 disables the Camel Morph analyzer service. |
 
 ### bert_ner
 
