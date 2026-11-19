@@ -1,0 +1,53 @@
+name: Arabic morphology (Camel Morph)
+
+# Builds the standalone native Camel Morph analyzer (tools/arabic_morph) and
+# runs its C-ABI contract test on a synthetic database. The CC BY 4.0 Camel
+# Morph data is not needed; full-database exactness against camel_tools is a
+# recorded developer receipt (docs/validation/camel-morph-msa-20261119).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/arabic_morph*'
+      - 'src/core/py_str*.h'
+      - 'src/core/json*.h'
+      - 'src/core/sha256.h'
+      - 'src/core/shortest_double.*'
+      - 'src/core/env_gate.h'
+      - 'tests/test_arabic_morph.cpp'
+      - 'tools/arabic_morph/**'
+      - '.github/workflows/arabic-morph.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/arabic_morph*'
+      - 'src/core/py_str*.h'
+      - 'src/core/json*.h'
+      - 'src/core/sha256.h'
+      - 'src/core/shortest_double.*'
+      - 'src/core/env_gate.h'
+      - 'tests/test_arabic_morph.cpp'
+      - 'tools/arabic_morph/**'
+      - '.github/workflows/arabic-morph.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: build + contract (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S tools/arabic_morph -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release -j 4
+      - name: Contract test
+        run: ctest --test-dir build -C Release --output-on-failure

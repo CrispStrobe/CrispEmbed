@@ -1,0 +1,4 @@
+{
+  "method": "tools/arabic_morph/camel_reference.py rank: camel_tools.disambig.mle out-of-context ordering (score 10**pos_lex_logprob / max, ties by pos_lex_logprob, lex_logprob, diac) over camel_tools analyses of the full and noprob databases, backoff NONE. Gold: UD Arabic-PUD r2.14 tokens not split into syntactic words with one (UPOS, lemma) annotation; lemma compared after dediac + camel_tools normalization; Camel POS mapped to UPOS coarsely.",
+  "result": {"words": 7567, "analyses_full": 217053, "analyses_noprob": 217053, "same_analysis_sets": 7567, "words_with_nondefault_prob": 6687, "ambiguous_words": 7127, "top1_same": 3275, "top1_same_lex_pos": 3275, "full_order_same": 2513, "gold_words": 5352, "gold_upos_top1_full": 4261, "gold_upos_top1_noprob": 3055, "gold_lemma_top1_full": 4444, "gold_lemma_top1_noprob": 3512, "gold_upos_lemma_top1_full": 3907, "gold_upos_lemma_top1_noprob": 2514, "gold_upos_lemma_any": 4816}
+}

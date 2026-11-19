@@ -1,0 +1,29 @@
+Native Camel Morph analyzer (crispembed-ar-morph) — source and data notices
+
+CrispEmbed: MIT, see repository LICENSE.
+
+camel_tools 1.6.0 (tag v1.6.0, commit be79ca9fc493f0df795375a7255bafef246a802d,
+https://github.com/CAMeL-Lab/camel_tools): MIT, Copyright 2018-2026 New York
+University Abu Dhabi; complete notice in notices/camel_tools-LICENSE.
+src/arabic_morph.cpp is a C++ port of camel_tools/morphology/database.py,
+analyzer.py and utils.py and of the dediac/charset helpers they use; it
+retains the MIT notice in its header. No camel_tools database is included.
+
+Ryu (ulfjack/ryu at 4c0618b0e44f7ef027ebae05d2cc7812048f7c8f, src/core/third_party/ryu):
+shortest round-trip float formatting for the *_logprob values, used under the
+Apache-2.0 option of its dual license; notices/Ryu-LICENSE-Apache2.
+
+Unicode character properties: src/arabic_morph_tables.h (general categories
+P*/S*, Unicode 15.0.0 as shipped with CPython 3.12) and src/core/py_str_tables.h
+(CPython str.isspace) are generated data; notices/Unicode-LICENSE.txt and
+notices/CPython-LICENSE.
+
+Data (not part of this library, downloaded separately by the host app):
+Camel Morph MSA v1.0 (c) 2024 by New York University Abu Dhabi is licensed
+under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); source
+https://github.com/CAMeL-Lab/camel_morph, attribution https://nyuad.nyu.edu.
+The published bundles carry their own NOTICE and LICENSE files. Its lexicon
+was seeded from CALIMA-Star/SAMA and its lex_logprob/pos_lex_logprob values
+were estimated on the Penn Arabic Treebank training split; the "noprob" bundle
+omits those values. Do not use camel_tools' calima-msa-r13 database (GPL v2)
+or LDC-licensed resources with this target.

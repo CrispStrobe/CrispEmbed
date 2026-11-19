@@ -163,6 +163,29 @@ runtime); no paid data. Consequences for this repository:
 - Spelling and rule-based grammar live in Quds:
   [Arabic proofing roadmap](https://github.com/CrispStrobe/quds_office_suite/blob/feat/arabic-proofing-20261119/docs/roadmaps/arabic-proofing.md)
   (AyaSpell under MPL 1.1 first).
+- Morphological analysis is covered licence-cleanly by Camel Morph MSA v1.0
+  (CC BY 4.0 data, see below) with a native MIT port of the camel_tools analyzer;
+  the GPL v2 `calima-msa-r13` database is not used.
+
+### Morphology — native Camel Morph MSA (done on `feat/camel-morph-msa-20261119`)
+
+`src/arabic_morph.{h,cpp}` ports the
+camel_tools 1.6.0 MorphologyDB/Analyzer (MIT) to C++ with a
+`crispembed_ar_morph_open/analyze/free` C ABI (standalone target
+`tools/arabic_morph`). The Camel Morph MSA v1.0 database (CC BY 4.0) is data,
+published as `cstr/camel-morph-msa-v1.0` (`full/` and `noprob/`, the latter
+without the Penn-Arabic-Treebank-derived `lex_logprob`/`pos_lex_logprob`).
+Exact against camel_tools on all 9,571 UD Arabic-PUD + stress words in NONE,
+NOAN_PROP and ADD_ALL backoff and on the noprob DB; receipts in
+[the validation README](docs/validation/camel-morph-msa-20261119/README.md).
+
+Open: Quds Office integration (bundle download, `crispembed_ar_morph_*` FFI,
+choosing full vs noprob given the ranking loss measured there); a WASM build;
+iOS/Android packaging of the standalone library; a compact binary DB to cut
+load time and peak RSS (about 300 MB during load); a disambiguator (camel_tools
+MLE/BERT) is not ported. Provenance caveat for both variants: the lexicon was
+seeded from CALIMA-Star/SAMA and reworked by hand (paper); noprob removes only
+the treebank-derived numbers.
 
 ## Active work in flight — native spaCy, 18 November 2026
 

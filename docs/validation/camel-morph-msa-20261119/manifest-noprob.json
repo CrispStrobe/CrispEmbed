@@ -1,0 +1,44 @@
+{
+  "format": "crispembed-camel-morph-bundle",
+  "format_version": 1,
+  "variant": "noprob",
+  "db": "camel_morph_msa_v1.0.noprob.db",
+  "license": "CC-BY-4.0",
+  "attribution": "Camel Morph MSA v1.0 (c) 2024 by New York University Abu Dhabi is licensed under CC BY 4.0",
+  "source": {
+    "repository": "https://github.com/CAMeL-Lab/camel_morph",
+    "commit": "aaa39653c2a53ebacf087f0b98e7f7cfb55cca81",
+    "last_change_commit": "e818de087015a4419fe58aeaa563147b23bf976b",
+    "path": "official_releases/lrec-coling2024_release/databases/camel-morph-msa/camel_morph_msa_v1.0.db",
+    "size": 84959404,
+    "sha256": "110e03baa282874062d076e23d9671e985b6f76520b891d58cba4e55de0b8f60",
+    "git_blob": "19f528666fda8b1cd67ef838089166a95eecc591"
+  },
+  "dropped_fields": [
+    "pos_logprob",
+    "lex_logprob",
+    "pos_lex_logprob"
+  ],
+  "dropped_values": 351926,
+  "analyzer": {
+    "reference": "camel_tools 1.6.0 Analyzer",
+    "default_backoff": "NONE"
+  },
+  "files": [
+    {
+      "path": "LICENSE",
+      "size": 442,
+      "sha256": "214965747a90efe3e5268d367192bb077f1101620662cba71d59d902000b2d94"
+    },
+    {
+      "path": "NOTICE",
+      "size": 1381,
+      "sha256": "b10936a72acb6f6dbc246ed75003e45f5f130deb6c7a0003c0a54ec11785bc9f"
+    },
+    {
+      "path": "camel_morph_msa_v1.0.noprob.db",
+      "size": 78083392,
+      "sha256": "2dfbec413288e7da96723d7926c0e74f2e90ef6994c6f7e995a27a8df079ecff"
+    }
+  ]
+}
