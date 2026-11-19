@@ -32,6 +32,7 @@ import json
 from pathlib import Path
 import struct
 import sys
+import textwrap
 import urllib.request
 import zlib
 
@@ -618,16 +619,14 @@ def build_binary(text_db: bytes, profile=PROOFING_PROFILE) -> tuple[bytes, dict]
     return out, stats
 
 
-PROOFING_CHANGES = """
-Changes in this variant (CC BY 4.0 section 3(a)(1)(B)): derived from the noprob
-variant (no pos_logprob/lex_logprob/pos_lex_logprob values) and converted to
-CrispEmbed's binary analyzer format ({fmt}). Only these features are kept:
-{profile}. bw is kept on the NOAN backoff stems only. All other features
-(gloss, bw, caphi, pattern, pattern_abstract, cm_*, catib6, ud, the
-tokenization features, correctness, mid_root_diac) were removed. Prefixes,
-suffixes, stems, categories, compatibility tables, DEFAULT and STEMBACKOFF
-entries are otherwise unchanged.
-"""
+PROOFING_CHANGES = (
+    "Changes in this variant (CC BY 4.0 section 3(a)(1)(B)): derived from the noprob variant (no "
+    "pos_logprob/lex_logprob/pos_lex_logprob values) and converted to CrispEmbed's binary analyzer format "
+    "({fmt}). Only these features are kept: {profile}. bw is kept on the NOAN backoff stems only. All other "
+    "features (gloss, bw, caphi, pattern, pattern_abstract, cm_*, catib6, ud, the tokenization features, "
+    "correctness, mid_root_diac) were removed. Prefixes, suffixes, stems, categories, compatibility tables, "
+    "DEFAULT and STEMBACKOFF entries are otherwise unchanged."
+)
 
 
 def write_bin_bundle(root: Path, noprob: bytes) -> dict:
@@ -636,7 +635,8 @@ def write_bin_bundle(root: Path, noprob: bytes) -> dict:
     if again != data:
         sys.exit("binary database is not reproducible")
     root.mkdir(parents=True, exist_ok=True)
-    changes = PROOFING_CHANGES.format(fmt=BIN_DB_FORMAT, profile=", ".join(PROOFING_PROFILE))
+    changes = "\n" + textwrap.fill(PROOFING_CHANGES.format(fmt=BIN_DB_FORMAT, profile=", ".join(PROOFING_PROFILE)),
+                                   width=79, break_on_hyphens=False) + "\n"
     files = {
         BIN_DB_NAME: data,
         "NOTICE": NOTICE.format(repo=SOURCE_REPO, commit=SOURCE_COMMIT, path=SOURCE_PATH, sha256=SOURCE_SHA256,
