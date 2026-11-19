@@ -141,25 +141,6 @@ the merged tree exactly matches that head. This continuation includes that
 merge and its review. Scope remains frozen Linux x86-64/AVX2 with PCRE2 10.46;
 release, app pins, mobile and model distribution remain separate.
 
-<<<<<<< HEAD
-## Arabic morphology — native Camel Morph MSA, 19 November 2026
-
-Branch `feat/camel-morph-msa-20261119`. `src/arabic_morph.{h,cpp}` ports the
-camel_tools 1.6.0 MorphologyDB/Analyzer (MIT) to C++ with a
-`crispembed_ar_morph_open/analyze/free` C ABI (standalone target
-`tools/arabic_morph`). The Camel Morph MSA v1.0 database (CC BY 4.0) is data,
-published as `cstr/camel-morph-msa-v1.0` (`full/` and `noprob/`, the latter
-without the Penn-Arabic-Treebank-derived `lex_logprob`/`pos_lex_logprob`).
-Exact against camel_tools on all 9,571 UD Arabic-PUD + stress words in NONE,
-NOAN_PROP and ADD_ALL backoff and on the noprob DB; receipts in
-[the validation README](docs/validation/camel-morph-msa-20261119/README.md).
-
-Open: Quds Office integration (bundle download, `crispembed_ar_morph_*` FFI,
-choosing full vs noprob given the ranking loss measured there); a WASM build;
-iOS/Android packaging of the standalone library; a compact binary DB to cut
-load time and peak RSS (about 300 MB during load); a disambiguator (camel_tools
-MLE/BERT) is not ported.
-=======
 ## Arabic language support — 19 November 2026
 
 Product constraints (owner): the Quds app binary carries only MIT/MPL-compatible
@@ -182,7 +163,29 @@ runtime); no paid data. Consequences for this repository:
 - Spelling and rule-based grammar live in Quds:
   [Arabic proofing roadmap](https://github.com/CrispStrobe/quds_office_suite/blob/feat/arabic-proofing-20261119/docs/roadmaps/arabic-proofing.md)
   (AyaSpell under MPL 1.1 first).
->>>>>>> origin/main
+- Morphological analysis is covered licence-cleanly by Camel Morph MSA v1.0
+  (CC BY 4.0 data, see below) with a native MIT port of the camel_tools analyzer;
+  the GPL v2 `calima-msa-r13` database is not used.
+
+### Morphology — native Camel Morph MSA (done on `feat/camel-morph-msa-20261119`)
+
+`src/arabic_morph.{h,cpp}` ports the
+camel_tools 1.6.0 MorphologyDB/Analyzer (MIT) to C++ with a
+`crispembed_ar_morph_open/analyze/free` C ABI (standalone target
+`tools/arabic_morph`). The Camel Morph MSA v1.0 database (CC BY 4.0) is data,
+published as `cstr/camel-morph-msa-v1.0` (`full/` and `noprob/`, the latter
+without the Penn-Arabic-Treebank-derived `lex_logprob`/`pos_lex_logprob`).
+Exact against camel_tools on all 9,571 UD Arabic-PUD + stress words in NONE,
+NOAN_PROP and ADD_ALL backoff and on the noprob DB; receipts in
+[the validation README](docs/validation/camel-morph-msa-20261119/README.md).
+
+Open: Quds Office integration (bundle download, `crispembed_ar_morph_*` FFI,
+choosing full vs noprob given the ranking loss measured there); a WASM build;
+iOS/Android packaging of the standalone library; a compact binary DB to cut
+load time and peak RSS (about 300 MB during load); a disambiguator (camel_tools
+MLE/BERT) is not ported. Provenance caveat for both variants: the lexicon was
+seeded from CALIMA-Star/SAMA and reworked by hand (paper); noprob removes only
+the treebank-derived numbers.
 
 ## Active work in flight — native spaCy, 18 November 2026
 
@@ -190,12 +193,8 @@ runtime); no paid data. Consequences for this repository:
 | --- | --- | --- | --- |
 | German spaCy CPU/F32 | `feat/native-spacy-w7-20261118` in both repositories | W6 acceptance/grammar evidence preserved; bounded Linux package reproduction/install and current Python/Dart operational consumers independently audited complete | Immutable hosted publication/download readback, portable dependencies and other platforms/devices; manual provider stays default off |
 | German spaCy ggml engine, precision and NER | `feat/spacy-default-ner-20261118` | ggml+SGEMM engine is the default (`CRISPEMBED_SPACY_GGML=0` keeps scalar); exact on 1,776/1,776 UD German GSD sentences on macOS arm64 and Linux AVX2 (6–7× faster); F16 changes 3/1,776 (reproduced by original spaCy) and stays gated, `CRISPEMBED_SPACY_GGML_UPCAST` gives F16 storage at F32 speed; opt-in NER (`CRISPEMBED_SPACY_NER`, separate `ner.gguf`) matches 1,758/1,758 original entities; [audit](docs/validation/native-spacy-ggml-20261118/README.md) | Rebuild and requalify the W7 package/capsule at this source before it carries the new default; publish `ner.gguf` with readback; Quds entity view; optional senter port only if a sentence-only consumer appears |
-<<<<<<< HEAD
-| spaCy v2: English, French and more languages | `feat/spacy-en-v2-20261118` | v2 profile (converter, runtime, C-ABI dispatch): en_core_web_sm 2,077/2,077 EWT texts and fr_core_news_sm 416/416 GSD texts exact vs original spaCy incl. entities; [audit](docs/validation/native-spacy-v2-20261118/README.md) | Published: EN/FR bundles with v2 capsules for Linux x86-64/arm64 and macOS arm64 ([receipts](docs/validation/native-spacy-en-fr-distribution-20261118/README.md)); open: Windows v2 capsule (C++ exception across the C ABI on a wrong model hash), iOS SDK rerun, requalify bundles if the post-#247 converter output is to be published; transformer pipelines (fr/en/de trf via ggml BERT/RoBERTa/CamemBERT); Latin (LatinCy custom components); Hebrew (DictaBERT-joint); Arabic: no commercially usable spaCy model; morphology is covered by the native Camel Morph analyzer (section below) |
-=======
 | spaCy v2: English, French and more languages | `feat/spacy-en-v2-20261118` | v2 profile (converter, runtime, C-ABI dispatch): en_core_web_sm 2,077/2,077 EWT texts and fr_core_news_sm 416/416 GSD texts exact vs original spaCy incl. entities; [audit](docs/validation/native-spacy-v2-20261118/README.md) | Published: EN/FR bundles with v2 capsules for Linux x86-64/arm64 and macOS arm64 ([receipts](docs/validation/native-spacy-en-fr-distribution-20261118/README.md)); open: Windows v2 capsule (C++ exception across the C ABI on a wrong model hash), iOS SDK rerun, requalify bundles if the post-#247 converter output is to be published; transformer pipelines: fr_dep_news_trf exact (#247/#252), en_core_web_trf (2,077/2,077 EWT texts, 1,905/1,905 entities) and de_dep_news_trf (977/977 GSD texts) exact on macOS arm64 in #253, hosted Linux x86/arm and macOS benches pending; Latin (LatinCy la_core_web_sm 3.9.8, MIT: custom tokenizer plus seven custom components, separate senter, parser hidden 128/maxout 3) and Hebrew (DictaBERT-joint, CC-BY-4.0, non-spaCy heads through the same C ABI) not started (first attempts stopped before any commit); Arabic: see below |
 
->>>>>>> origin/main
 
 The [W7 continuation](docs/validation/native-spacy-w7-20261118/README.md) now
 implements immutable Linux packaging and freezes actual dependency/loading/cleanup
