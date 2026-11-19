@@ -20,6 +20,9 @@
 #if defined(__unix__) || defined(__APPLE__)
 #include <sys/resource.h>
 #endif
+#if defined(__APPLE__)
+#include <mach/mach.h>
+#endif
 
 namespace {
 
@@ -37,6 +40,25 @@ long peak_rss_kib() {
     struct rusage ru {};
     getrusage(RUSAGE_SELF, &ru);
     return long(ru.ru_maxrss); // KiB on Linux
+#else
+    return -1;
+#endif
+}
+
+// Current resident set size in KiB (-1 when unknown).
+long current_rss_kib() {
+#if defined(__APPLE__)
+    mach_task_basic_info_data_t info{};
+    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, (task_info_t)&info, &count) != KERN_SUCCESS) return -1;
+    return long(info.resident_size / 1024);
+#elif defined(__linux__)
+    FILE * f = std::fopen("/proc/self/statm", "r");
+    if (!f) return -1;
+    long pages = 0, resident = 0;
+    const int n = std::fscanf(f, "%ld %ld", &pages, &resident);
+    std::fclose(f);
+    return n == 2 ? resident * 4 : -1;
 #else
     return -1;
 #endif
@@ -139,7 +161,7 @@ int main(int argc, char ** argv) {
         return 1;
     }
     if (info) std::printf("%s\n", crispembed_ar_morph_info(m));
-    const long rss_after_load = peak_rss_kib();
+    const long rss_after_load = current_rss_kib();
 
     for (const std::string & w : words) {
         char * json = nullptr;
@@ -196,7 +218,7 @@ int main(int argc, char ** argv) {
         if (out != stdout) std::fclose(out);
         std::fprintf(stderr,
                      "{\"load_s\":%.3f,\"words\":%zu,\"analyses\":%zu,\"analyze_s\":%.3f,\"words_per_s\":%.1f,"
-                     "\"peak_rss_after_load_kib\":%ld,\"peak_rss_kib\":%ld}\n",
+                     "\"rss_after_load_kib\":%ld,\"peak_rss_kib\":%ld}\n",
                      load_s, list.size(), n_analyses, analyze_s, analyze_s > 0 ? double(list.size()) / analyze_s : 0.0,
                      rss_after_load, peak_rss_kib());
     }
