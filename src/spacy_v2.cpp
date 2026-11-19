@@ -177,6 +177,50 @@ const Json & pos_entries(const Json & tables, const char * name) {
     return entries;
 }
 
+// spaCy EditTreeLemmatizer (top_k=1, backoff="orth", overwrite=False).
+struct EditTreeLemmatizer {
+    std::vector<std::uint32_t> class_to_tree;
+    std::vector<EditTree> trees;
+    bool present = false;
+};
+
+EditTreeLemmatizer parse_edit_trees(const Json & value) {
+    EditTreeLemmatizer result;
+    result.present = true;
+    const auto & top_k = member(value, "top_k");
+    const auto & overwrite = member(value, "overwrite");
+    require(top_k.kind == Json::int_t && top_k.i == 1 && text(member(value, "backoff"), "backoff") == "orth" &&
+                overwrite.kind == Json::bool_t && !overwrite.b,
+            "Unsupported edit-tree lemmatizer settings");
+    auto index = [](const Json & item, std::uint64_t bound) {
+        require(item.kind == Json::int_t && item.i >= 0 && static_cast<std::uint64_t>(item.i) <= bound,
+                "Invalid edit-tree integer");
+        return static_cast<std::uint32_t>(item.i);
+    };
+    const auto & trees = member(value, "trees");
+    require(trees.kind == Json::array_t && !trees.a.empty() && trees.a.size() <= 1000000, "Invalid edit trees");
+    for (const auto & entry : trees.a) {
+        require(entry.kind == Json::object_t, "Invalid edit tree");
+        EditTree tree;
+        if (entry.get("orig")) {
+            tree.is_match = false;
+            tree.original = text(member(entry, "orig"), "edit-tree orig");
+            tree.replacement = text(member(entry, "subst"), "edit-tree subst");
+        } else {
+            tree.prefix_length = index(member(entry, "prefix_len"), 4096);
+            tree.suffix_length = index(member(entry, "suffix_len"), 4096);
+            tree.prefix_tree = index(member(entry, "prefix_tree"), EditTree::none);
+            tree.suffix_tree = index(member(entry, "suffix_tree"), EditTree::none);
+        }
+        result.trees.push_back(std::move(tree));
+    }
+    validate_edit_trees(result.trees);
+    const auto & classes = member(value, "class_to_tree");
+    require(classes.kind == Json::array_t && !classes.a.empty(), "Invalid edit-tree classes");
+    for (const auto & item : classes.a) result.class_to_tree.push_back(index(item, result.trees.size() - 1));
+    return result;
+}
+
 RuleLemmatizer parse_lemmatizer(const Json & value, const std::string & language) {
     RuleLemmatizer result;
     result.present = true;
@@ -292,6 +336,7 @@ struct PipelineV2::Impl {
     std::vector<std::string> parser_moves;
     std::vector<Rule> rules;
     RuleLemmatizer lemmatizer;
+    EditTreeLemmatizer edit_trees;
     std::unique_ptr<GgmlNumeric> numeric;
 #ifdef CRISPEMBED_SPACY_TRF
     std::unique_ptr<TransformerPipeline> transformer;
@@ -517,7 +562,7 @@ PipelineV2::PipelineV2(const std::string & resources_json, std::map<std::string,
     const auto & format = member(root, "format_version");
     require(format.kind == Json::int_t && format.i == 2, "Unsupported spaCy v2 resource format");
     m.language = text(member(root, "language"), "language");
-    require(m.language == "en" || m.language == "fr", "Unsupported spaCy v2 language");
+    require(m.language == "en" || m.language == "fr" || m.language == "de", "Unsupported spaCy v2 language");
     m.components = strings(member(root, "component_order"), "component_order", 16);
     const std::vector<std::string> known = { "tok2vec", "transformer",     "tagger",     "morphologizer",
                                              "parser",  "attribute_ruler", "lemmatizer", "ner" };
@@ -548,7 +593,13 @@ PipelineV2::PipelineV2(const std::string & resources_json, std::map<std::string,
     m.parser_moves = strings(member(parser, "moves"), "parser moves", 137);
     (void)ParserState(0, m.parser_moves);
     if (has("attribute_ruler")) m.rules = parse_rules(member(labels, "attribute_ruler"));
-    if (has("lemmatizer")) m.lemmatizer = parse_lemmatizer(member(labels, "lemmatizer"), m.language);
+    if (has("lemmatizer")) {
+        const auto & lemma = member(labels, "lemmatizer");
+        if (text(member(lemma, "mode"), "mode") == "edit_tree")
+            m.edit_trees = parse_edit_trees(lemma);
+        else
+            m.lemmatizer = parse_lemmatizer(lemma, m.language);
+    }
 
     // Numeric engine over the shared tok2vec, tagger and parser lower layer.
     std::map<std::string, ggml_tensor *> numeric_weights, ner_weights;
@@ -599,12 +650,24 @@ PipelineV2::PipelineV2(const std::string & resources_json, std::map<std::string,
     } else {
         require(numeric_weights.find("morphologizer.W") == numeric_weights.end(), "Unexpected morphologizer weights");
     }
-    require(numeric_weights.find("lemmatizer.W") == numeric_weights.end(), "Unexpected trainable lemmatizer weights");
+    if (m.edit_trees.present) {
+        const auto found = numeric_weights.find("lemmatizer.W");
+        require(found != numeric_weights.end() &&
+                    found->second->ne[1] == static_cast<std::int64_t>(m.edit_trees.class_to_tree.size()),
+                "Edit-tree lemmatizer weights do not match its labels");
+        require(has("transformer"), "Edit-tree lemmatizers are admitted on the transformer path only");
+    } else {
+        require(numeric_weights.find("lemmatizer.W") == numeric_weights.end(),
+                "Unexpected trainable lemmatizer weights");
+    }
     if (m.components.front() == "transformer") {
 #ifdef CRISPEMBED_SPACY_TRF
         const auto & spec = member(labels, "transformer");
-        require(text(member(spec, "architecture"), "architecture") == "camembert" &&
-                    text(member(spec, "piece_encoder"), "piece_encoder") == "camembert_sentencepiece" &&
+        const auto & architecture = text(member(spec, "architecture"), "architecture");
+        const auto & piece_encoder = text(member(spec, "piece_encoder"), "piece_encoder");
+        require(((architecture == "camembert" && piece_encoder == "camembert_sentencepiece") ||
+                 (architecture == "roberta" && piece_encoder == "roberta_byte_bpe") ||
+                 (architecture == "bert" && piece_encoder == "bert_wordpiece")) &&
                     text(member(spec, "listener"), "listener") == "last_layer_reduce_mean",
                 "Unsupported spaCy transformer profile");
         auto number = [&](const char * key) {
@@ -617,15 +680,65 @@ PipelineV2::PipelineV2(const std::string & resources_json, std::map<std::string,
         config.width = number("width");
         config.heads = number("heads");
         config.intermediate = number("intermediate");
-        config.padding_idx = number("padding_idx");
+        {
+            const auto & value = member(spec, "padding_idx");
+            require(value.kind == Json::int_t && value.i >= 0 && value.i < 100000, "Invalid padding_idx");
+            config.padding_idx = static_cast<int>(value.i);
+        }
+        if (architecture == "bert") {
+            const auto & value = member(spec, "position_offset");
+            require(value.kind == Json::int_t && value.i == 0, "Invalid BERT position_offset");
+            config.position_offset = 0;
+        }
         config.max_positions = number("max_positions");
         config.model_max_length = number("model_max_length");
         config.window = number("window");
         config.stride = number("stride");
         const auto & eps = member(spec, "layer_norm_eps");
-        require(eps.is_number() && eps.number() > 0, "Invalid layer_norm_eps");
+        // bert-base-german-cased ships layer_norm_eps = 0.0 (torch uses it as is).
+        require(eps.is_number() && eps.number() >= 0 && eps.number() < 1, "Invalid layer_norm_eps");
         config.layer_norm_eps = static_cast<float>(eps.number());
-        config.sentencepiece_model = base64_decode(text(member(spec, "sentencepiece_model_base64"), "spm model"));
+        config.piece_encoder = piece_encoder;
+        if (piece_encoder == "camembert_sentencepiece") {
+            config.sentencepiece_model = base64_decode(text(member(spec, "sentencepiece_model_base64"), "spm model"));
+        } else if (piece_encoder == "bert_wordpiece") {
+            const auto & wordpiece = member(spec, "wordpiece");
+            const auto & pieces = member(wordpiece, "pieces");
+            require(pieces.kind == Json::array_t && !pieces.a.empty(), "Invalid WordPiece pieces");
+            for (const auto & piece : pieces.a) config.wordpiece_pieces.push_back(text(piece, "WordPiece piece"));
+            auto special = [&](const char * key) {
+                const auto & value = member(wordpiece, key);
+                require(value.kind == Json::int_t && value.i >= 0, std::string("Invalid WordPiece ") + key);
+                return static_cast<int>(value.i);
+            };
+            config.bos_id = special("bos");
+            config.eos_id = special("eos");
+            config.unk_id = special("unk");
+        } else {
+            const auto & bpe = member(spec, "byte_bpe");
+            const auto & pieces = member(bpe, "pieces");
+            require(pieces.kind == Json::array_t && !pieces.a.empty(), "Invalid byte-BPE pieces");
+            for (const auto & piece : pieces.a) config.bpe_pieces.push_back(text(piece, "byte-BPE piece"));
+            const auto & merges = member(bpe, "merges");
+            require(merges.kind == Json::array_t, "Invalid byte-BPE merges");
+            for (const auto & merge : merges.a) {
+                require(merge.kind == Json::array_t && merge.a.size() == 2, "Invalid byte-BPE merge");
+                config.bpe_merges.emplace_back(text(merge.a[0], "merge"), text(merge.a[1], "merge"));
+            }
+            config.bpe_split_pattern = text(member(bpe, "split_pattern"), "split_pattern");
+            auto special = [&](const char * key) {
+                const auto & value = member(bpe, key);
+                require(value.kind == Json::int_t && value.i >= 0, std::string("Invalid byte-BPE ") + key);
+                return static_cast<int>(value.i);
+            };
+            config.bos_id = special("bos");
+            config.eos_id = special("eos");
+            config.unk_id = special("unk");
+        }
+        // A transformer-listener NER's reduce/lower layers run in the heads graph.
+        for (const auto & item : ner_weights)
+            if (item.first.rfind("ner.reduce.", 0) == 0 || item.first.rfind("ner.lower.W", 0) == 0)
+                numeric_weights.insert(item);
         m.transformer = std::make_unique<TransformerPipeline>(std::move(config), std::move(numeric_weights), backend);
 #else
         throw std::invalid_argument("This build has no spaCy transformer support (CRISPEMBED_SPACY_TRF=OFF)");
@@ -731,13 +844,32 @@ PipelineV2::Output PipelineV2::run(const std::vector<LexicalToken> & tokens, con
             }
         } else if (component == "attribute_ruler") {
             m.apply_rules(annotations, tokens, cancelled);
+        } else if (component == "lemmatizer" && m.edit_trees.present) {
+            const auto & scores = numeric.lemmatizer;
+            require(scores.rows == n && scores.cols == m.edit_trees.class_to_tree.size(), "Invalid lemmatizer scores");
+            for (std::size_t i = 0; i < n; ++i) {
+                const float * row = scores.data.data() + i * scores.cols;
+                std::size_t best = 0;
+                for (std::size_t c = 1; c < scores.cols; ++c)
+                    if (row[c] > row[best]) best = c;
+                // Inapplicable tree -> backoff orth; existing lemma kept.
+                annotations[i].lemma = apply_lemma(m.edit_trees.trees, m.edit_trees.class_to_tree[best], tokens[i].text,
+                                                   annotations[i].lemma)
+                                           .lemma;
+            }
         } else if (component == "lemmatizer") {
             for (std::size_t i = 0; i < n; ++i)
                 if (annotations[i].lemma.empty()) annotations[i].lemma = m.rule_lemma(annotations[i], tokens[i]);
         } else if (component == "ner") {
             std::vector<std::uint8_t> starts;
             for (const auto & annotation : annotations) starts.push_back(annotation.is_sent_start ? 1 : 0);
-            output.entities = m.ner->run(features, starts, trace, cancelled);
+            if (m.ner->listener()) {
+                std::vector<std::uint8_t> spaces;
+                for (const auto & token : tokens) spaces.push_back(token.is_space);
+                output.entities = m.ner->run_cached(numeric.ner_lower.data, spaces, starts, trace, cancelled);
+            } else {
+                output.entities = m.ner->run(features, starts, trace, cancelled);
+            }
             output.entity_labels = m.ner->labels();
         }
     }
