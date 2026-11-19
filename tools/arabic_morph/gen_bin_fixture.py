@@ -44,6 +44,8 @@ def main() -> None:
         "",
         "#include <cstddef>",
         "",
+        "// The CI compares this file byte for byte with the generator output.",
+        "// clang-format off",
         f"static const unsigned char k_bin_db[{len(binary)}] = {{",
     ]
     for i in range(0, len(binary), 16):
@@ -56,7 +58,7 @@ def main() -> None:
         projected = [{k: v for k, v in a.items() if k in keep} for a in json.loads(expected)]
         out = json.dumps(projected, ensure_ascii=False, separators=(",", ":"))
         lines.append(f'    {{ {backoff}, {json.dumps(word, ensure_ascii=False)}, R"J({out})J" }},')
-    lines += ["};", ""]
+    lines += ["};", "// clang-format on", ""]
     OUT.write_text("\n".join(lines), encoding="utf-8", newline="\n")
     print(json.dumps({"fixture_bytes": len(binary), "cases": len(cases)}))
 
