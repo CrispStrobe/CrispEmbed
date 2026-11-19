@@ -38,6 +38,11 @@ struct TransformerConfig {
     std::vector<std::pair<std::string, std::string>> bpe_merges;
     std::string bpe_split_pattern;
     int bos_id = 0, eos_id = 2, unk_id = 3;
+    // BERT WordPiece ("bert_wordpiece"): pieces in id order, "##" marks
+    // continuation pieces (curated-tokenizers WordPieceProcessor).
+    std::vector<std::string> wordpiece_pieces;
+    // First position id: RoBERTa-family padding_idx + 1; BERT 0. -1 = derive.
+    int position_offset = -1;
 };
 
 class TransformerPipeline {

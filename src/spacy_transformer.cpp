@@ -61,6 +61,63 @@ struct TransformerPipeline::Impl {
     sentencepiece::SentencePieceProcessor spp;
     // RoBERTa byte-level BPE (curated-tokenizers ByteBPEProcessor semantics).
     bool byte_bpe = false;
+    // BERT WordPiece (curated-tokenizers WordPieceProcessor + _bert_preprocess).
+    bool wordpiece = false;
+    std::unordered_map<std::string, int> wp_initial, wp_continuation;
+    std::unique_ptr<PythonRegex> bert_punctuation;
+
+    static std::vector<std::size_t> codepoint_offsets(const std::string & text) {
+        std::vector<std::size_t> offsets;
+        for (std::size_t i = 0; i < text.size(); ++i)
+            if ((static_cast<unsigned char>(text[i]) & 0xC0) != 0x80) offsets.push_back(i);
+        offsets.push_back(text.size());
+        return offsets;
+    }
+
+    // WordPieceProcessor.encode: greedy longest prefix by code points
+    // (including the empty prefix); an unmatched remainder appends one
+    // unknown piece after the pieces found so far.
+    void wordpiece_encode(const std::string & token, std::vector<int> & ids) const {
+        const auto offsets = codepoint_offsets(token);
+        const std::size_t count = offsets.size() - 1;
+        std::size_t start = 0;
+        bool initial = true;
+        while (start < count) {
+            const auto & table = initial ? wp_initial : wp_continuation;
+            bool found = false;
+            std::size_t length = count - start;
+            for (;; --length) {
+                const auto hit = table.find(token.substr(offsets[start], offsets[start + length] - offsets[start]));
+                if (hit != table.end()) {
+                    ids.push_back(hit->second);
+                    found = true;
+                    break;
+                }
+                if (length == 0) break;
+            }
+            if (!found) {
+                ids.push_back(config.unk_id);
+                return;
+            }
+            require(length > 0 || initial, "WordPiece empty continuation match would not terminate");
+            start += length;
+            initial = false;
+        }
+    }
+
+    // _bert_preprocess: every punctuation character (ASCII punctuation or a
+    // Unicode P* category) is its own part; other runs stay together.
+    std::vector<int> encode_wordpiece(const std::string & text) const {
+        std::vector<int> ids;
+        std::size_t position = 0;
+        for (const auto & span : bert_punctuation->find_all(text)) {
+            if (span.first > position) wordpiece_encode(text.substr(position, span.first - position), ids);
+            wordpiece_encode(text.substr(span.first, span.second - span.first), ids);
+            position = span.second;
+        }
+        if (position < text.size()) wordpiece_encode(text.substr(position), ids);
+        return ids;
+    }
     std::unordered_map<std::string, int> piece_to_id;
     std::unordered_map<std::string, std::size_t> merge_rank; // key: first + '\0' + second
     std::array<std::string, 256> byte_encoder;
@@ -179,7 +236,7 @@ struct TransformerPipeline::Impl {
         };
         // RobertaEmbeddings: (word + token_type) + position, then LayerNorm.
         ggml_tensor * x = ggml_get_rows(ctx, weight("trf.embed.word"), tokens);
-        x = ggml_add(ctx, x, ggml_reshape_1d(ctx, weight("trf.embed.type"), W));
+        x = ggml_add(ctx, x, ggml_view_1d(ctx, weight("trf.embed.type"), W, 0));
         x = ggml_add(ctx, x, ggml_get_rows(ctx, weight("trf.embed.position"), positions));
         x = layer_norm(x, "trf.embed.norm");
         const float scale = 1.0f / std::sqrt(static_cast<float>(D));
@@ -213,7 +270,7 @@ struct TransformerPipeline::Impl {
         }
         std::vector<int32_t> position_ids(static_cast<size_t>(T));
         for (int64_t t = 0; t < T; ++t)
-            position_ids[static_cast<size_t>(t)] = static_cast<int32_t>(t + config.padding_idx + 1);
+            position_ids[static_cast<size_t>(t)] = static_cast<int32_t>(t + config.position_offset);
         std::vector<int32_t> token_ids(ids.begin(), ids.end());
         ggml_backend_tensor_set(tokens, token_ids.data(), 0, token_ids.size() * sizeof(int32_t));
         ggml_backend_tensor_set(positions, position_ids.data(), 0, position_ids.size() * sizeof(int32_t));
@@ -257,7 +314,7 @@ struct TransformerPipeline::Impl {
             return ggml_add(ctx, ggml_mul_mat(ctx, weight(prefix + ".weight"), x), weight(prefix + ".bias"));
         };
         ggml_tensor * x = ggml_get_rows(ctx, weight("trf.embed.word"), tokens);
-        x = ggml_add(ctx, x, ggml_reshape_1d(ctx, weight("trf.embed.type"), W));
+        x = ggml_add(ctx, x, ggml_view_1d(ctx, weight("trf.embed.type"), W, 0));
         x = ggml_add(ctx, x, ggml_get_rows(ctx, weight("trf.embed.position"), positions));
         x = layer_norm(x, "trf.embed.norm");
         const float scale = 1.0f / std::sqrt(static_cast<float>(D));
@@ -297,7 +354,7 @@ struct TransformerPipeline::Impl {
         for (const auto & span : batch)
             for (int64_t t = 0; t < T; ++t) {
                 token_ids.push_back(span[static_cast<size_t>(t)]);
-                position_ids.push_back(static_cast<int32_t>(t + config.padding_idx + 1));
+                position_ids.push_back(static_cast<int32_t>(t + config.position_offset));
             }
         ggml_backend_tensor_set(tokens, token_ids.data(), 0, token_ids.size() * sizeof(int32_t));
         ggml_backend_tensor_set(positions, position_ids.data(), 0, position_ids.size() * sizeof(int32_t));
@@ -329,8 +386,9 @@ TransformerPipeline::TransformerPipeline(TransformerConfig config, std::map<std:
     require(m.config.width > 0 && m.config.heads > 0 && m.config.width % m.config.heads == 0 && m.config.layers > 0 &&
                 m.config.layers <= 64,
             "Invalid spaCy transformer geometry");
+    if (m.config.position_offset < 0) m.config.position_offset = m.config.padding_idx + 1;
     require(m.config.window > 0 && m.config.window / 2 <= m.config.stride && m.config.stride <= m.config.window &&
-                m.config.window + 2 <= m.config.max_positions - m.config.padding_idx &&
+                m.config.window + 1 + m.config.position_offset < m.config.max_positions &&
                 m.config.window <= m.config.model_max_length,
             "Invalid spaCy transformer span settings");
     for (const auto & item : m.weights)
@@ -351,6 +409,23 @@ TransformerPipeline::TransformerPipeline(TransformerConfig config, std::map<std:
         m.split = std::make_unique<PythonRegex>(m.config.bpe_split_pattern);
         for (const int id : { m.config.bos_id, m.config.eos_id, m.config.unk_id })
             require(id >= 0 && static_cast<std::size_t>(id) < pieces.size(), "Invalid byte-BPE special id");
+    } else if (m.config.piece_encoder == "bert_wordpiece") {
+        m.wordpiece = true;
+        const auto & pieces = m.config.wordpiece_pieces;
+        require(!pieces.empty() && pieces.size() <= 1000000, "Invalid WordPiece vocabulary");
+        for (std::size_t i = 0; i < pieces.size(); ++i) {
+            const auto & piece = pieces[i];
+            if (piece.rfind("##", 0) == 0) {
+                require(piece.size() > 2, "Empty continuation WordPiece piece");
+                m.wp_continuation.emplace(piece.substr(2), static_cast<int>(i)); // first wins
+            } else {
+                m.wp_initial.emplace(piece, static_cast<int>(i));
+            }
+        }
+        // _is_bert_punctuation: HF's ASCII punctuation ranges or category P*.
+        m.bert_punctuation = std::make_unique<PythonRegex>("[!-/:-@\\[-`{-~]|\\p{P}");
+        for (const int id : { m.config.bos_id, m.config.eos_id, m.config.unk_id })
+            require(id >= 0 && static_cast<std::size_t>(id) < pieces.size(), "Invalid WordPiece special id");
     } else {
         require(m.config.piece_encoder == "camembert_sentencepiece", "Unsupported spaCy piece encoder");
         const auto status = m.spp.LoadFromSerializedProto(m.config.sentencepiece_model);
@@ -387,7 +462,9 @@ std::vector<std::vector<int>> TransformerPipeline::pieces(const std::vector<Lexi
         const auto & token = tokens[index];
         std::vector<int> ids;
         if (!token.is_space) {
-            if (impl_->byte_bpe) {
+            if (impl_->wordpiece) {
+                ids = impl_->encode_wordpiece(token.text);
+            } else if (impl_->byte_bpe) {
                 // GPT-2/RoBERTa keeps the preceding token's whitespace_ (" ").
                 const bool space = index > 0 && tokens[index - 1].space_after;
                 ids = impl_->encode_byte_bpe(space ? " " + token.text : token.text);
@@ -410,13 +487,13 @@ NumericOutput TransformerPipeline::run(const std::vector<LexicalToken> & tokens,
     const auto n = tokens.size();
     if (n == 0) return output;
     const auto per_token = pieces(tokens);
-    std::vector<int> doc = { m.byte_bpe ? m.config.bos_id : camembert_id(m.spp.bos_id()) };
+    std::vector<int> doc = { m.byte_bpe || m.wordpiece ? m.config.bos_id : camembert_id(m.spp.bos_id()) };
     std::vector<size_t> lengths;
     for (const auto & ids : per_token) {
         doc.insert(doc.end(), ids.begin(), ids.end());
         lengths.push_back(ids.size());
     }
-    doc.push_back(m.byte_bpe ? m.config.eos_id : camembert_id(m.spp.eos_id()));
+    doc.push_back(m.byte_bpe || m.wordpiece ? m.config.eos_id : camembert_id(m.spp.eos_id()));
     const size_t L = doc.size(), W = static_cast<size_t>(m.config.width);
     const size_t window = static_cast<size_t>(m.config.window), stride = static_cast<size_t>(m.config.stride);
 
@@ -516,6 +593,7 @@ NumericOutput TransformerPipeline::run(const std::vector<LexicalToken> & tokens,
     };
     ggml_tensor * tagger = head("tagger");
     ggml_tensor * morphologizer = head("morphologizer");
+    ggml_tensor * lemmatizer = head("lemmatizer");
     ggml_tensor * reduced = head("parser.reduce");
     require(reduced != nullptr, "Missing spaCy parser reduce layer");
     ggml_tensor * lower_w = m.weight("parser.lower.W");
@@ -532,7 +610,7 @@ NumericOutput TransformerPipeline::run(const std::vector<LexicalToken> & tokens,
         ggml_set_output(ner_lower);
     }
     ggml_cgraph * graph = ggml_new_graph(ctx);
-    for (ggml_tensor * out : { tagger, morphologizer, lower, ner_lower })
+    for (ggml_tensor * out : { tagger, morphologizer, lemmatizer, lower, ner_lower })
         if (out) ggml_build_forward_expand(graph, out);
     if (!ggml_gallocr_alloc_graph(m.allocator, graph)) throw std::bad_alloc();
     ggml_backend_tensor_set(input, vectors.data.data(), 0, vectors.data.size() * sizeof(float));
@@ -549,6 +627,7 @@ NumericOutput TransformerPipeline::run(const std::vector<LexicalToken> & tokens,
     };
     output.tagger = read(tagger);
     output.ner_lower = read(ner_lower);
+    output.lemmatizer = read(lemmatizer);
     output.morphologizer = read(morphologizer);
     const auto lower_values = read(lower);
     output.parser_cache.rows = n + 1;

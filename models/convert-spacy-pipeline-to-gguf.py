@@ -180,12 +180,15 @@ def export_transformer(nlp, tensors, origins):
     kinds = {("spacy-curated-transformers.CamembertTransformer.v1",
               "spacy-curated-transformers.CamembertSentencepieceEncoder.v1"): ("camembert", "camembert_sentencepiece"),
              ("spacy-curated-transformers.RobertaTransformer.v1",
-              "spacy-curated-transformers.ByteBpeEncoder.v1"): ("roberta", "roberta_byte_bpe")}
+              "spacy-curated-transformers.ByteBpeEncoder.v1"): ("roberta", "roberta_byte_bpe"),
+             ("spacy-curated-transformers.BertTransformer.v1",
+              "spacy-curated-transformers.BertWordpieceEncoder.v1"): ("bert", "bert_wordpiece")}
     family = kinds.get((cfg["@architectures"], cfg["piece_encoder"]["@architectures"]))
     require(family is not None, "Unsupported transformer/piece encoder")
     spans = cfg["with_spans"]
     require(spans["@architectures"] == "spacy-curated-transformers.WithStridedSpans.v1", "Unsupported span extractor")
-    require(cfg["hidden_act"] == "gelu" and cfg["type_vocab_size"] == 1, "Unsupported transformer activation/types")
+    require(cfg["hidden_act"] == "gelu" and cfg["type_vocab_size"] == (2 if family[0] == "bert" else 1),
+            "Unsupported transformer activation/types")
     for name in nlp.pipe_names[1:]:
         tok2vec = (nlp.config["components"][name].get("model") or {}).get("tok2vec")
         if tok2vec is None and name == "parser":
@@ -197,11 +200,13 @@ def export_transformer(nlp, tensors, origins):
     state = component.model.get_ref("transformer").shims[0]._model.state_dict()
     layers = cfg["num_hidden_layers"]
     prefix = "curated_encoder."
-    mapping = {"embeddings.inner.word_embeddings.weight": "trf.embed.word",
-               "embeddings.inner.position_embeddings.weight": "trf.embed.position",
-               "embeddings.inner.token_type_embeddings.weight": "trf.embed.type",
-               "embeddings.inner.layer_norm.weight": "trf.embed.norm.weight",
-               "embeddings.inner.layer_norm.bias": "trf.embed.norm.bias"}
+    # RoBERTa-family embeddings wrap BertEmbeddings as ".inner".
+    inner = "" if family[0] == "bert" else "inner."
+    mapping = {f"embeddings.{inner}word_embeddings.weight": "trf.embed.word",
+               f"embeddings.{inner}position_embeddings.weight": "trf.embed.position",
+               f"embeddings.{inner}token_type_embeddings.weight": "trf.embed.type",
+               f"embeddings.{inner}layer_norm.weight": "trf.embed.norm.weight",
+               f"embeddings.{inner}layer_norm.bias": "trf.embed.norm.bias"}
     for i in range(layers):
         for source, target in (("mha.input", "qkv"), ("mha.output", "attn_out"),
                                ("attn_output_layernorm", "attn_norm"), ("ffn.intermediate", "ffn_in"),
@@ -220,7 +225,21 @@ def export_transformer(nlp, tensors, origins):
             "padding_idx": cfg["padding_idx"], "max_positions": cfg["max_position_embeddings"],
             "model_max_length": cfg["model_max_length"], "window": spans["window"], "stride": spans["stride"],
             "listener": "last_layer_reduce_mean"}
-    if family[0] == "camembert":
+    if family[0] == "bert":
+        # BertEmbeddings: positions 0..T-1, token type 0 (row 0 of the table).
+        result["position_offset"] = 0
+        encoder = component.model.get_ref("piece_encoder")
+        from spacy_curated_transformers.tokenization import wordpiece_encoder as wpe
+        require(encoder.attrs["preprocess"] is wpe._bert_preprocess and encoder.attrs["lowercase"] is False and
+                encoder.attrs["strip_accents"] is False, "Unsupported WordPiece preprocessing")
+        wpp = encoder.attrs["wordpiece_processor"]
+        pieces = wpp.to_list()
+        require("##" not in pieces, "Empty continuation WordPiece piece (loops in the original)")
+        result["wordpiece"] = {"pieces": pieces,
+                               "bos": wpp.get_initial(encoder.attrs["bos_piece"]),
+                               "eos": wpp.get_initial(encoder.attrs["eos_piece"]),
+                               "unk": wpp.get_initial(encoder.attrs["unk_piece"])}
+    elif family[0] == "camembert":
         spp = component.model.get_ref("piece_encoder").get_ref("encoder").attrs["sentencepiece_processor"]
         result["sentencepiece_model_base64"] = base64.b64encode(spp.to_protobuf()).decode("ascii")
     else:
@@ -317,13 +336,25 @@ def extract(nlp, source: Path):
     if "lemmatizer" in pipes:
         lemma = nlp.get_pipe("lemmatizer")
         if lemma.__class__.__name__ == "EditTreeLemmatizer":
-            raise ValueError("Trainable lemmatizers use the v1 German profile for now")
-        require(lemma.mode == "rule" and lemma.__class__.__name__ == RULE_LEMMATIZERS.get(nlp.lang),
-                f"Unsupported lemmatizer {lemma.__class__.__name__}/{lemma.mode}")
-        require(lemma.overwrite is False, "Unsupported lemmatizer overwrite")
-        labels["lemmatizer"] = {"mode": "rule", "language": nlp.lang, "overwrite": False,
-                                "tables": {name: table_json(name, lemma.lookups.get_table(name))
-                                           for name in sorted(lemma.lookups.tables)}}
+            require(lemma.top_k == 1 and lemma.backoff == "orth" and lemma.overwrite is False,
+                    "Unsupported edit-tree lemmatizer settings")
+            export_classifier(nlp, "lemmatizer", tensors, origins)
+            trees = []
+            for i in range(len(lemma.trees)):
+                tree = dict(lemma.trees[i])
+                for key in ("orig", "subst"):
+                    if key in tree:
+                        tree[key] = nlp.vocab.strings[tree[key]]
+                trees.append(tree)
+            labels["lemmatizer"] = {"mode": "edit_tree", "class_to_tree": list(lemma.labels), "trees": trees,
+                                    "top_k": 1, "backoff": "orth", "overwrite": False}
+        else:
+            require(lemma.mode == "rule" and lemma.__class__.__name__ == RULE_LEMMATIZERS.get(nlp.lang),
+                    f"Unsupported lemmatizer {lemma.__class__.__name__}/{lemma.mode}")
+            require(lemma.overwrite is False, "Unsupported lemmatizer overwrite")
+            labels["lemmatizer"] = {"mode": "rule", "language": nlp.lang, "overwrite": False,
+                                    "tables": {name: table_json(name, lemma.lookups.get_table(name))
+                                               for name in sorted(lemma.lookups.tables)}}
     tokenizer_and_norms = shared_lexical(nlp, source)
     return tensors, origins, {"format_version": FORMAT_VERSION, "language": nlp.lang, "component_order": pipes,
                               **tokenizer_and_norms, "unicode": v1.unicode_tables(), "labels": labels,

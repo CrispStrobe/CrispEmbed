@@ -355,7 +355,8 @@ struct LexicalModel::Impl {
         // generic engineering bounds instead of fixed counts.
         const auto format = field(root, "format_version", Json::int_t).i;
         const auto & language = field(root, "language", Json::string_t).s;
-        require((format == 1 && language == "de") || (format == 2 && (language == "en" || language == "fr")),
+        require((format == 1 && language == "de") ||
+                    (format == 2 && (language == "en" || language == "fr" || language == "de")),
                 "Unsupported lexical resource profile");
         const bool closed = format == 1;
         const auto & source = field(root, "lexical_semantics_source", Json::object_t);
