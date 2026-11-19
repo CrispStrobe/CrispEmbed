@@ -96,12 +96,22 @@ NerModel::NerModel(std::map<std::string, ggml_tensor *> weights, ggml_backend_t 
             throw std::invalid_argument("spaCy NER tensors must be F32: " + item.first);
     lower_bias_ = read(weight("ner.lower.b"));
     lower_pad_ = read(weight("ner.lower.pad"));
-    upper_w_ = read(weight("ner.upper.W"));
-    upper_b_ = read(weight("ner.upper.b"));
     const std::size_t classes = class_moves_.size();
-    if (lower_bias_.size() != slot || lower_pad_.size() != cache_columns || upper_w_.size() != classes * hidden ||
-        upper_b_.size() != classes)
+    // Hidden width from the lower layer: 64 for the CNN NER, n_moves for an
+    // upper-less transformer-listener NER (maxout output = class scores).
+    hidden_ = lower_bias_.size() / hidden_pieces;
+    slot_ = hidden_ * hidden_pieces;
+    columns_ = state_features * slot_;
+    has_upper_ = weights_.find("ner.upper.W") != weights_.end();
+    if (has_upper_) {
+        upper_w_ = read(weight("ner.upper.W"));
+        upper_b_ = read(weight("ner.upper.b"));
+    }
+    if (lower_bias_.size() % hidden_pieces != 0 || lower_pad_.size() != columns_ ||
+        (has_upper_ ? upper_w_.size() != classes * hidden_ || upper_b_.size() != classes : hidden_ != classes))
         throw std::invalid_argument("Invalid spaCy NER parser tensor geometry");
+    listener_ = weights_.find("ner.embed.0.E") == weights_.end();
+    if (!listener_ && hidden_ != hidden) throw std::invalid_argument("Invalid spaCy NER parser tensor geometry");
     allocator_ = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend_));
     if (!allocator_) throw std::bad_alloc();
 }
@@ -211,6 +221,8 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
     std::vector<float> cache(lower_pad_);
     const auto lower_values = read(lower);
     cache.insert(cache.end(), lower_values.begin(), lower_values.end());
+    std::vector<std::uint8_t> spaces(count);
+    for (std::size_t i = 0; i < count; ++i) spaces[i] = features[i][5] != 0;
     if (trace) {
         const auto t2v = read(tok2vec);
         trace("ner.tok2vec.output", TensorView{ { count, static_cast<std::size_t>(width) }, t2v.data(), t2v.size() });
@@ -220,23 +232,49 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
               TensorView{ { count + 1, state_features, hidden, hidden_pieces }, cache.data(), cache.size() });
     }
 
+    return decode(cache, count, spaces, sentence_starts, trace, cancelled);
+}
+
+std::vector<Entity> NerModel::run_cached(const std::vector<float> & lower_rows,
+                                         const std::vector<std::uint8_t> & is_space,
+                                         const std::vector<std::uint8_t> & sentence_starts, const TraceSink & trace,
+                                         const CancelCheck & cancelled) const {
+    check_cancelled(cancelled);
+    const auto count = is_space.size();
+    if (!listener_) throw std::invalid_argument("spaCy NER run_cached needs a transformer-listener NER");
+    if (sentence_starts.size() != count || lower_rows.size() != count * columns_)
+        throw std::invalid_argument("spaCy NER cache geometry mismatch");
+    if (count == 0) return {};
+    std::vector<float> cache(lower_pad_);
+    cache.insert(cache.end(), lower_rows.begin(), lower_rows.end());
+    if (trace)
+        trace("ner.lower_cache",
+              TensorView{ { count + 1, state_features, hidden_, hidden_pieces }, cache.data(), cache.size() });
+    return decode(cache, count, is_space, sentence_starts, trace, cancelled);
+}
+
+std::vector<Entity> NerModel::decode(const std::vector<float> & cache, std::size_t count,
+                                     const std::vector<std::uint8_t> & is_spaces,
+                                     const std::vector<std::uint8_t> & sentence_starts, const TraceSink & trace,
+                                     const CancelCheck & cancelled) const {
+    const std::size_t slot = slot_, cache_columns = columns_, hidden = hidden_;
     // Greedy BILUO transitions (no preset entities, beam width 1).
     std::vector<Entity> entities;
     bool open = false;
     Entity current;
-    std::array<float, slot> summed{};
-    std::array<float, hidden> activation{};
+    std::vector<float> summed(slot);
+    std::vector<float> activation(hidden);
     const std::size_t classes = class_moves_.size();
     std::vector<float> scores(classes);
     for (std::size_t b0 = 0; b0 < count; ++b0) {
         check_cancelled(cancelled);
         const std::size_t remaining = count - b0;
         const bool next_starts_sentence = b0 + 1 < count && sentence_starts[b0 + 1] != 0;
-        const bool is_space = features[b0][5] != 0;
+        const bool is_space = is_spaces[b0] != 0;
         const std::array<std::int32_t, state_features> ids = { static_cast<std::int32_t>(b0),
                                                                open ? static_cast<std::int32_t>(current.start) : -1,
                                                                open ? static_cast<std::int32_t>(b0) - 1 : -1 };
-        summed.fill(0.0f);
+        std::fill(summed.begin(), summed.end(), 0.0f);
         for (std::size_t f = 0; f < state_features; ++f) {
             const float * source =
                 ids[f] < 0 ? lower_pad_.data() + f * slot
@@ -250,10 +288,14 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
             activation[h] = second > first ? second : first;
         }
         for (std::size_t c = 0; c < classes; ++c) {
-            const float * w = upper_w_.data() + c * hidden;
-            float sum = 0.0f;
-            for (std::size_t h = 0; h < hidden; ++h) sum += activation[h] * w[h];
-            scores[c] = sum + upper_b_[c];
+            if (has_upper_) {
+                const float * w = upper_w_.data() + c * hidden;
+                float sum = 0.0f;
+                for (std::size_t h = 0; h < hidden; ++h) sum += activation[h] * w[h];
+                scores[c] = sum + upper_b_[c];
+            } else {
+                scores[c] = activation[c];
+            }
             if (!std::isfinite(scores[c])) throw std::runtime_error("spaCy NER produced a nonfinite score");
         }
         std::vector<float> valid(classes);

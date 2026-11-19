@@ -52,6 +52,8 @@ struct NumericOutput {
     // Columns flatten [feature=8, hidden=64, maxout_piece=2], in that order.
     // Empty input short-circuits inference and leaves this matrix with no rows.
     Matrix parser_cache;
+    // Transformer-listener NER lower-layer rows (n x 3*hidden*2, no pad row).
+    Matrix ner_lower;
 };
 
 // Thinc 8.3.14 uint64 specialization. All arithmetic wraps at 64 bits and

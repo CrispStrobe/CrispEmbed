@@ -37,6 +37,8 @@ public:
     PythonRegex(PythonRegex &&) noexcept;
     PythonRegex & operator=(PythonRegex &&) noexcept;
     bool search(std::string_view text) const;
+    // Python re.findall spans (byte offsets), non-overlapping, left to right.
+    std::vector<std::pair<std::size_t, std::size_t>> find_all(std::string_view text) const;
 
 private:
     struct Impl;

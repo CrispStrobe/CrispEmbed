@@ -355,7 +355,8 @@ struct LexicalModel::Impl {
         // generic engineering bounds instead of fixed counts.
         const auto format = field(root, "format_version", Json::int_t).i;
         const auto & language = field(root, "language", Json::string_t).s;
-        require((format == 1 && language == "de") || (format == 2 && (language == "en" || language == "fr")),
+        require((format == 1 && language == "de") ||
+                    (format == 2 && (language == "en" || language == "fr" || language == "de")),
                 "Unsupported lexical resource profile");
         const bool closed = format == 1;
         const auto & source = field(root, "lexical_semantics_source", Json::object_t);
@@ -727,6 +728,13 @@ PythonRegex::PythonRegex(const std::string & pattern) : impl_(std::make_unique<I
 PythonRegex::~PythonRegex() = default;
 PythonRegex::PythonRegex(PythonRegex &&) noexcept = default;
 PythonRegex & PythonRegex::operator=(PythonRegex &&) noexcept = default;
+
+std::vector<std::pair<std::size_t, std::size_t>> PythonRegex::find_all(std::string_view text) const {
+    (void)decode_utf8(text);
+    std::vector<std::pair<std::size_t, std::size_t>> result;
+    for (const auto & match : impl_->regex.find_all(text, {})) result.emplace_back(match.start, match.end);
+    return result;
+}
 
 bool PythonRegex::search(std::string_view text) const {
     (void)decode_utf8(text);

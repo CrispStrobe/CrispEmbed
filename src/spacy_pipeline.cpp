@@ -531,7 +531,7 @@ crispembed_spacy_context * create_v2(const char * model_path, const char * expec
             "spaCy v2 resources do not belong to this model");
     require(string_value("spacy.precision") == "f32", "Only F32 spaCy v2 models are admitted");
     const auto language = string_value("spacy.language");
-    require(language == "en" || language == "fr", "Unsupported spaCy v2 language");
+    require(language == "en" || language == "fr" || language == "de", "Unsupported spaCy v2 language");
     auto context = std::make_unique<crispembed_spacy_context>();
     context->model_sha256 = expected_sha256;
     context->backend = ggml_backend_cpu_init();

@@ -48,7 +48,20 @@ public:
     std::vector<Entity> run(const std::vector<FeatureRow> & features, const std::vector<std::uint8_t> & sentence_starts,
                             const TraceSink & trace = {}, const CancelCheck & cancelled = {}) const;
 
+    // Transformer-listener NER (no "ner.embed.*" weights): decode from the
+    // lower-layer rows computed on the shared transformer vectors (n x
+    // 3*hidden*2, without the padding row). Upper-less NERs score with the
+    // maxout output directly.
+    std::vector<Entity> run_cached(const std::vector<float> & lower_rows, const std::vector<std::uint8_t> & is_space,
+                                   const std::vector<std::uint8_t> & sentence_starts, const TraceSink & trace = {},
+                                   const CancelCheck & cancelled = {}) const;
+    bool listener() const { return listener_; }
+
 private:
+    std::vector<Entity> decode(const std::vector<float> & cache, std::size_t count,
+                               const std::vector<std::uint8_t> & is_space,
+                               const std::vector<std::uint8_t> & sentence_starts, const TraceSink & trace,
+                               const CancelCheck & cancelled) const;
     ggml_tensor * weight(const std::string & name) const;
     std::map<std::string, ggml_tensor *> weights_;
     ggml_backend_t backend_;
@@ -57,6 +70,8 @@ private:
     std::vector<std::string> labels_;
     std::vector<int> class_moves_;
     std::vector<std::uint32_t> class_labels_;
+    std::size_t hidden_ = 0, slot_ = 0, columns_ = 0;
+    bool has_upper_ = true, listener_ = false;
 };
 
 } // namespace spacy
