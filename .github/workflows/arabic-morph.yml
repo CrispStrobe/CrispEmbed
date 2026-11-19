@@ -16,6 +16,8 @@ on:
       - 'src/core/shortest_double.*'
       - 'src/core/env_gate.h'
       - 'tests/test_arabic_morph.cpp'
+      - 'tests/arabic_morph_bin_fixture.h'
+      - 'models/convert-camel-morph-db.py'
       - 'tools/arabic_morph/**'
       - '.github/workflows/arabic-morph.yml'
   pull_request:
@@ -28,6 +30,8 @@ on:
       - 'src/core/shortest_double.*'
       - 'src/core/env_gate.h'
       - 'tests/test_arabic_morph.cpp'
+      - 'tests/arabic_morph_bin_fixture.h'
+      - 'models/convert-camel-morph-db.py'
       - 'tools/arabic_morph/**'
       - '.github/workflows/arabic-morph.yml'
 
@@ -51,3 +55,8 @@ jobs:
         run: cmake --build build --config Release -j 4
       - name: Contract test
         run: ctest --test-dir build -C Release --output-on-failure
+      - name: Binary fixture matches the converter
+        if: runner.os == 'Linux'
+        run: |
+          python3 tools/arabic_morph/gen_bin_fixture.py
+          git diff --exit-code tests/arabic_morph_bin_fixture.h

@@ -5,6 +5,8 @@ Developer tooling. Reads the token from the HF_TOKEN environment variable and
 never prints it.
 
     HF_TOKEN=... python tools/arabic_morph/hf_publish.py upload --dir out/ --repo cstr/camel-morph-msa-v1.0
+    HF_TOKEN=... python tools/arabic_morph/hf_publish.py upload --dir out/ --repo cstr/camel-morph-msa-v1.0 \
+        --only 'proofing-bin/*' --only README.md       # leave the other folders untouched
     python tools/arabic_morph/hf_publish.py verify --dir out/ --repo cstr/camel-morph-msa-v1.0 --revision <sha>
 
 verify downloads every local file from the given commit (anonymously unless
@@ -40,7 +42,7 @@ def cmd_upload(args):
     api = HfApi(token=token)
     api.create_repo(args.repo, repo_type="model", exist_ok=True, private=False)
     info = api.upload_folder(folder_path=args.dir, repo_id=args.repo, repo_type="model",
-                             commit_message=args.message)
+                             commit_message=args.message, allow_patterns=args.only or None)
     print(json.dumps({"repo": args.repo, "commit": info.oid, "url": info.commit_url}))
 
 
@@ -78,6 +80,7 @@ def main():
     p.add_argument("--dir", required=True)
     p.add_argument("--repo", required=True)
     p.add_argument("--message", default="Camel Morph MSA v1.0 bundles (full, noprob)")
+    p.add_argument("--only", action="append", help="upload only paths matching this pattern (repeatable)")
     p = sub.add_parser("verify")
     p.add_argument("--dir", required=True)
     p.add_argument("--repo", required=True)

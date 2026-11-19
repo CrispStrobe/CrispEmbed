@@ -179,13 +179,44 @@ Exact against camel_tools on all 9,571 UD Arabic-PUD + stress words in NONE,
 NOAN_PROP and ADD_ALL backoff and on the noprob DB; receipts in
 [the validation README](docs/validation/camel-morph-msa-20261119/README.md).
 
-Open: Quds Office integration (bundle download, `crispembed_ar_morph_*` FFI,
-choosing full vs noprob given the ranking loss measured there); a WASM build;
-iOS/Android packaging of the standalone library; a compact binary DB to cut
-load time and peak RSS (about 300 MB during load); a disambiguator (camel_tools
-MLE/BERT) is not ported. Provenance caveat for both variants: the lexicon was
-seeded from CALIMA-Star/SAMA and reworked by hand (paper); noprob removes only
-the treebank-derived numbers.
+Quds Office integrated the noprob bundle (Quds PR #189, native FFI isolate and
+WASM worker). Provenance caveat for every variant: the lexicon was seeded from
+CALIMA-Star/SAMA and reworked by hand (paper); noprob removes only the
+treebank-derived numbers.
+
+### Morphology — binary proofing database (`feat/arabic-morph-binary-20261119`)
+
+A versioned, memory-mapped binary format
+([spec](docs/arabic-morph-binary-format.md)) holds the analyzer's database
+reduced to the 24 features the Quds proofing rules and lemma identity need
+(`diac lex root pos`, the clitics, the inflectional features and `source`).
+`models/convert-camel-morph-db.py` builds it from the pinned noprob database,
+byte-identically on every run, and it is published as `proofing-bin/`
+(12.2 MB) at `cstr/camel-morph-msa-v1.0@d5364e04`.
+
+The analyzer is templated over the text and binary databases, so both paths
+coexist behind the same API (`CRISPEMBED_AR_MORPH_MMAP=0` reads the file into
+the heap instead of mapping it). ABI 2 adds the batched
+`crispembed_ar_morph_analyze_compact` (binary buffer, optional dedup); the
+JSON ABI is unchanged.
+
+The profile projection is exact against camel_tools on all 9,571 PUD and
+stress words in NONE, NOAN_PROP and ADD_ALL backoff (1,704,695 analyses in
+ADD_ALL), through both the JSON and compact ABIs.
+
+Natively the binary database loads in 0.11 s (text: 1.2 s), with 13 MB RSS
+after load instead of 233 MB. Through Quds' Dart API, throughput is about
+2.5–4× the JSON path. The WASM heap is 16–19 MB instead of 320 MB.
+[Receipts](docs/validation/camel-morph-binary-20261119/README.md).
+
+Open:
+
+- hosted CI runs of the new contract test on Windows (`MapViewOfFile`) and
+  Linux;
+- iOS and Android packaging of the standalone library;
+- the full-feature text bundle stays heap-parsed; a binary `full` variant is
+  only worth building if a consumer needs gloss or bw;
+- a disambiguator (camel_tools MLE/BERT) is not ported.
 
 ## Active work in flight — native spaCy, 18 November 2026
 

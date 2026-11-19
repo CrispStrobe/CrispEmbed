@@ -10,6 +10,8 @@ Developer tooling only (evaluation; nothing here ships). Requires `camel-tools`
     python tools/arabic_morph/camel_reference.py analyze --db full/camel_morph_msa_v1.0.db \
         --words words.jsonl --backoff NONE --out ref.jsonl
     python tools/arabic_morph/camel_reference.py compare --ref ref.jsonl --native native.jsonl
+    python tools/arabic_morph/camel_reference.py compare --ref ref.jsonl --native bin.jsonl \
+        --profile proofing-bin/manifest.json      # project both sides onto the bundle's profile
     python tools/arabic_morph/camel_reference.py rank --full ref-full.jsonl --noprob ref-noprob.jsonl \
         --conllu ar_pud-ud-test.conllu
 
@@ -145,16 +147,47 @@ def same_value(a, b):
     return a == b
 
 
+def load_profile(spec):
+    """A comma-separated feature list, or a bundle manifest.json with a "profile"."""
+    if spec.endswith(".json"):
+        with open(spec, encoding="utf-8") as f:
+            return list(json.load(f)["profile"])
+    return [k for k in spec.split(",") if k]
+
+
+def project(rec, profile):
+    """Keeps only the profile features of every analysis, in their order."""
+    if profile is None or not rec.get("ok"):
+        return rec
+    keep = set(profile)
+    return dict(rec, analyses=[[kv for kv in a if kv[0] in keep] for a in rec["analyses"]])
+
+
+def read_jsonl(path, profile=None):
+    """Streams the records (reference files reach gigabytes for ADD_ALL)."""
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            yield project(json.loads(line), profile)
+
+
 def cmd_compare(args):
-    ref = [json.loads(line) for line in open(args.ref, encoding="utf-8")]
-    nat = [json.loads(line) for line in open(args.native, encoding="utf-8")]
-    stats = {"words": len(ref), "word_exact": 0, "word_exact_ordered": 0, "errors_both": 0,
+    profile = load_profile(args.profile) if args.profile else None
+    ref = read_jsonl(args.ref, profile)
+    nat = read_jsonl(args.native, profile)
+    stats = {"words": 0, "word_exact": 0, "word_exact_ordered": 0, "errors_both": 0,
              "analyses": 0, "analyses_equal": 0, "features": 0, "set_group_reordered_analyses": 0,
              "mismatch_words": 0}
+    if profile is not None:
+        stats["profile"] = profile
+        stats["word_same_analysis_set"] = 0  # same distinct projected analyses, order ignored
     shown = 0
-    if len(ref) != len(nat):
-        sys.exit(f"length mismatch {len(ref)} vs {len(nat)}")
-    for r, n in zip(ref, nat):
+    stats["words"] = 0
+    sentinel = object()
+    import itertools
+    for r, n in itertools.zip_longest(ref, nat, fillvalue=sentinel):
+        if r is sentinel or n is sentinel:
+            sys.exit("length mismatch between the two files")
+        stats["words"] += 1
         if not r["ok"]:
             ok = not n["ok"]
             stats["errors_both"] += ok
@@ -184,6 +217,9 @@ def cmd_compare(args):
             equal = equal and same
         stats["word_exact"] += equal
         stats["word_exact_ordered"] += equal and exact_order
+        if profile is not None:
+            canon = lambda a: json.dumps(a, ensure_ascii=False)  # noqa: E731
+            stats["word_same_analysis_set"] += {canon(x) for x in ra} == {canon(y) for y in na}
         if not equal:
             stats["mismatch_words"] += 1
             if shown < args.show:
@@ -304,6 +340,7 @@ def main():
     p.add_argument("--ref", required=True)
     p.add_argument("--native", required=True)
     p.add_argument("--show", type=int, default=5)
+    p.add_argument("--profile", help="feature list (a,b,...) or bundle manifest.json: compare only these features")
     p = sub.add_parser("rank")
     p.add_argument("--words", required=True)
     p.add_argument("--full", required=True)

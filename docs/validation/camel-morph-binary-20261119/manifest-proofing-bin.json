@@ -1,0 +1,77 @@
+{
+  "format": "crispembed-camel-morph-bundle",
+  "format_version": 2,
+  "variant": "proofing-bin",
+  "db": "camel_morph_msa_v1.0.proofing.cmorph",
+  "db_format": "crispembed-camel-morph-bin-v1",
+  "license": "CC-BY-4.0",
+  "attribution": "Camel Morph MSA v1.0 (c) 2024 by New York University Abu Dhabi is licensed under CC BY 4.0",
+  "source": {
+    "repository": "https://github.com/CAMeL-Lab/camel_morph",
+    "commit": "aaa39653c2a53ebacf087f0b98e7f7cfb55cca81",
+    "last_change_commit": "e818de087015a4419fe58aeaa563147b23bf976b",
+    "path": "official_releases/lrec-coling2024_release/databases/camel-morph-msa/camel_morph_msa_v1.0.db",
+    "size": 84959404,
+    "sha256": "110e03baa282874062d076e23d9671e985b6f76520b891d58cba4e55de0b8f60",
+    "git_blob": "19f528666fda8b1cd67ef838089166a95eecc591"
+  },
+  "derived_from": {
+    "variant": "noprob",
+    "db": "camel_morph_msa_v1.0.noprob.db",
+    "size": 78083392,
+    "sha256": "2dfbec413288e7da96723d7926c0e74f2e90ef6994c6f7e995a27a8df079ecff"
+  },
+  "profile": [
+    "diac",
+    "lex",
+    "root",
+    "pos",
+    "prc3",
+    "prc2",
+    "prc1",
+    "prc1.5",
+    "prc0",
+    "per",
+    "asp",
+    "vox",
+    "mod",
+    "form_gen",
+    "gen",
+    "form_num",
+    "num",
+    "stt",
+    "cas",
+    "enc0",
+    "enc1",
+    "enc2",
+    "rat",
+    "source"
+  ],
+  "dropped_fields": [
+    "pos_logprob",
+    "lex_logprob",
+    "pos_lex_logprob"
+  ],
+  "analyzer": {
+    "reference": "camel_tools 1.6.0 Analyzer",
+    "default_backoff": "NONE",
+    "output": "the profile features of every camel_tools analysis, in camel_tools' order"
+  },
+  "files": [
+    {
+      "path": "LICENSE",
+      "size": 442,
+      "sha256": "214965747a90efe3e5268d367192bb077f1101620662cba71d59d902000b2d94"
+    },
+    {
+      "path": "NOTICE",
+      "size": 1799,
+      "sha256": "ce2f9c051786a37e4eb72367e6a6c9ea256b702137d4187bb0bfbda38f860efd"
+    },
+    {
+      "path": "camel_morph_msa_v1.0.proofing.cmorph",
+      "size": 12166992,
+      "sha256": "fc9d9109ddb5430da94def715df05b563cb37ffaec508f3514668ded19438909"
+    }
+  ]
+}

@@ -57,6 +57,7 @@
 #include "core/sha256.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -69,6 +70,21 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#elif (defined(__unix__) || defined(__APPLE__)) && !defined(__EMSCRIPTEN__)
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 
 namespace {
 
@@ -1061,12 +1077,52 @@ const uint32_t k_copy_feats[] = { K_GLOSS, K_ATBTOK, K_ATBSEG, K_D1TOK, K_D1SEG,
                                   K_D2TOK, K_D2SEG,  K_D3TOK,  K_D3SEG, K_BWTOK };
 const uint32_t k_undefined_lex_feats[] = { K_ROOT, K_PATTERN, K_CAPHI };
 
-struct morph_db {
+// What the analyzer needs from either database representation.
+struct db_common {
+    std::vector<std::string> key_names;
+    std::unordered_map<std::string, uint32_t> key_ids;
+    std::vector<uint8_t> defined; // by key id
+    // Output keys by id; empty means every key (the text database).
+    std::vector<uint8_t> output;
+    bool pattern_in_order = false;
+    std::unordered_map<std::string, result_t> defaults;
+    std::unordered_map<std::string, std::vector<std::string>> stem_backoffs;
+    size_t max_prefix_size = 0, max_suffix_size = 0;
+
+    bool def(uint32_t key) const { return key < defined.size() && defined[key]; }
+
+    bool keep(uint32_t key) const { return output.empty() || (key < output.size() && output[key]); }
+
+    uint32_t key_id(std::string_view name) {
+        auto it = key_ids.find(std::string(name));
+        if (it != key_ids.end()) return it->second;
+        const uint32_t id = uint32_t(key_names.size());
+        key_names.emplace_back(name);
+        key_ids.emplace(std::string(name), id);
+        return id;
+    }
+
+    static uint64_t pair_key(uint32_t a, uint32_t b) { return (uint64_t(a) << 32) | b; }
+};
+
+// Entries of one form: explicit ids (text) or a contiguous row range (binary).
+struct elist {
+    const uint32_t * ids = nullptr;
+    uint32_t first = 0;
+    uint32_t n = 0;
+
+    uint32_t size() const { return n; }
+
+    uint32_t operator[](uint32_t i) const { return ids ? ids[i] : first + i; }
+
+    bool empty() const { return n == 0; }
+};
+
+// The ALMOR text database parsed into heap structures.
+struct morph_db : db_common {
     // Interned strings.
     std::string pool;
     std::vector<std::pair<uint32_t, uint32_t>> strs;
-    std::vector<std::string> key_names;
-    std::unordered_map<std::string, uint32_t> key_ids;
     std::vector<std::string> cat_names;
     std::unordered_map<std::string, uint32_t> cat_ids;
 
@@ -1077,24 +1133,7 @@ struct morph_db {
     std::unordered_set<uint64_t> ab, bc, ac;
     std::vector<uint8_t> ab_has, bc_has, ac_has;
 
-    std::vector<uint8_t> defined; // by key id
-    bool pattern_in_order = false;
-    std::unordered_map<std::string, result_t> defaults;
-    std::unordered_map<std::string, std::vector<std::string>> stem_backoffs;
-    size_t max_prefix_size = 0, max_suffix_size = 0;
-
     std::string_view str(uint32_t id) const { return std::string_view(pool.data() + strs[id].first, strs[id].second); }
-
-    bool def(uint32_t key) const { return key < defined.size() && defined[key]; }
-
-    uint32_t key_id(std::string_view name) {
-        auto it = key_ids.find(std::string(name));
-        if (it != key_ids.end()) return it->second;
-        const uint32_t id = uint32_t(key_names.size());
-        key_names.emplace_back(name);
-        key_ids.emplace(std::string(name), id);
-        return id;
-    }
 
     uint32_t cat_id(std::string_view name) {
         auto it = cat_ids.find(std::string(name));
@@ -1116,7 +1155,49 @@ struct morph_db {
         return out;
     }
 
-    static uint64_t pair_key(uint32_t a, uint32_t b) { return (uint64_t(a) << 32) | b; }
+    static elist lookup(const std::unordered_map<std::string, std::vector<uint32_t>> & hash, const std::string & form) {
+        auto it = hash.find(form);
+        elist l;
+        if (it != hash.end()) {
+            l.ids = it->second.data();
+            l.n = uint32_t(it->second.size());
+        }
+        return l;
+    }
+
+    elist prefixes(const std::string & form) const { return lookup(prefix_hash, form); }
+
+    elist suffixes(const std::string & form) const { return lookup(suffix_hash, form); }
+
+    elist stems(const std::string & form) const { return lookup(stem_hash, form); }
+
+    uint32_t cat(uint32_t e) const { return entries[e].cat; }
+
+    std::string_view cat_name(uint32_t c) const { return cat_names[c]; }
+
+    bool ab_has_cat(uint32_t a) const { return ab_has[a] != 0; }
+
+    bool bc_has_cat(uint32_t b) const { return bc_has[b] != 0; }
+
+    bool ac_has_cat(uint32_t a) const { return ac_has[a] != 0; }
+
+    bool ab_ok(uint32_t a, uint32_t b) const { return ab.count(pair_key(a, b)) != 0; }
+
+    bool bc_ok(uint32_t b, uint32_t c) const { return bc.count(pair_key(b, c)) != 0; }
+
+    bool ac_ok(uint32_t a, uint32_t c) const { return ac.count(pair_key(a, c)) != 0; }
+
+    size_t prefix_forms() const { return prefix_hash.size(); }
+
+    size_t suffix_forms() const { return suffix_hash.size(); }
+
+    size_t stem_forms() const { return stem_hash.size(); }
+
+    size_t stem_entries() const {
+        size_t n = 0;
+        for (const auto & kv : stem_hash) n += kv.second.size();
+        return n;
+    }
 };
 
 class db_parser {
@@ -1409,7 +1490,7 @@ private:
             if (toks.size() != 2) fail(std::string("invalid ") + section + " line");
             const uint32_t a = db_.cat_id(toks[0]);
             const uint32_t b = db_.cat_id(toks[1]);
-            table.insert(morph_db::pair_key(a, b));
+            table.insert(db_common::pair_key(a, b));
             if (has.size() <= a) has.resize(a + 1, 0);
             has[a] = 1;
         }
@@ -1417,17 +1498,501 @@ private:
 };
 
 // ---------------------------------------------------------------------------
+// Binary database (docs/arabic-morph-binary-format.md): read in place from a
+// memory-mapped (or, on hosts without mmap, heap-held) file. Every offset,
+// id and string is validated once at load; lookups never allocate.
+
+constexpr char k_bin_magic[8] = { 'C', 'E', 'M', 'O', 'R', 'P', 'H', 'B' };
+constexpr uint32_t k_bin_version = 1;
+constexpr uint32_t k_bin_header_bytes = 64;
+constexpr uint32_t k_bin_cat_column = 0xFFFFFFFFu;
+constexpr uint32_t k_bin_none = 0xFFFFFFFFu;
+constexpr uint32_t k_key_defined = 1, k_key_output = 2;
+
+uint32_t crc32_bytes(const uint8_t * p, size_t n) {
+    static uint32_t table[256];
+    static const bool ready = [] {
+        for (uint32_t i = 0; i < 256; ++i) {
+            uint32_t c = i;
+            for (int k = 0; k < 8; ++k) c = (c & 1) ? 0xEDB88320u ^ (c >> 1) : c >> 1;
+            table[i] = c;
+        }
+        return true;
+    }();
+    (void)ready;
+    uint32_t c = 0xFFFFFFFFu;
+    for (size_t i = 0; i < n; ++i) c = table[(c ^ p[i]) & 0xFF] ^ (c >> 8);
+    return c ^ 0xFFFFFFFFu;
+}
+
+inline uint32_t rd32(const uint8_t * p) {
+    uint32_t v;
+    std::memcpy(&v, p, 4);
+    return v;
+}
+
+inline uint64_t rd64(const uint8_t * p) {
+    uint64_t v;
+    std::memcpy(&v, p, 8);
+    return v;
+}
+
+inline uint32_t rd_width(const uint8_t * p, uint32_t width) {
+    if (width == 1) return p[0];
+    if (width == 2) return uint32_t(p[0]) | (uint32_t(p[1]) << 8);
+    return rd32(p);
+}
+
+bool little_endian_host() {
+    const uint32_t one = 1;
+    uint8_t b;
+    std::memcpy(&b, &one, 1);
+    return b == 1;
+}
+
+// Bounds-checked cursor over one section.
+class bin_reader {
+public:
+    bin_reader(const uint8_t * p, size_t n, const char * what) : p_(p), n_(n), what_(what) {}
+
+    uint32_t u32() {
+        need(4);
+        const uint32_t v = rd32(p_ + pos_);
+        pos_ += 4;
+        return v;
+    }
+
+    const uint8_t * take(size_t bytes) {
+        need(bytes);
+        const uint8_t * at = p_ + pos_;
+        pos_ += bytes;
+        return at;
+    }
+
+    // n items of item_bytes each, guarding the multiplication.
+    const uint8_t * take_array(uint64_t n, uint64_t item_bytes) {
+        if (item_bytes && n > (uint64_t(1) << 40) / item_bytes) fail();
+        return take(size_t(n * item_bytes));
+    }
+
+    void align8() { pos_ = std::min(n_, (pos_ + 7) & ~size_t(7)); }
+
+    [[noreturn]] void fail() const { throw data_error(std::string("binary database: truncated ") + what_); }
+
+private:
+    void need(size_t bytes) const {
+        if (bytes > n_ - pos_) fail();
+    }
+
+    const uint8_t * p_;
+    size_t n_;
+    size_t pos_ = 0;
+    const char * what_;
+};
+
+struct bin_column {
+    uint32_t key;   // morph key id, or k_bin_cat_column
+    uint32_t width; // 1, 2 or 4 bytes
+    uint32_t offset;
+    uint32_t dict_count;
+    const uint8_t * dict; // dict_count little-endian u32 string (or category) ids
+};
+
+struct bin_table {
+    uint32_t rows = 0, forms = 0, row_bytes = 0, base = 0;
+    std::vector<bin_column> columns; // value columns in stored-key order
+    bin_column cat{};
+    const uint8_t * index = nullptr; // forms x {form string id, first row, row count}
+    const uint8_t * data = nullptr;  // rows x row_bytes
+};
+
+struct bin_db : db_common {
+    // The mapped or heap-held file; the database points into it.
+    std::shared_ptr<const void> owner;
+    const uint8_t * base = nullptr;
+    size_t size = 0;
+
+    uint32_t n_strings = 0;
+    const uint8_t * str_offsets = nullptr;
+    const uint8_t * str_bytes = nullptr;
+    uint32_t n_cats = 0;
+    const uint8_t * cat_ids = nullptr;
+    bin_table prefix, suffix, stem;
+    const uint8_t * compat[3] = {}; // AB, BC, AC sorted (a << 32 | b)
+    uint32_t compat_n[3] = {};
+
+    std::string_view str(uint32_t id) const {
+        const uint32_t a = rd32(str_offsets + 4 * size_t(id)), b = rd32(str_offsets + 4 * size_t(id) + 4);
+        return std::string_view(reinterpret_cast<const char *>(str_bytes) + a, b - a);
+    }
+
+    const bin_table & table_of(uint32_t e, uint32_t & row) const {
+        if (e < suffix.base) {
+            row = e;
+            return prefix;
+        }
+        if (e < stem.base) {
+            row = e - suffix.base;
+            return suffix;
+        }
+        row = e - stem.base;
+        return stem;
+    }
+
+    static uint32_t local(const bin_table & t, uint32_t row, const bin_column & c) {
+        return rd_width(t.data + size_t(row) * t.row_bytes + c.offset, c.width);
+    }
+
+    uint32_t cat(uint32_t e) const {
+        uint32_t row;
+        const bin_table & t = table_of(e, row);
+        return rd32(t.cat.dict + 4 * size_t(local(t, row, t.cat)));
+    }
+
+    std::string_view cat_name(uint32_t c) const { return str(rd32(cat_ids + 4 * size_t(c))); }
+
+    fview view(uint32_t e) const {
+        uint32_t row;
+        const bin_table & t = table_of(e, row);
+        fview out;
+        out.reserve(t.columns.size());
+        const uint8_t * r = t.data + size_t(row) * t.row_bytes;
+        for (const bin_column & c : t.columns) {
+            const uint32_t v = rd_width(r + c.offset, c.width);
+            if (v >= c.dict_count) continue; // absent
+            out.emplace_back(c.key, str(rd32(c.dict + 4 * size_t(v))));
+        }
+        return out;
+    }
+
+    elist find(const bin_table & t, std::string_view form) const {
+        uint32_t lo = 0, hi = t.forms;
+        while (lo < hi) {
+            const uint32_t mid = lo + (hi - lo) / 2;
+            const int c = str(rd32(t.index + 12 * size_t(mid))).compare(form);
+            if (c < 0)
+                lo = mid + 1;
+            else if (c > 0)
+                hi = mid;
+            else {
+                elist l;
+                l.first = t.base + rd32(t.index + 12 * size_t(mid) + 4);
+                l.n = rd32(t.index + 12 * size_t(mid) + 8);
+                return l;
+            }
+        }
+        return elist();
+    }
+
+    elist prefixes(std::string_view form) const { return find(prefix, form); }
+
+    elist suffixes(std::string_view form) const { return find(suffix, form); }
+
+    elist stems(std::string_view form) const { return find(stem, form); }
+
+    // First pair index >= key in table t.
+    uint32_t lower(int t, uint64_t key) const {
+        uint32_t lo = 0, hi = compat_n[t];
+        while (lo < hi) {
+            const uint32_t mid = lo + (hi - lo) / 2;
+            if (rd64(compat[t] + 8 * size_t(mid)) < key)
+                lo = mid + 1;
+            else
+                hi = mid;
+        }
+        return lo;
+    }
+
+    bool has_first(int t, uint32_t a) const {
+        const uint32_t i = lower(t, pair_key(a, 0));
+        return i < compat_n[t] && uint32_t(rd64(compat[t] + 8 * size_t(i)) >> 32) == a;
+    }
+
+    bool has_pair(int t, uint32_t a, uint32_t b) const {
+        const uint64_t key = pair_key(a, b);
+        const uint32_t i = lower(t, key);
+        return i < compat_n[t] && rd64(compat[t] + 8 * size_t(i)) == key;
+    }
+
+    bool ab_has_cat(uint32_t a) const { return has_first(0, a); }
+
+    bool bc_has_cat(uint32_t b) const { return has_first(1, b); }
+
+    bool ac_has_cat(uint32_t a) const { return has_first(2, a); }
+
+    bool ab_ok(uint32_t a, uint32_t b) const { return has_pair(0, a, b); }
+
+    bool bc_ok(uint32_t b, uint32_t c) const { return has_pair(1, b, c); }
+
+    bool ac_ok(uint32_t a, uint32_t c) const { return has_pair(2, a, c); }
+
+    size_t prefix_forms() const { return prefix.forms; }
+
+    size_t suffix_forms() const { return suffix.forms; }
+
+    size_t stem_forms() const { return stem.forms; }
+
+    size_t stem_entries() const { return stem.rows; }
+};
+
+// Validates the file and builds the small heap-side tables (keys, defaults,
+// stem backoffs, column descriptors). Throws data_error.
+void load_bin(bin_db & db) {
+    if (!little_endian_host()) throw data_error("binary database requires a little-endian host");
+    const uint8_t * f = db.base;
+    const size_t n = db.size;
+    if (n < k_bin_header_bytes || std::memcmp(f, k_bin_magic, 8) != 0) throw data_error("not a binary database");
+    if (rd32(f + 8) != k_bin_version) throw data_error("binary database: unsupported format version");
+    if (rd32(f + 12) != k_bin_header_bytes) throw data_error("binary database: header size");
+    const uint32_t n_sections = rd32(f + 16);
+    const uint32_t flags = rd32(f + 20);
+    if (rd64(f + 24) != uint64_t(n)) throw data_error("binary database: file size mismatch");
+    {
+        uint8_t header[k_bin_header_bytes];
+        std::memcpy(header, f, k_bin_header_bytes);
+        std::memset(header + 36, 0, 4);
+        if (crc32_bytes(header, k_bin_header_bytes) != rd32(f + 36))
+            throw data_error("binary database: header checksum");
+    }
+    if (n_sections == 0 || n_sections > 64 || uint64_t(k_bin_header_bytes) + 24ull * n_sections > n)
+        throw data_error("binary database: section directory");
+    const uint8_t * dir = f + k_bin_header_bytes;
+    if (crc32_bytes(dir, 24 * size_t(n_sections)) != rd32(f + 32))
+        throw data_error("binary database: directory checksum");
+    db.pattern_in_order = (flags & 1) != 0;
+
+    struct section {
+        const uint8_t * p = nullptr;
+        size_t n = 0;
+    };
+
+    auto tag_of = [](const char * t) { return rd32(reinterpret_cast<const uint8_t *>(t)); };
+    static const char * const tags[] = { "STRS", "KEYS", "CATS", "DFLT", "BKOF", "PREF",
+                                         "SUFF", "STEM", "TBAB", "TBBC", "TBAC" };
+    section sec[11];
+    for (uint32_t i = 0; i < n_sections; ++i) {
+        const uint8_t * d = dir + 24 * size_t(i);
+        const uint64_t off = rd64(d + 8), len = rd64(d + 16);
+        if (off % 8 != 0 || off > n || len > n - off) throw data_error("binary database: section bounds");
+        if (crc32_bytes(f + off, size_t(len)) != rd32(d + 4)) throw data_error("binary database: section checksum");
+        for (size_t t = 0; t < 11; ++t) {
+            if (rd32(d) != tag_of(tags[t])) continue;
+            if (sec[t].p) throw data_error("binary database: duplicate section");
+            sec[t].p = f + off;
+            sec[t].n = size_t(len);
+        }
+    }
+    for (size_t t = 0; t < 11; ++t)
+        if (!sec[t].p) throw data_error(std::string("binary database: missing section ") + tags[t]);
+
+    // STRS: sorted, unique, valid UTF-8.
+    {
+        bin_reader r(sec[0].p, sec[0].n, "STRS");
+        db.n_strings = r.u32();
+        db.str_offsets = r.take_array(uint64_t(db.n_strings) + 1, 4);
+        const uint32_t total = rd32(db.str_offsets + 4 * size_t(db.n_strings));
+        db.str_bytes = r.take(total);
+        uint32_t prev = 0;
+        for (uint32_t i = 0; i <= db.n_strings; ++i) {
+            const uint32_t o = rd32(db.str_offsets + 4 * size_t(i));
+            if ((i == 0 && o != 0) || o < prev) throw data_error("binary database: string offsets");
+            prev = o;
+        }
+        for (uint32_t i = 0; i < db.n_strings; ++i) {
+            if (!valid_utf8(db.str(i))) throw data_error("binary database: string is not valid UTF-8");
+            if (i && !(db.str(i - 1) < db.str(i))) throw data_error("binary database: string table order");
+        }
+    }
+    auto string_id = [&](uint32_t id) {
+        if (id >= db.n_strings) throw data_error("binary database: string id");
+        return id;
+    };
+
+    // KEYS: file key index -> morph key id.
+    for (uint32_t k = 0; k < K_COUNT; ++k) db.key_id(k_known_names[k]);
+    std::vector<uint32_t> key_map;
+    {
+        bin_reader r(sec[1].p, sec[1].n, "KEYS");
+        const uint32_t count = r.u32();
+        if (count > 4096) throw data_error("binary database: key count");
+        std::vector<std::pair<uint32_t, uint32_t>> keys;
+        for (uint32_t i = 0; i < count; ++i) {
+            const uint32_t name = string_id(r.u32());
+            keys.emplace_back(name, r.u32());
+        }
+        std::unordered_set<uint32_t> seen;
+        for (const auto & k : keys) {
+            if (!seen.insert(k.first).second) throw data_error("binary database: duplicate key");
+            const uint32_t id = db.key_id(db.str(k.first));
+            key_map.push_back(id);
+            if (db.defined.size() <= id) db.defined.resize(id + 1, 0);
+            if (db.output.size() <= id) db.output.resize(id + 1, 0);
+            db.defined[id] = (k.second & k_key_defined) ? 1 : 0;
+            db.output[id] = (k.second & k_key_output) ? 1 : 0;
+        }
+        db.defined.resize(db.key_names.size(), 0);
+        db.output.resize(db.key_names.size(), 0);
+        if (!db.keep(K_DIAC) || !db.keep(K_LEX)) throw data_error("binary database: diac and lex must be kept");
+    }
+    auto key_of = [&](uint32_t index) {
+        if (index >= key_map.size()) throw data_error("binary database: key index");
+        return key_map[index];
+    };
+
+    // CATS
+    {
+        bin_reader r(sec[2].p, sec[2].n, "CATS");
+        db.n_cats = r.u32();
+        db.cat_ids = r.take_array(db.n_cats, 4);
+        for (uint32_t i = 0; i < db.n_cats; ++i) string_id(rd32(db.cat_ids + 4 * size_t(i)));
+    }
+
+    // DFLT
+    {
+        bin_reader r(sec[3].p, sec[3].n, "DFLT");
+        const uint32_t count = r.u32();
+        for (uint32_t i = 0; i < count; ++i) {
+            const std::string pos(db.str(string_id(r.u32())));
+            const uint32_t nf = r.u32();
+            if (nf > k_max_entry_feats) throw data_error("binary database: default size");
+            result_t parsed;
+            for (uint32_t k = 0; k < nf; ++k) {
+                const uint32_t key = key_of(r.u32());
+                const uint32_t v = r.u32();
+                set(parsed, key, v == k_bin_none ? none_value() : str_value(std::string(db.str(string_id(v)))));
+            }
+            db.defaults[pos] = std::move(parsed);
+        }
+    }
+
+    // BKOF
+    {
+        bin_reader r(sec[4].p, sec[4].n, "BKOF");
+        const uint32_t count = r.u32();
+        for (uint32_t i = 0; i < count; ++i) {
+            const std::string name(db.str(string_id(r.u32())));
+            const uint32_t nc = r.u32();
+            if (nc > 65536) throw data_error("binary database: backoff size");
+            std::vector<std::string> cats;
+            for (uint32_t k = 0; k < nc; ++k) cats.emplace_back(db.str(string_id(r.u32())));
+            db.stem_backoffs[name] = std::move(cats);
+        }
+    }
+
+    // Entry tables.
+    uint32_t base = 0;
+    bin_table * tables[3] = { &db.prefix, &db.suffix, &db.stem };
+    for (int t = 0; t < 3; ++t) {
+        bin_table & tb = *tables[t];
+        bin_reader r(sec[5 + t].p, sec[5 + t].n, tags[5 + t]);
+        tb.rows = r.u32();
+        tb.forms = r.u32();
+        const uint32_t n_cols = r.u32();
+        tb.row_bytes = r.u32();
+        if (n_cols == 0 || n_cols > 4096 || tb.row_bytes == 0 || tb.forms > tb.rows ||
+            uint64_t(base) + tb.rows > k_max_entries)
+            throw data_error("binary database: table header");
+        tb.base = base;
+        base += tb.rows;
+        const uint8_t * desc = r.take_array(n_cols, 16);
+        bool have_cat = false;
+        std::unordered_set<uint32_t> keys_seen;
+        for (uint32_t c = 0; c < n_cols; ++c) {
+            bin_column col;
+            const uint32_t key = rd32(desc + 16 * size_t(c));
+            col.width = rd32(desc + 16 * size_t(c) + 4);
+            col.offset = rd32(desc + 16 * size_t(c) + 8);
+            col.dict_count = rd32(desc + 16 * size_t(c) + 12);
+            if ((col.width != 1 && col.width != 2 && col.width != 4) || uint64_t(col.offset) + col.width > tb.row_bytes)
+                throw data_error("binary database: column layout");
+            const uint64_t absent = col.width == 4 ? 0xFFFFFFFFull : (1ull << (8 * col.width)) - 1;
+            if (col.dict_count >= absent) throw data_error("binary database: column dictionary");
+            col.dict = r.take_array(col.dict_count, 4);
+            for (uint32_t v = 0; v < col.dict_count; ++v) {
+                const uint32_t id = rd32(col.dict + 4 * size_t(v));
+                if (key == k_bin_cat_column ? id >= db.n_cats : id >= db.n_strings)
+                    throw data_error("binary database: column value id");
+            }
+            if (key == k_bin_cat_column) {
+                if (have_cat) throw data_error("binary database: two category columns");
+                have_cat = true;
+                col.key = key;
+                tb.cat = col;
+            } else {
+                col.key = key_of(key);
+                if (!keys_seen.insert(col.key).second) throw data_error("binary database: duplicate column");
+                tb.columns.push_back(col);
+            }
+        }
+        if (!have_cat) throw data_error("binary database: no category column");
+        r.align8();
+        tb.index = r.take_array(tb.forms, 12);
+        uint32_t next = 0;
+        for (uint32_t i = 0; i < tb.forms; ++i) {
+            const uint8_t * e = tb.index + 12 * size_t(i);
+            const uint32_t form = string_id(rd32(e));
+            if (i && form <= rd32(e - 12)) throw data_error("binary database: form index order");
+            if (rd32(e + 4) != next || rd32(e + 8) == 0 || rd32(e + 8) > tb.rows - next)
+                throw data_error("binary database: form index rows");
+            next += rd32(e + 8);
+            if (cp_count(db.str(form)) > k_max_form_cps) throw data_error("binary database: form too long");
+        }
+        if (next != tb.rows) throw data_error("binary database: form index coverage");
+        r.align8();
+        tb.data = r.take_array(tb.rows, tb.row_bytes);
+        for (uint32_t row = 0; row < tb.rows; ++row) {
+            if (bin_db::local(tb, row, tb.cat) >= tb.cat.dict_count) throw data_error("binary database: row category");
+            for (const bin_column & c : tb.columns) {
+                const uint32_t v = bin_db::local(tb, row, c);
+                const uint32_t absent = c.width == 4 ? 0xFFFFFFFFu : (1u << (8 * c.width)) - 1;
+                if (v >= c.dict_count && v != absent) throw data_error("binary database: row value");
+            }
+        }
+    }
+    for (uint32_t i = 0; i < db.prefix.forms; ++i)
+        db.max_prefix_size = std::max(db.max_prefix_size, cp_count(db.str(rd32(db.prefix.index + 12 * size_t(i)))));
+    for (uint32_t i = 0; i < db.suffix.forms; ++i)
+        db.max_suffix_size = std::max(db.max_suffix_size, cp_count(db.str(rd32(db.suffix.index + 12 * size_t(i)))));
+
+    // Compatibility tables.
+    for (int t = 0; t < 3; ++t) {
+        bin_reader r(sec[8 + t].p, sec[8 + t].n, tags[8 + t]);
+        db.compat_n[t] = r.u32();
+        r.u32(); // padding
+        db.compat[t] = r.take_array(db.compat_n[t], 8);
+        for (uint32_t i = 0; i < db.compat_n[t]; ++i) {
+            const uint64_t v = rd64(db.compat[t] + 8 * size_t(i));
+            if (uint32_t(v >> 32) >= db.n_cats || uint32_t(v) >= db.n_cats ||
+                (i && v <= rd64(db.compat[t] + 8 * size_t(i) - 8)))
+                throw data_error("binary database: compatibility table");
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Analyzer.
 
 enum class backoff_t { none, noan_all, noan_prop, add_all, add_prop };
 
-class analyzer {
+// The analyzer behind the C ABI, whatever the database representation.
+class analyzer_base {
 public:
-    analyzer(std::unique_ptr<morph_db> db, backoff_t backoff) : db_(std::move(db)), backoff_(backoff) {}
+    virtual ~analyzer_base() = default;
+    virtual std::vector<result_t> analyze(const u32 & raw) const = 0;
+    virtual const db_common & common() const = 0;
+};
 
-    const morph_db & db() const { return *db_; }
+// camel_tools' Analyzer over a text (morph_db) or binary (bin_db) database.
+// With the binary database only the profile features are stored; every
+// assignment of a dropped feature is skipped (keep()), which leaves the kept
+// features unchanged because no kept value is computed from a dropped one.
+template <typename DB> class analyzer final : public analyzer_base {
+public:
+    analyzer(std::unique_ptr<DB> db, backoff_t backoff) : db_(std::move(db)), backoff_(backoff) {}
 
-    std::vector<result_t> analyze(const u32 & raw) const {
+    const db_common & common() const override { return *db_; }
+
+    std::vector<result_t> analyze(const u32 & raw) const override {
         const u32 word = py_str::strip(raw);
         std::vector<result_t> analyses;
         if (word.empty()) return analyses;
@@ -1455,6 +2020,8 @@ public:
         }
         off.push_back(wn.size());
         auto sub = [&](size_t a, size_t b) { return wn.substr(off[a], off[b] - off[a]); };
+        // camel_tools' tokenization keys are only concatenated strings; with
+        // the binary database they are dropped and never computed.
 
         std::string wd_no_tatweel;
         for (char32_t c : word_dediac)
@@ -1465,12 +2032,12 @@ public:
         if (!has_punc) {
             for (long long p = 0; p <= std::min(max_p, w - 1); ++p) {
                 for (long long s = std::max(1LL, w - p - max_s); s <= w - p; ++s) {
-                    auto pre = db_->prefix_hash.find(sub(0, size_t(p)));
-                    auto suf = db_->suffix_hash.find(sub(size_t(p + s), size_t(w)));
-                    if (pre == db_->prefix_hash.end() || suf == db_->suffix_hash.end()) continue;
-                    auto stem = db_->stem_hash.find(sub(size_t(p), size_t(p + s)));
-                    if (stem == db_->stem_hash.end()) continue;
-                    combined(wd_no_tatweel, pre->second, stem->second, suf->second, analyses);
+                    const elist pre = db_->prefixes(sub(0, size_t(p)));
+                    const elist suf = db_->suffixes(sub(size_t(p + s), size_t(w)));
+                    if (pre.empty() || suf.empty()) continue;
+                    const elist stem = db_->stems(sub(size_t(p), size_t(p + s)));
+                    if (stem.empty()) continue;
+                    combined(wd_no_tatweel, pre, stem, suf, analyses);
                 }
             }
         }
@@ -1481,20 +2048,24 @@ public:
             const bool prop = backoff_ == backoff_t::noan_prop || backoff_ == backoff_t::add_prop;
             auto bo = db_->stem_backoffs.find(prop ? "PROP" : "ALL");
             if (bo == db_->stem_backoffs.end()) throw input_error("camel_tools raises KeyError: stem backoff mode");
-            auto noan_stems = db_->stem_hash.find("NOAN");
-            if (noan_stems == db_->stem_hash.end()) throw input_error("camel_tools raises KeyError: 'NOAN'");
-            std::vector<uint32_t> stems;
-            for (uint32_t e : noan_stems->second) {
-                const std::string & cat = db_->cat_names[db_->entries[e].cat];
-                if (std::find(bo->second.begin(), bo->second.end(), cat) != bo->second.end()) stems.push_back(e);
+            const elist noan_stems = db_->stems("NOAN");
+            if (noan_stems.empty()) throw input_error("camel_tools raises KeyError: 'NOAN'");
+            std::vector<uint32_t> stem_ids;
+            for (uint32_t k = 0; k < noan_stems.size(); ++k) {
+                const uint32_t e = noan_stems[k];
+                const std::string_view cat = db_->cat_name(db_->cat(e));
+                if (std::find(bo->second.begin(), bo->second.end(), cat) != bo->second.end()) stem_ids.push_back(e);
             }
+            elist stems;
+            stems.ids = stem_ids.data();
+            stems.n = uint32_t(stem_ids.size());
             for (long long p = 0; p <= std::min(max_p, w - 1); ++p) {
                 for (long long s = std::max(1LL, w - p - max_s); s <= w - p; ++s) {
-                    auto pre = db_->prefix_hash.find(sub(0, size_t(p)));
-                    auto suf = db_->suffix_hash.find(sub(size_t(p + s), size_t(w)));
-                    if (pre == db_->prefix_hash.end() || suf == db_->suffix_hash.end()) continue;
+                    const elist pre = db_->prefixes(sub(0, size_t(p)));
+                    const elist suf = db_->suffixes(sub(size_t(p + s), size_t(w)));
+                    if (pre.empty() || suf.empty()) continue;
                     const u32 stem = word_normal.substr(size_t(p), size_t(s));
-                    combined_backoff(stem, prop, pre->second, stems, suf->second, analyses);
+                    combined_backoff(stem, prop, pre, stems, suf, analyses);
                 }
             }
         }
@@ -1502,7 +2073,7 @@ public:
     }
 
 private:
-    std::unique_ptr<morph_db> db_;
+    std::unique_ptr<DB> db_;
     backoff_t backoff_;
 
     const std::string_view & need(const fview & f, uint32_t key) const {
@@ -1522,6 +2093,11 @@ private:
         return f->v;
     }
 
+    // set() for keys the database outputs; a dropped key is never stored.
+    void put(result_t & r, uint32_t key, value v) const {
+        if (db_->keep(key)) set(r, key, std::move(v));
+    }
+
     // Digit, punctuation and foreign words.
     result_t special(const u32 & word_u, const char * dkey, const char * bw_suffix, const char * source,
                      const char * undefined_lex, const char * catib6, const char * ud, bool foreign) const {
@@ -1529,23 +2105,23 @@ private:
         if (it == db_->defaults.end()) throw input_error(std::string("camel_tools raises KeyError: '") + dkey + "'");
         result_t r = it->second;
         const std::string word = to_utf8(word_u);
-        if (foreign) set(r, K_POS, str_value("foreign"));
-        set(r, K_DIAC, str_value(word));
-        set(r, K_STEM, str_value(word));
-        set(r, K_STEMGLOSS, str_value(word));
-        set(r, K_STEMCAT, none_value());
-        set(r, K_LEX, str_value(word));
-        set(r, K_BW, str_value(word + bw_suffix));
-        set(r, K_SOURCE, str_value(source));
+        if (foreign) put(r, K_POS, str_value("foreign"));
+        put(r, K_DIAC, str_value(word));
+        put(r, K_STEM, str_value(word));
+        put(r, K_STEMGLOSS, str_value(word));
+        put(r, K_STEMCAT, none_value());
+        put(r, K_LEX, str_value(word));
+        put(r, K_BW, str_value(word + bw_suffix));
+        put(r, K_SOURCE, str_value(source));
         for (uint32_t k : k_copy_feats)
-            if (db_->def(k)) set(r, k, str_value(word));
+            if (db_->def(k)) put(r, k, str_value(word));
         for (uint32_t k : k_undefined_lex_feats)
-            if (db_->def(k)) set(r, k, str_value(undefined_lex));
-        if (db_->def(K_CATIB6)) set(r, K_CATIB6, str_value(catib6));
-        if (db_->def(K_UD)) set(r, K_UD, str_value(ud));
-        set(r, K_POS_LOGPROB, float_value(-99.0));
-        set(r, K_LEX_LOGPROB, float_value(-99.0));
-        set(r, K_POS_LEX_LOGPROB, float_value(-99.0));
+            if (db_->def(k)) put(r, k, str_value(undefined_lex));
+        if (db_->def(K_CATIB6)) put(r, K_CATIB6, str_value(catib6));
+        if (db_->def(K_UD)) put(r, K_UD, str_value(ud));
+        put(r, K_POS_LOGPROB, float_value(-99.0));
+        put(r, K_LEX_LOGPROB, float_value(-99.0));
+        put(r, K_POS_LEX_LOGPROB, float_value(-99.0));
         fix_form(r);
         return r;
     }
@@ -1605,8 +2181,8 @@ private:
             v += get_or(X, k, "");
             set(r, k, str_value(std::move(v)));
         }
-        set(r, K_STEM, str_value(std::string(need(S, K_DIAC))));
-        set(r, K_STEMGLOSS, str_value(get_or(S, K_GLOSS, "")));
+        if (db_->keep(K_STEM)) set(r, K_STEM, str_value(std::string(need(S, K_DIAC))));
+        put(r, K_STEMGLOSS, str_value(get_or(S, K_GLOSS, "")));
         {
             const value & d = need(r, K_DIAC);
             set(r, K_DIAC, str_value(to_utf8(rewrite_diac(from_utf8_valid(utf8_of(d))))));
@@ -1664,23 +2240,25 @@ private:
         return joined.empty() ? std::string() : joined.substr(1);
     }
 
-    void combined(const std::string & wd_no_tatweel, const std::vector<uint32_t> & prefixes,
-                  const std::vector<uint32_t> & stems, const std::vector<uint32_t> & suffixes,
-                  std::vector<result_t> & out) const {
-        for (uint32_t pe : prefixes) {
-            const uint32_t pcat = db_->entries[pe].cat;
+    void combined(const std::string & wd_no_tatweel, const elist & prefixes, const elist & stems,
+                  const elist & suffixes, std::vector<result_t> & out) const {
+        for (uint32_t pi = 0; pi < prefixes.size(); ++pi) {
+            const uint32_t pe = prefixes[pi];
+            const uint32_t pcat = db_->cat(pe);
             fview P;
             bool have_p = false;
-            for (uint32_t se : stems) {
-                const uint32_t scat = db_->entries[se].cat;
-                if (!db_->ab_has[pcat]) throw input_error("camel_tools raises KeyError: prefix category");
-                if (!db_->ab.count(morph_db::pair_key(pcat, scat))) continue;
+            for (uint32_t si = 0; si < stems.size(); ++si) {
+                const uint32_t se = stems[si];
+                const uint32_t scat = db_->cat(se);
+                if (!db_->ab_has_cat(pcat)) throw input_error("camel_tools raises KeyError: prefix category");
+                if (!db_->ab_ok(pcat, scat)) continue;
                 fview S;
                 bool have_s = false;
-                for (uint32_t xe : suffixes) {
-                    const uint32_t xcat = db_->entries[xe].cat;
-                    if (!db_->bc_has[scat] || !db_->ac_has[pcat] || !db_->bc.count(morph_db::pair_key(scat, xcat)) ||
-                        !db_->ac.count(morph_db::pair_key(pcat, xcat)))
+                for (uint32_t xi = 0; xi < suffixes.size(); ++xi) {
+                    const uint32_t xe = suffixes[xi];
+                    const uint32_t xcat = db_->cat(xe);
+                    if (!db_->bc_has_cat(scat) || !db_->ac_has_cat(pcat) || !db_->bc_ok(scat, xcat) ||
+                        !db_->ac_ok(pcat, xcat))
                         continue;
                     if (!have_p) {
                         P = db_->view(pe);
@@ -1692,26 +2270,27 @@ private:
                     }
                     const fview X = db_->view(xe);
                     result_t merged = merge(P, S, X);
-                    set(merged, K_STEM, str_value(std::string(need(S, K_DIAC))));
-                    set(merged, K_STEMCAT, str_value(db_->cat_names[scat]));
+                    if (db_->keep(K_STEM)) set(merged, K_STEM, str_value(std::string(need(S, K_DIAC))));
+                    if (db_->keep(K_STEMCAT)) set(merged, K_STEMCAT, str_value(std::string(db_->cat_name(scat))));
                     const std::string merged_dediac = dediac_ar_utf8(utf8_of(need(merged, K_DIAC)));
-                    if (wd_no_tatweel != merged_dediac) set(merged, K_SOURCE, str_value("spvar"));
+                    if (wd_no_tatweel != merged_dediac) put(merged, K_SOURCE, str_value("spvar"));
                     out.push_back(std::move(merged));
                 }
             }
         }
     }
 
-    void combined_backoff(const u32 & stem, bool prop, const std::vector<uint32_t> & prefixes,
-                          const std::vector<uint32_t> & stems, const std::vector<uint32_t> & suffixes,
-                          std::vector<result_t> & out) const {
+    void combined_backoff(const u32 & stem, bool prop, const elist & prefixes, const elist & stems,
+                          const elist & suffixes, std::vector<result_t> & out) const {
         std::string expanded;
         bool expanded_ready = false;
-        for (uint32_t pe : prefixes) {
-            const uint32_t pcat = db_->entries[pe].cat;
+        for (uint32_t pi = 0; pi < prefixes.size(); ++pi) {
+            const uint32_t pe = prefixes[pi];
+            const uint32_t pcat = db_->cat(pe);
             const fview P = db_->view(pe);
-            for (uint32_t se : stems) {
-                const uint32_t scat = db_->entries[se].cat;
+            for (uint32_t si = 0; si < stems.size(); ++si) {
+                const uint32_t se = stems[si];
+                const uint32_t scat = db_->cat(se);
                 // stem_feats = copy.copy(...): owned, mutated across suffixes.
                 std::vector<std::pair<uint32_t, std::string>> sf;
                 for (const auto & kv : db_->view(se)) sf.emplace_back(kv.first, std::string(kv.second));
@@ -1725,14 +2304,13 @@ private:
                     if (!v) throw input_error("camel_tools raises KeyError: '" + db_->key_names[key] + "'");
                     return *v;
                 };
-                if (!db_->ab_has[pcat]) throw input_error("camel_tools raises KeyError: prefix category");
-                if (!db_->ab.count(morph_db::pair_key(pcat, scat))) continue;
-                for (uint32_t xe : suffixes) {
-                    const uint32_t xcat = db_->entries[xe].cat;
-                    if (!db_->bc_has[scat]) throw input_error("camel_tools raises KeyError: stem category");
-                    if (!db_->bc.count(morph_db::pair_key(scat, xcat)) || !db_->ac_has[pcat] ||
-                        !db_->ac.count(morph_db::pair_key(pcat, xcat)))
-                        continue;
+                if (!db_->ab_has_cat(pcat)) throw input_error("camel_tools raises KeyError: prefix category");
+                if (!db_->ab_ok(pcat, scat)) continue;
+                for (uint32_t xi = 0; xi < suffixes.size(); ++xi) {
+                    const uint32_t xe = suffixes[xi];
+                    const uint32_t xcat = db_->cat(xe);
+                    if (!db_->bc_has_cat(scat)) throw input_error("camel_tools raises KeyError: stem category");
+                    if (!db_->bc_ok(scat, xcat) || !db_->ac_has_cat(pcat) || !db_->ac_ok(pcat, xcat)) continue;
                     if (prop && sneed(K_BW).find("NOUN_PROP") == std::string::npos) continue;
                     if (!expanded_ready) {
                         expanded = expand_noan_template(stem);
@@ -1742,20 +2320,24 @@ private:
                         std::string & v = sneed(k);
                         v = replace_all(v, "NOAN", expanded);
                     }
-                    if (std::string * c = sget(K_CAPHI))
-                        *c = simple_ar_to_caphi(stem);
-                    else
-                        sf.emplace_back(K_CAPHI, simple_ar_to_caphi(stem));
+                    if (db_->keep(K_CAPHI)) {
+                        if (std::string * c = sget(K_CAPHI))
+                            *c = simple_ar_to_caphi(stem);
+                        else
+                            sf.emplace_back(K_CAPHI, simple_ar_to_caphi(stem));
+                    }
                     fview S;
                     S.reserve(sf.size());
                     for (const auto & kv : sf) S.emplace_back(kv.first, std::string_view(kv.second));
                     const fview X = db_->view(xe);
                     result_t merged = merge(P, S, X);
-                    set(merged, K_STEM, str_value(sneed(K_DIAC)));
-                    set(merged, K_STEMCAT, str_value(db_->cat_names[scat]));
-                    set(merged, K_SOURCE, str_value("backoff"));
-                    set(merged, K_PATTERN, str_value("backoff"));
-                    set(merged, K_GLOSS, str_value(sneed(K_GLOSS)));
+                    if (db_->keep(K_STEM)) set(merged, K_STEM, str_value(sneed(K_DIAC)));
+                    if (db_->keep(K_STEMCAT)) set(merged, K_STEMCAT, str_value(std::string(db_->cat_name(scat))));
+                    put(merged, K_SOURCE, str_value("backoff"));
+                    put(merged, K_PATTERN, str_value("backoff"));
+                    // The binary converter requires gloss on every NOAN stem,
+                    // so skipping this dropped key cannot hide a KeyError.
+                    if (db_->keep(K_GLOSS)) set(merged, K_GLOSS, str_value(sneed(K_GLOSS)));
                     out.push_back(std::move(merged));
                 }
             }
@@ -1805,8 +2387,108 @@ bool plain_file_name(const std::string & name) {
     return true;
 }
 
+// Read-only bytes of a whole file: a private read-only mapping (POSIX mmap,
+// Windows MapViewOfFile) or, on hosts without one (Emscripten) and with
+// CRISPEMBED_AR_MORPH_MMAP=0, one heap buffer.
+struct file_bytes {
+    std::shared_ptr<const void> owner;
+    const uint8_t * data = nullptr;
+    size_t size = 0;
+    bool mapped = false;
+};
+
+file_bytes read_file_heap(const std::string & path, size_t max_bytes) {
+    FILE * f = std::fopen(path.c_str(), "rb");
+    if (!f) throw data_error("cannot open " + path);
+    std::fseek(f, 0, SEEK_END);
+    const long end = std::ftell(f);
+    std::fseek(f, 0, SEEK_SET);
+    if (end < 0 || size_t(end) > max_bytes) {
+        std::fclose(f);
+        throw data_error("file exceeds its size bound: " + path);
+    }
+    const size_t n = size_t(end);
+    std::shared_ptr<uint8_t> buf(static_cast<uint8_t *>(std::malloc(n ? n : 1)), [](uint8_t * p) { std::free(p); });
+    if (!buf) {
+        std::fclose(f);
+        throw std::bad_alloc();
+    }
+    const size_t got = n ? std::fread(buf.get(), 1, n, f) : 0;
+    const bool ok = got == n && !std::ferror(f);
+    std::fclose(f);
+    if (!ok) throw data_error("cannot read " + path);
+    file_bytes out;
+    out.data = buf.get();
+    out.size = n;
+    out.owner = std::move(buf);
+    return out;
+}
+
+file_bytes map_file(const std::string & path, size_t max_bytes) {
+#if defined(_WIN32)
+    // CRISPEMBED_AR_MORPH_MMAP=0 reads the binary database into one heap buffer instead of mapping it.
+    if (!core_env::explicitly_off("CRISPEMBED_AR_MORPH_MMAP")) {
+        const int wn = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path.c_str(), -1, nullptr, 0);
+        if (wn <= 0) throw data_error("cannot open " + path);
+        std::wstring wpath(size_t(wn), L'\0');
+        MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path.c_str(), -1, &wpath[0], wn);
+        HANDLE file = CreateFileW(wpath.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+                                  FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file == INVALID_HANDLE_VALUE) throw data_error("cannot open " + path);
+        LARGE_INTEGER sz;
+        if (!GetFileSizeEx(file, &sz) || sz.QuadPart <= 0 || uint64_t(sz.QuadPart) > max_bytes) {
+            CloseHandle(file);
+            throw data_error("file is empty or exceeds its size bound: " + path);
+        }
+        HANDLE mapping = CreateFileMappingW(file, nullptr, PAGE_READONLY, 0, 0, nullptr);
+        CloseHandle(file);
+        if (!mapping) throw data_error("cannot map " + path);
+        void * view = MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
+        CloseHandle(mapping);
+        if (!view) throw data_error("cannot map " + path);
+        file_bytes out;
+        out.owner = std::shared_ptr<const void>(view, [](const void * p) { UnmapViewOfFile(p); });
+        out.data = static_cast<const uint8_t *>(view);
+        out.size = size_t(sz.QuadPart);
+        out.mapped = true;
+        return out;
+    }
+#elif (defined(__unix__) || defined(__APPLE__)) && !defined(__EMSCRIPTEN__)
+    // CRISPEMBED_AR_MORPH_MMAP=0 reads the binary database into one heap buffer instead of mapping it.
+    if (!core_env::explicitly_off("CRISPEMBED_AR_MORPH_MMAP")) {
+        const int fd = ::open(path.c_str(), O_RDONLY | O_CLOEXEC);
+        if (fd < 0) throw data_error("cannot open " + path);
+        struct stat st {};
+        if (::fstat(fd, &st) != 0 || !S_ISREG(st.st_mode) || st.st_size <= 0 || uint64_t(st.st_size) > max_bytes) {
+            ::close(fd);
+            throw data_error("file is empty or exceeds its size bound: " + path);
+        }
+        const size_t n = size_t(st.st_size);
+        void * p = ::mmap(nullptr, n, PROT_READ, MAP_PRIVATE, fd, 0);
+        ::close(fd);
+        if (p == MAP_FAILED) throw data_error("cannot map " + path);
+        file_bytes out;
+        out.owner = std::shared_ptr<const void>(p, [n](const void * q) { ::munmap(const_cast<void *>(q), n); });
+        out.data = static_cast<const uint8_t *>(p);
+        out.size = n;
+        out.mapped = true;
+        return out;
+    }
+#endif
+    return read_file_heap(path, max_bytes);
+}
+
+bool has_bin_magic(const std::string & path) {
+    FILE * f = std::fopen(path.c_str(), "rb");
+    if (!f) return false;
+    char head[8] = {};
+    const size_t n = std::fread(head, 1, 8, f);
+    std::fclose(f);
+    return n == 8 && std::memcmp(head, k_bin_magic, 8) == 0;
+}
+
 struct opened {
-    std::unique_ptr<analyzer> an;
+    std::unique_ptr<analyzer_base> an;
     std::string info;
 };
 
@@ -1832,25 +2514,62 @@ const char * backoff_name(int b) {
     return names[b];
 }
 
-opened build(std::string db_text, const std::string & db_sha256, int backoff, const std::string & variant,
-             const std::string & manifest_sha256) {
-    const backoff_t bo = to_backoff(backoff);
-    auto db = std::make_unique<morph_db>();
-    db_parser(std::move(db_text), *db).parse();
-    size_t stems = 0;
-    for (const auto & kv : db->stem_hash) stems += kv.second.size();
+template <typename DB>
+opened finish_build(std::unique_ptr<DB> db, const char * format, const std::string & db_sha256, int backoff,
+                    const std::string & variant, const std::string & manifest_sha256, const char * storage) {
     std::string info = "{\"abi_version\":" + std::to_string(CRISPEMBED_AR_MORPH_ABI_VERSION) + ",\"variant\":\"" +
-                       core_json::json_escape_strict(variant) + "\",\"db_sha256\":\"" + db_sha256 + "\"";
+                       core_json::json_escape_strict(variant) + "\",\"db_format\":\"" + format + "\",\"db_sha256\":\"" +
+                       db_sha256 + "\"";
     if (!manifest_sha256.empty()) info += ",\"manifest_sha256\":\"" + manifest_sha256 + "\"";
     info += ",\"backoff\":\"" + std::string(backoff_name(backoff)) +
-            "\",\"prefix_forms\":" + std::to_string(db->prefix_hash.size()) +
-            ",\"suffix_forms\":" + std::to_string(db->suffix_hash.size()) +
-            ",\"stem_forms\":" + std::to_string(db->stem_hash.size()) + ",\"stem_entries\":" + std::to_string(stems) +
-            ",\"unicode_version\":\"" + arabic_morph_tables::k_unicode_version + "\"}";
+            "\",\"prefix_forms\":" + std::to_string(db->prefix_forms()) +
+            ",\"suffix_forms\":" + std::to_string(db->suffix_forms()) +
+            ",\"stem_forms\":" + std::to_string(db->stem_forms()) +
+            ",\"stem_entries\":" + std::to_string(db->stem_entries()) + ",\"unicode_version\":\"" +
+            arabic_morph_tables::k_unicode_version + "\",\"storage\":\"" + storage + "\",\"keys\":[";
+    for (size_t k = 0; k < db->key_names.size(); ++k) {
+        if (k) info += ',';
+        info += '"' + core_json::json_escape_strict(db->key_names[k]) + '"';
+    }
+    info += "],\"profile\":";
+    if (db->output.empty()) {
+        info += "null";
+    } else {
+        info += '[';
+        bool first = true;
+        for (size_t k = 0; k < db->key_names.size(); ++k) {
+            if (!db->keep(uint32_t(k))) continue;
+            if (!first) info += ',';
+            first = false;
+            info += '"' + core_json::json_escape_strict(db->key_names[k]) + '"';
+        }
+        info += ']';
+    }
+    info += '}';
     opened o;
-    o.an = std::make_unique<analyzer>(std::move(db), bo);
+    o.an = std::make_unique<analyzer<DB>>(std::move(db), to_backoff(backoff));
     o.info = std::move(info);
     return o;
+}
+
+opened build(std::string db_text, const std::string & db_sha256, int backoff, const std::string & variant,
+             const std::string & manifest_sha256) {
+    to_backoff(backoff);
+    auto db = std::make_unique<morph_db>();
+    db_parser(std::move(db_text), *db).parse();
+    return finish_build(std::move(db), "text", db_sha256, backoff, variant, manifest_sha256, "heap");
+}
+
+opened build_bin(file_bytes bytes, const std::string & db_sha256, int backoff, const std::string & variant,
+                 const std::string & manifest_sha256) {
+    to_backoff(backoff);
+    auto db = std::make_unique<bin_db>();
+    db->owner = bytes.owner;
+    db->base = bytes.data;
+    db->size = bytes.size;
+    load_bin(*db);
+    return finish_build(std::move(db), "binary", db_sha256, backoff, variant, manifest_sha256,
+                        bytes.mapped ? "mapped" : "heap");
 }
 
 void put_error(char * error, size_t cap, const std::string & msg) {
@@ -1860,13 +2579,14 @@ void put_error(char * error, size_t cap, const std::string & msg) {
     error[n] = '\0';
 }
 
-void append_json(std::string & out, const morph_db & db, const std::vector<result_t> & analyses) {
+void append_json(std::string & out, const db_common & db, const std::vector<result_t> & analyses) {
     out.push_back('[');
     for (size_t a = 0; a < analyses.size(); ++a) {
         if (a) out.push_back(',');
         out.push_back('{');
         bool first = true;
         for (const rfeat & f : analyses[a]) {
+            if (!db.keep(f.key)) continue;
             if (!first) out.push_back(',');
             first = false;
             out.push_back('"');
@@ -1891,10 +2611,97 @@ void append_json(std::string & out, const morph_db & db, const std::vector<resul
     out.push_back(']');
 }
 
+void put_u32(std::string & out, uint32_t v) {
+    char b[4] = { char(v & 0xFF), char((v >> 8) & 0xFF), char((v >> 16) & 0xFF), char((v >> 24) & 0xFF) };
+    out.append(b, 4);
+}
+
+void put_u16(std::string & out, uint32_t v) {
+    out.push_back(char(v & 0xFF));
+    out.push_back(char((v >> 8) & 0xFF));
+}
+
+// One word's compact record (see crispembed_ar_morph_analyze_compact).
+void append_compact(std::string & out, const db_common & db, const std::vector<result_t> & analyses, bool dedup) {
+    constexpr uint32_t none_ref = 0xFFFFFFFFu;
+    std::unordered_map<std::string, uint32_t> index; // kind byte + text
+    std::vector<const std::string *> strings;
+    std::vector<uint8_t> kinds;
+    std::vector<std::vector<std::pair<uint32_t, uint32_t>>> rows;
+    std::unordered_set<std::string> seen;
+    uint32_t max_key = 0;
+    std::string scratch;
+    for (const result_t & r : analyses) {
+        std::vector<std::pair<uint32_t, uint32_t>> row;
+        row.reserve(r.size());
+        for (const rfeat & f : r) {
+            if (!db.keep(f.key)) continue;
+            uint32_t ref = none_ref;
+            if (f.v.kind != value::none_t) {
+                scratch.assign(1, f.v.kind == value::float_t ? '\1' : '\0');
+                if (f.v.kind == value::float_t)
+                    scratch += py_str::float_repr(f.v.f);
+                else
+                    scratch += f.v.s;
+                auto it = index.find(scratch);
+                if (it == index.end()) {
+                    it = index.emplace(scratch, uint32_t(strings.size())).first;
+                    strings.push_back(&it->first);
+                    kinds.push_back(uint8_t(scratch[0]));
+                }
+                ref = it->second;
+            }
+            max_key = std::max(max_key, f.key);
+            row.emplace_back(f.key, ref);
+        }
+        if (dedup) {
+            std::string sig;
+            for (const auto & kv : row) {
+                put_u32(sig, kv.first);
+                put_u32(sig, kv.second);
+            }
+            if (!seen.insert(std::move(sig)).second) continue;
+        }
+        rows.push_back(std::move(row));
+    }
+    if (rows.size() > 0xFFFFFFFFull || strings.size() >= 0xFFFFFFFFull) throw std::runtime_error("result too large");
+    const bool wide = strings.size() >= 0xFFFF || max_key > 0xFF;
+    put_u32(out, uint32_t(rows.size()));
+    put_u32(out, uint32_t(strings.size()));
+    out.push_back(wide ? '\1' : '\0');
+    out.append(3, '\0');
+    for (size_t i = 0; i < strings.size(); ++i) {
+        const std::string & s = *strings[i];
+        out.push_back(char(kinds[i]));
+        put_u32(out, uint32_t(s.size() - 1));
+        out.append(s, 1, std::string::npos);
+    }
+    for (const auto & row : rows) {
+        put_u16(out, uint32_t(row.size()));
+        for (const auto & kv : row) {
+            if (wide) {
+                put_u16(out, kv.first);
+                put_u32(out, kv.second);
+            } else {
+                out.push_back(char(kv.first));
+                put_u16(out, kv.second == none_ref ? 0xFFFFu : kv.second);
+            }
+        }
+    }
+}
+
+const std::string * check_word(std::string_view in) {
+    static const std::string too_long = "word exceeds CRISPEMBED_AR_MORPH_MAX_WORD_BYTES";
+    static const std::string bad_utf8 = "word is not valid UTF-8";
+    if (in.size() > CRISPEMBED_AR_MORPH_MAX_WORD_BYTES) return &too_long;
+    if (!valid_utf8(in)) return &bad_utf8;
+    return nullptr;
+}
+
 } // namespace
 
 struct crispembed_ar_morph {
-    std::unique_ptr<analyzer> an;
+    std::unique_ptr<analyzer_base> an;
     std::string info;
 };
 
@@ -1924,6 +2731,12 @@ crispembed_ar_morph * crispembed_ar_morph_open_db(const char * db_path, const ch
         return nullptr;
     }
     try {
+        if (has_bin_magic(db_path)) {
+            file_bytes bytes = map_file(db_path, k_max_db_bytes);
+            const std::string digest = core_sha256::bytes(bytes.data, bytes.size);
+            if (digest != db_sha256) throw data_error("database SHA-256 mismatch");
+            return finish_open(build_bin(std::move(bytes), digest, backoff, "db", ""));
+        }
         std::string text = read_bounded(db_path, k_max_db_bytes);
         const std::string digest = core_sha256::bytes(text.data(), text.size());
         if (digest != db_sha256) throw data_error("database SHA-256 mismatch");
@@ -1959,8 +2772,12 @@ crispembed_ar_morph * crispembed_ar_morph_open(const char * manifest_path, const
         };
         if (get_str("format") != "crispembed-camel-morph-bundle") throw data_error("manifest: unknown format");
         const core_json_value::value * fv = m.get("format_version");
-        if (!fv || fv->kind != core_json_value::value::int_t || fv->i != 1)
+        if (!fv || fv->kind != core_json_value::value::int_t || (fv->i != 1 && fv->i != 2))
             throw data_error("manifest: unsupported format_version");
+        // Version 1 bundles hold the ALMOR text database, version 2 the binary one.
+        const bool binary = fv->i == 2;
+        if (binary && get_str("db_format") != "crispembed-camel-morph-bin-v1")
+            throw data_error("manifest: unsupported db_format");
         const std::string db_name = get_str("db");
         const std::string variant = get_str("variant");
         const core_json_value::value * files = m.get("files");
@@ -1968,6 +2785,7 @@ crispembed_ar_morph * crispembed_ar_morph_open(const char * manifest_path, const
             throw data_error("manifest: files");
         const std::string dir = dirname_of(manifest_path);
         std::string db_text, db_digest;
+        file_bytes db_bytes;
         bool have_db = false;
         for (const auto & f : files->a) {
             const core_json_value::value * p = f.get("path");
@@ -1980,6 +2798,15 @@ crispembed_ar_morph * crispembed_ar_morph_open(const char * manifest_path, const
             const bool is_db = p->s == db_name;
             const size_t bound = is_db ? k_max_db_bytes : k_max_aux_file_bytes;
             if (size_t(s->i) > bound) throw data_error("manifest: file too large");
+            if (is_db && binary) {
+                db_bytes = map_file(dir + p->s, size_t(s->i));
+                if (db_bytes.size != size_t(s->i)) throw data_error("size mismatch: " + p->s);
+                const std::string digest = core_sha256::bytes(db_bytes.data, db_bytes.size);
+                if (digest != h->s) throw data_error("SHA-256 mismatch: " + p->s);
+                db_digest = digest;
+                have_db = true;
+                continue;
+            }
             std::string bytes = read_bounded(dir + p->s, size_t(s->i));
             if (bytes.size() != size_t(s->i)) throw data_error("size mismatch: " + p->s);
             const std::string digest = core_sha256::bytes(bytes.data(), bytes.size());
@@ -1991,6 +2818,7 @@ crispembed_ar_morph * crispembed_ar_morph_open(const char * manifest_path, const
             }
         }
         if (!have_db) throw data_error("manifest: database not listed");
+        if (binary) return finish_open(build_bin(std::move(db_bytes), db_digest, backoff, variant, manifest_sha256));
         return finish_open(build(std::move(db_text), db_digest, backoff, variant, manifest_sha256));
     } catch (const std::bad_alloc &) {
         put_error(error, error_capacity, "allocation failed");
@@ -2013,19 +2841,15 @@ int crispembed_ar_morph_analyze(const crispembed_ar_morph * morph, const char * 
         put_error(error, error_capacity, "disabled by CRISPEMBED_AR_MORPH");
         return CRISPEMBED_AR_MORPH_DISABLED;
     }
-    if (word_len > CRISPEMBED_AR_MORPH_MAX_WORD_BYTES) {
-        put_error(error, error_capacity, "word exceeds CRISPEMBED_AR_MORPH_MAX_WORD_BYTES");
-        return CRISPEMBED_AR_MORPH_INPUT_ERROR;
-    }
     try {
         const std::string_view in(word ? word : "", word_len);
-        if (!valid_utf8(in)) {
-            put_error(error, error_capacity, "word is not valid UTF-8");
+        if (const std::string * why = check_word(in)) {
+            put_error(error, error_capacity, *why);
             return CRISPEMBED_AR_MORPH_INPUT_ERROR;
         }
         const std::vector<result_t> analyses = morph->an->analyze(from_utf8_valid(in));
         std::string out;
-        append_json(out, morph->an->db(), analyses);
+        append_json(out, morph->an->common(), analyses);
         char * buf = static_cast<char *>(std::malloc(out.size() + 1));
         if (!buf) {
             put_error(error, error_capacity, "allocation failed");
@@ -2048,8 +2872,77 @@ int crispembed_ar_morph_analyze(const crispembed_ar_morph * morph, const char * 
     }
 }
 
+int crispembed_ar_morph_analyze_compact(const crispembed_ar_morph * morph, const char * words,
+                                        const uint32_t * word_lens, uint32_t n_words, uint32_t flags, uint8_t ** out,
+                                        size_t * out_len, char * error, size_t error_capacity) {
+    put_error(error, error_capacity, "");
+    if (out) *out = nullptr;
+    if (out_len) *out_len = 0;
+    if (!morph || !out || (n_words && !word_lens) || (flags & ~uint32_t(CRISPEMBED_AR_MORPH_COMPACT_DEDUP))) {
+        put_error(error, error_capacity, "invalid argument");
+        return CRISPEMBED_AR_MORPH_INVALID_ARGUMENT;
+    }
+    uint64_t total = 0;
+    for (uint32_t i = 0; i < n_words; ++i) total += word_lens[i];
+    if (total && !words) {
+        put_error(error, error_capacity, "invalid argument");
+        return CRISPEMBED_AR_MORPH_INVALID_ARGUMENT;
+    }
+    if (core_env::explicitly_off("CRISPEMBED_AR_MORPH")) {
+        put_error(error, error_capacity, "disabled by CRISPEMBED_AR_MORPH");
+        return CRISPEMBED_AR_MORPH_DISABLED;
+    }
+    try {
+        std::string buf;
+        put_u32(buf, CRISPEMBED_AR_MORPH_COMPACT_MAGIC);
+        put_u32(buf, n_words);
+        size_t pos = 0;
+        std::string record;
+        for (uint32_t i = 0; i < n_words; ++i) {
+            const std::string_view in(words ? words + pos : "", word_lens[i]);
+            pos += word_lens[i];
+            record.clear();
+            uint32_t status = CRISPEMBED_AR_MORPH_OK;
+            if (check_word(in)) {
+                status = CRISPEMBED_AR_MORPH_INPUT_ERROR;
+            } else {
+                try {
+                    const std::vector<result_t> analyses = morph->an->analyze(from_utf8_valid(in));
+                    append_compact(record, morph->an->common(), analyses,
+                                   (flags & CRISPEMBED_AR_MORPH_COMPACT_DEDUP) != 0);
+                } catch (const input_error &) {
+                    status = CRISPEMBED_AR_MORPH_INPUT_ERROR;
+                    record.clear();
+                }
+            }
+            put_u32(buf, status);
+            put_u32(buf, uint32_t(record.size()));
+            buf += record;
+        }
+        uint8_t * mem = static_cast<uint8_t *>(std::malloc(buf.size()));
+        if (!mem) {
+            put_error(error, error_capacity, "allocation failed");
+            return CRISPEMBED_AR_MORPH_ALLOCATION_ERROR;
+        }
+        std::memcpy(mem, buf.data(), buf.size());
+        *out = mem;
+        if (out_len) *out_len = buf.size();
+        return CRISPEMBED_AR_MORPH_OK;
+    } catch (const std::bad_alloc &) {
+        put_error(error, error_capacity, "allocation failed");
+        return CRISPEMBED_AR_MORPH_ALLOCATION_ERROR;
+    } catch (const std::exception & e) {
+        put_error(error, error_capacity, e.what());
+        return CRISPEMBED_AR_MORPH_RUNTIME_ERROR;
+    }
+}
+
 void crispembed_ar_morph_string_free(char * text) {
     std::free(text);
+}
+
+void crispembed_ar_morph_buffer_free(uint8_t * buffer) {
+    std::free(buffer);
 }
 
 const char * crispembed_ar_morph_info(const crispembed_ar_morph * morph) {

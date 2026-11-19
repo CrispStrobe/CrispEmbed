@@ -8,13 +8,21 @@
 // source order, as the port emits them.
 // Full-database exactness against camel_tools is recorded in
 // docs/validation/camel-morph-msa-20261119/README.md.
+//
+// The binary format is checked on the same database converted by
+// tools/arabic_morph/gen_bin_fixture.py (arabic_morph_bin_fixture.h), against
+// the same camel_tools outputs projected onto the fixture's profile; the
+// compact ABI is checked against the JSON ABI for both formats.
 #include "arabic_morph.h"
+#include "arabic_morph_bin_fixture.h"
+#include "core/json.h"
 #include "core/sha256.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -138,6 +146,208 @@ std::string analyze(crispembed_ar_morph * m, const std::string & w, int * rc_out
     return out;
 }
 
+void set_env(const char * name, const char * value) {
+#if defined(_WIN32)
+    _putenv_s(name, value ? value : "");
+#else
+    if (value)
+        setenv(name, value, 1);
+    else
+        unsetenv(name);
+#endif
+}
+
+uint32_t rd32(const unsigned char * p) {
+    return uint32_t(p[0]) | (uint32_t(p[1]) << 8) | (uint32_t(p[2]) << 16) | (uint32_t(p[3]) << 24);
+}
+
+uint32_t rd16(const unsigned char * p) {
+    return uint32_t(p[0]) | (uint32_t(p[1]) << 8);
+}
+
+std::vector<std::string> info_keys(const char * info) {
+    const std::string s(info);
+    std::vector<std::string> keys;
+    size_t i = s.find("\"keys\":[");
+    if (i == std::string::npos) return keys;
+    for (i += 8; i < s.size() && s[i] != ']';) {
+        if (s[i] != '"') {
+            ++i;
+            continue;
+        }
+        std::string k;
+        size_t end = 0;
+        core_json::json_decode_string(s, i, k, end);
+        keys.push_back(k);
+        i = end;
+    }
+    return keys;
+}
+
+// The compact results of `words`, re-rendered as the JSON ABI renders them
+// ("<error N>" for a rejected word).
+std::vector<std::string> analyze_compact(crispembed_ar_morph * m, const std::vector<std::string> & words,
+                                         uint32_t flags = 0) {
+    std::string concat;
+    std::vector<uint32_t> lens;
+    for (const std::string & w : words) {
+        concat += w;
+        lens.push_back(uint32_t(w.size()));
+    }
+    unsigned char * buf = nullptr;
+    size_t len = 0;
+    char err[256];
+    std::vector<std::string> out;
+    const int rc = crispembed_ar_morph_analyze_compact(m, concat.data(), lens.data(), uint32_t(lens.size()), flags,
+                                                       &buf, &len, err, sizeof err);
+    if (rc != CRISPEMBED_AR_MORPH_OK) return out;
+    const std::vector<std::string> keys = info_keys(crispembed_ar_morph_info(m));
+    const unsigned char * p = buf;
+    const unsigned char * end = buf + len;
+    if (rd32(p) != CRISPEMBED_AR_MORPH_COMPACT_MAGIC || rd32(p + 4) != words.size()) return out;
+    p += 8;
+    for (size_t w = 0; w < words.size(); ++w) {
+        const uint32_t status = rd32(p), bytes = rd32(p + 4);
+        p += 8;
+        if (status != CRISPEMBED_AR_MORPH_OK) {
+            out.push_back("<error " + std::to_string(status) + ">");
+            p += bytes;
+            continue;
+        }
+        const unsigned char * rec = p;
+        const uint32_t n = rd32(rec), n_strings = rd32(rec + 4);
+        const bool wide = rec[8] != 0;
+        rec += 12;
+        std::vector<std::string> strs;
+        for (uint32_t i = 0; i < n_strings; ++i) {
+            const uint32_t l = rd32(rec + 1);
+            const std::string text(reinterpret_cast<const char *>(rec + 5), l);
+            strs.push_back(rec[0] == 1 ? text : "\"" + core_json::json_escape_strict(text) + "\"");
+            rec += 5 + l;
+        }
+        std::string json = "[";
+        for (uint32_t a = 0; a < n; ++a) {
+            json += a ? ",{" : "{";
+            const uint32_t nf = rd16(rec);
+            rec += 2;
+            for (uint32_t f = 0; f < nf; ++f) {
+                const uint32_t key = wide ? rd16(rec) : rec[0];
+                uint32_t ref = wide ? rd32(rec + 2) : rd16(rec + 1);
+                if (!wide && ref == 0xFFFF) ref = 0xFFFFFFFFu;
+                rec += wide ? 6 : 3;
+                if (f) json += ',';
+                json += "\"" + core_json::json_escape_strict(keys.at(key)) + "\":";
+                json += ref == 0xFFFFFFFFu ? std::string("null") : strs.at(ref);
+            }
+            json += '}';
+        }
+        json += ']';
+        out.push_back(rec == p + bytes ? json : std::string("<bad record>"));
+        p += bytes;
+    }
+    if (p != end) out.clear();
+    crispembed_ar_morph_buffer_free(buf);
+    return out;
+}
+
+// Compact output equals the JSON ABI on every fixture word plus rejects.
+void check_compact(crispembed_ar_morph * m, int backoff, const char * what) {
+    std::vector<std::string> words;
+    for (const expected_case & c : k_cases)
+        if (c.backoff == backoff) words.push_back(c.word);
+    words.push_back(std::string("\xff\xfe"));
+    words.push_back(std::string());
+    std::vector<std::string> want;
+    for (const std::string & w : words) want.push_back(analyze(m, w));
+    check(analyze_compact(m, words) == want, what);
+    check(analyze_compact(m, words, CRISPEMBED_AR_MORPH_COMPACT_DEDUP) == want, "dedup keeps distinct analyses");
+}
+
+void check_binary(const std::string & manifest_dir) {
+    const std::string bin(reinterpret_cast<const char *>(k_bin_db), sizeof k_bin_db);
+    const std::string path = temp_path("crispembed-ar-morph-test.cmorph");
+    check(write_file(path, bin), "write binary fixture");
+    const std::string sha = core_sha256::bytes(bin.data(), bin.size());
+    char err[256];
+    crispembed_ar_morph * none = crispembed_ar_morph_open_db(path.c_str(), sha.c_str(), 0, err, sizeof err);
+    crispembed_ar_morph * prop = crispembed_ar_morph_open_db(path.c_str(), sha.c_str(), 2, err, sizeof err);
+    check(none && prop, "open binary fixture");
+    if (!none || !prop) {
+        std::fprintf(stderr, "binary open: %s\n", err);
+        return;
+    }
+    const std::string info = crispembed_ar_morph_info(none);
+    check(info.find("\"db_format\":\"binary\"") != std::string::npos, "binary info format");
+    check(info.find("\"stem_entries\":3") != std::string::npos, "binary info counts");
+    for (const bin_case & c : k_bin_cases) {
+        const std::string got = analyze(c.backoff == 0 ? none : prop, c.word);
+        if (got != c.json) {
+            std::fprintf(stderr, "binary word %s\n got: %s\nwant: %s\n", c.word, got.c_str(), c.json);
+            check(false, "binary camel_tools parity (profile)");
+        }
+    }
+    int rc = 0;
+    analyze(prop, std::string("\xd8\xb2\\q"), &rc);
+    check(rc == CRISPEMBED_AR_MORPH_INPUT_ERROR, "binary: invalid template raises like camel_tools");
+    check_compact(none, 0, "binary compact equals JSON");
+    check_compact(prop, 2, "binary compact equals JSON (backoff)");
+    crispembed_ar_morph_free(prop);
+
+    // The heap path (hosts without mmap) gives the same results.
+    set_env("CRISPEMBED_AR_MORPH_MMAP", "0");
+    crispembed_ar_morph * heap = crispembed_ar_morph_open_db(path.c_str(), sha.c_str(), 0, err, sizeof err);
+    set_env("CRISPEMBED_AR_MORPH_MMAP", nullptr);
+    check(heap != nullptr, "open binary fixture on the heap");
+    if (heap) {
+        check(std::string(crispembed_ar_morph_info(heap)).find("\"storage\":\"heap\"") != std::string::npos,
+              "heap storage reported");
+        check(analyze(heap, k_bin_cases[0].word) == k_bin_cases[0].json, "heap analysis");
+        crispembed_ar_morph_free(heap);
+    }
+    crispembed_ar_morph_free(none);
+
+    // Corruption: every section and the header are checksummed and bounded.
+    for (size_t at : { size_t(3), size_t(30), size_t(100), bin.size() / 2, bin.size() - 5 }) {
+        std::string bad = bin;
+        bad[at] = char(bad[at] ^ 0x5a);
+        check(write_file(path, bad), "write corrupt binary");
+        const std::string bsha = core_sha256::bytes(bad.data(), bad.size());
+        check(!crispembed_ar_morph_open_db(path.c_str(), bsha.c_str(), 0, err, sizeof err), "corrupt binary rejected");
+    }
+    {
+        const std::string cut = bin.substr(0, bin.size() - 8);
+        check(write_file(path, cut), "write truncated binary");
+        const std::string csha = core_sha256::bytes(cut.data(), cut.size());
+        check(!crispembed_ar_morph_open_db(path.c_str(), csha.c_str(), 0, err, sizeof err),
+              "truncated binary rejected");
+    }
+    check(write_file(path, bin), "rewrite binary fixture");
+
+    // A version-2 bundle opens the binary database through its manifest.
+    const std::string name = "crispembed-ar-morph-test.cmorph";
+    auto manifest_for = [&](const char * format) {
+        return std::string("{\"format\":\"crispembed-camel-morph-bundle\",\"format_version\":2,") +
+               "\"variant\":\"proofing-test\",\"db\":\"" + name + "\"" + format + ",\"files\":[{\"path\":\"" + name +
+               "\",\"size\":" + std::to_string(bin.size()) + ",\"sha256\":\"" + sha + "\"}]}";
+    };
+    const std::string mpath = manifest_dir + "crispembed-ar-morph-bin-manifest.json";
+    const std::string manifest = manifest_for(",\"db_format\":\"crispembed-camel-morph-bin-v1\"");
+    check(write_file(mpath, manifest), "write binary manifest");
+    const std::string msha = core_sha256::bytes(manifest.data(), manifest.size());
+    crispembed_ar_morph * bundled = crispembed_ar_morph_open(mpath.c_str(), msha.c_str(), 0, err, sizeof err);
+    check(bundled != nullptr, "open binary bundle");
+    if (bundled) {
+        check(analyze(bundled, k_bin_cases[0].word) == k_bin_cases[0].json, "binary bundle analysis");
+        crispembed_ar_morph_free(bundled);
+    }
+    const std::string untyped = manifest_for("");
+    check(write_file(mpath, untyped), "write untyped manifest");
+    const std::string usha = core_sha256::bytes(untyped.data(), untyped.size());
+    check(!crispembed_ar_morph_open(mpath.c_str(), usha.c_str(), 0, err, sizeof err), "db_format required");
+    std::remove(mpath.c_str());
+    std::remove(path.c_str());
+}
+
 } // namespace
 
 int main() {
@@ -206,8 +416,11 @@ int main() {
     const std::string tsha = core_sha256::bytes(tampered.data(), tampered.size());
     check(!crispembed_ar_morph_open(manifest_path.c_str(), tsha.c_str(), 0, err, sizeof err), "db pin enforced");
 
+    check_compact(none, 0, "text compact equals JSON");
+    check_compact(prop, 2, "text compact equals JSON (backoff)");
     crispembed_ar_morph_free(none);
     crispembed_ar_morph_free(prop);
+    check_binary(temp_path(""));
     std::remove(db_path.c_str());
     std::remove(notice_path.c_str());
     std::remove(manifest_path.c_str());

@@ -1,0 +1,84 @@
+{
+  "repo": "cstr/camel-morph-msa-v1.0",
+  "revision": "d5364e04af7a40b0c9044ed127606e585be15272",
+  "files": {
+    "LICENSE": {
+      "size": 442,
+      "sha256": "214965747a90efe3e5268d367192bb077f1101620662cba71d59d902000b2d94",
+      "match": true
+    },
+    "NOTICE": {
+      "size": 1381,
+      "sha256": "b10936a72acb6f6dbc246ed75003e45f5f130deb6c7a0003c0a54ec11785bc9f",
+      "match": true
+    },
+    "README.md": {
+      "size": 2502,
+      "sha256": "24f83a131c58672ec6947549f2d9937db9976f3fe9cfbbe85b106d9c76138d35",
+      "match": true
+    },
+    "full/LICENSE": {
+      "size": 442,
+      "sha256": "214965747a90efe3e5268d367192bb077f1101620662cba71d59d902000b2d94",
+      "match": true
+    },
+    "full/NOTICE": {
+      "size": 1084,
+      "sha256": "8fad1d1f4984d61e42c2ba4f45ce251f102cd11c5212f0fdb520d819990d3a8d",
+      "match": true
+    },
+    "full/camel_morph_msa_v1.0.db": {
+      "size": 84959404,
+      "sha256": "110e03baa282874062d076e23d9671e985b6f76520b891d58cba4e55de0b8f60",
+      "match": true
+    },
+    "full/manifest.json": {
+      "size": 1346,
+      "sha256": "6fc4a6fe6eab991d5ae62219116bbdf9e7354d835df1a2d9ac71402e57716e35",
+      "match": true
+    },
+    "noprob/LICENSE": {
+      "size": 442,
+      "sha256": "214965747a90efe3e5268d367192bb077f1101620662cba71d59d902000b2d94",
+      "match": true
+    },
+    "noprob/NOTICE": {
+      "size": 1381,
+      "sha256": "b10936a72acb6f6dbc246ed75003e45f5f130deb6c7a0003c0a54ec11785bc9f",
+      "match": true
+    },
+    "noprob/camel_morph_msa_v1.0.noprob.db": {
+      "size": 78083392,
+      "sha256": "2dfbec413288e7da96723d7926c0e74f2e90ef6994c6f7e995a27a8df079ecff",
+      "match": true
+    },
+    "noprob/manifest.json": {
+      "size": 1430,
+      "sha256": "96b949981e76c0d2b4892ec7aac1f1e519813ac6d55d4e39303d94822df68050",
+      "match": true
+    },
+    "proofing-bin/LICENSE": {
+      "size": 442,
+      "sha256": "214965747a90efe3e5268d367192bb077f1101620662cba71d59d902000b2d94",
+      "match": true
+    },
+    "proofing-bin/NOTICE": {
+      "size": 1799,
+      "sha256": "ce2f9c051786a37e4eb72367e6a6c9ea256b702137d4187bb0bfbda38f860efd",
+      "match": true
+    },
+    "proofing-bin/camel_morph_msa_v1.0.proofing.cmorph": {
+      "size": 12166992,
+      "sha256": "fc9d9109ddb5430da94def715df05b563cb37ffaec508f3514668ded19438909",
+      "match": true
+    },
+    "proofing-bin/manifest.json": {
+      "size": 2064,
+      "sha256": "357540af897af5dd2a0f7fc84518cc875c4481e3e566c30ca0a5043a52290f71",
+      "match": true
+    }
+  },
+  "extra_remote": [],
+  "missing_remote": [],
+  "all_match": true
+}
