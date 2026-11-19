@@ -133,7 +133,8 @@ licensable data. Receipt: [ranking-full-vs-noprob.json](ranking-full-vs-noprob.j
 
 ## Open
 
-Quds Office integration (download and FFI, plus choosing full or noprob given
-the ranking result above); WASM, iOS and Android packages of the standalone
-target; a compact binary database; camel_tools' disambiguators (MLE, BERT)
-are not ported.
+Quds Office integrated the noprob bundle (Quds PR #189). The compact
+binary database is done; see
+[camel-morph-binary-20261119](../camel-morph-binary-20261119/README.md).
+iOS and Android packages of the standalone target remain open, and
+camel_tools' disambiguators (MLE, BERT) are not ported.
