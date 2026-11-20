@@ -33,7 +33,9 @@ extern "C" {
 
 // Version 2 adds crispembed_ar_morph_analyze_compact, crispembed_ar_morph_buffer_free
 // and binary (format_version 2) bundles; every version-1 function is unchanged.
-#define CRISPEMBED_AR_MORPH_ABI_VERSION 2
+// Version 3 adds the context disambiguator (crispembed_ar_morph_disambig_*,
+// crispembed_ar_morph_disambiguate); every version-2 function is unchanged.
+#define CRISPEMBED_AR_MORPH_ABI_VERSION 3
 // Largest accepted word in bytes, before stripping.
 #define CRISPEMBED_AR_MORPH_MAX_WORD_BYTES 4096u
 
@@ -133,6 +135,70 @@ CRISPEMBED_AR_MORPH_API void crispembed_ar_morph_buffer_free(uint8_t * buffer);
 CRISPEMBED_AR_MORPH_API const char * crispembed_ar_morph_info(const crispembed_ar_morph * morph);
 
 CRISPEMBED_AR_MORPH_API void crispembed_ar_morph_free(crispembed_ar_morph * morph);
+
+// ---------------------------------------------------------------------------
+// Context disambiguation (ABI version 3; docs/arabic-morph-disambig-format.md).
+//
+// A disambiguation model ranks the analyses of each word of a sentence in
+// context: a bigram hidden Markov model over candidates (analyses sharing
+// tag, lex and pos), trained without annotations on raw text. It is data,
+// downloaded separately like the database.
+//
+// Default-off: every function below fails with CRISPEMBED_AR_MORPH_DISABLED
+// (null for the openers) unless CRISPEMBED_AR_MORPH_DISAMBIG is set to an
+// on value (anything but empty, 0, false, off, no). CRISPEMBED_AR_MORPH=0
+// disables it too.
+
+typedef struct crispembed_ar_morph_disambig crispembed_ar_morph_disambig;
+
+// Magic of the score section that follows the compact buffer.
+#define CRISPEMBED_AR_MORPH_SCORES_MAGIC 0x31534D41u /* "AMS1" little-endian */
+
+// Opens a model bundle through its manifest.json (format
+// "crispembed-camel-morph-disambig-bundle"), whose lowercase SHA-256 the
+// caller trusts; every listed file must match its size and SHA-256.
+CRISPEMBED_AR_MORPH_API crispembed_ar_morph_disambig * crispembed_ar_morph_disambig_open(const char * manifest_path,
+                                                                                         const char * manifest_sha256,
+                                                                                         char * error,
+                                                                                         size_t error_capacity);
+
+// Opens a bare model file whose lowercase SHA-256 the caller trusts.
+CRISPEMBED_AR_MORPH_API crispembed_ar_morph_disambig * crispembed_ar_morph_disambig_open_file(const char * model_path,
+                                                                                              const char * model_sha256,
+                                                                                              char * error,
+                                                                                              size_t error_capacity);
+
+// Analyzes and disambiguates n_sentences sentences. The n_words words are
+// given as in crispembed_ar_morph_analyze_compact; sentence_lens holds the
+// number of words of each sentence, in order, and must sum to n_words (at
+// most 65536 words per sentence). Words are tokens as the host splits them:
+// punctuation, numbers and Latin words are tokens too, because they are
+// context. On success *out receives one buffer (crispembed_ar_morph_buffer_free):
+//
+//   the compact buffer of crispembed_ar_morph_analyze_compact for the same
+//   words and flags, followed by
+//   u32 CRISPEMBED_AR_MORPH_SCORES_MAGIC, u32 n_words, then per word:
+//     u32 n_analyses (the analyses of its compact record; 0 when rejected)
+//     u32 n_candidates (at least 1)
+//     n_analyses x { u32 rank, f32 score }
+//
+// A candidate is the set of a word's analyses that share the model's tag,
+// lex and pos; rank is the candidate's rank by score (0 = best, ties in
+// analysis order) and score its posterior probability in context. The
+// candidates of a word sum to 1. A word without analyses (or a rejected one)
+// has one candidate and no analyses. The context is immutable after open.
+CRISPEMBED_AR_MORPH_API int crispembed_ar_morph_disambiguate(const crispembed_ar_morph * morph,
+                                                             const crispembed_ar_morph_disambig * model,
+                                                             const char * words, const uint32_t * word_lens,
+                                                             uint32_t n_words, const uint32_t * sentence_lens,
+                                                             uint32_t n_sentences, uint32_t flags, uint8_t ** out,
+                                                             size_t * out_len, char * error, size_t error_capacity);
+
+// JSON description of the model (format, SHA-256s, tag and lexeme counts,
+// tag features, training metadata). Owned by the model; valid until free.
+CRISPEMBED_AR_MORPH_API const char * crispembed_ar_morph_disambig_info(const crispembed_ar_morph_disambig * model);
+
+CRISPEMBED_AR_MORPH_API void crispembed_ar_morph_disambig_free(crispembed_ar_morph_disambig * model);
 
 #ifdef __cplusplus
 }

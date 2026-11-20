@@ -1,0 +1,109 @@
+{
+ "method": "tools/arabic_morph/disambig_train.py evaluate: top-1 candidate in context (forward-backward posterior) vs gold UPOS and lemma for host tokens that are exactly one UD word; noprob/full: camel_tools MLE out-of-context order over the noprob and full databases (native analyzer). Native: crispembed-ar-morph --sentences (C ABI crispembed_ar_morph_disambiguate) compared with the Python reference.",
+ "corpus": "UD Arabic-PUD test, GitHub master retrieved 2026-11-20 (CC BY-SA 3.0), evaluation only",
+ "experiments_dev_0_500": {},
+ "final": {
+  "full_pud": {
+   "conf0.5_both": 10623,
+   "conf0.5_n": 13996,
+   "conf0.5_upos": 11223,
+   "conf0.8_both": 9303,
+   "conf0.8_n": 11624,
+   "conf0.8_upos": 9691,
+   "conf0.95_both": 6997,
+   "conf0.95_n": 8462,
+   "conf0.95_upos": 7240,
+   "conf0.9_both": 7801,
+   "conf0.9_n": 9568,
+   "conf0.9_upos": 8086,
+   "full_both": 11476,
+   "full_lemma": 13655,
+   "full_upos": 12057,
+   "model_both": 11339,
+   "model_lemma": 13992,
+   "model_upos": 12067,
+   "native_max_score_diff": 5.261172176806994e-07,
+   "native_same_top": 17907,
+   "native_tokens": 17907,
+   "noprob_both": 6329,
+   "noprob_lemma": 11196,
+   "noprob_upos": 7269,
+   "oracle_both": 13140,
+   "tokens": 15482,
+   "pct": {
+    "full_both": 74.1,
+    "full_lemma": 88.2,
+    "full_upos": 77.9,
+    "model_both": 73.2,
+    "model_lemma": 90.4,
+    "model_upos": 77.9,
+    "noprob_both": 40.9,
+    "noprob_lemma": 72.3,
+    "noprob_upos": 47.0,
+    "oracle_both": 84.9,
+    "conf0.5": {
+     "coverage": 90.4,
+     "both": 75.9,
+     "upos": 80.2
+    },
+    "conf0.8": {
+     "coverage": 75.1,
+     "both": 80.0,
+     "upos": 83.4
+    },
+    "conf0.9": {
+     "coverage": 61.8,
+     "both": 81.5,
+     "upos": 84.5
+    },
+    "conf0.95": {
+     "coverage": 54.7,
+     "both": 82.7,
+     "upos": 85.6
+    }
+   },
+   "model": {
+    "alpha": 0.1,
+    "beta": 0.1,
+    "corpus": {
+     "sentences": 885657,
+     "tokens": 12000927,
+     "types": 496071
+    },
+    "format": "crispembed-camel-morph-disambig-v1",
+    "init": "unambiguous",
+    "init_discount": "noun_prop=0.1,abbrev=0.1,interj=0.1",
+    "iterations": 10,
+    "kappa": 1.0,
+    "min_count": 0.5,
+    "min_trans": 0.1,
+    "tags": [
+     "pos:value",
+     "prc3:value",
+     "prc2:value",
+     "prc1:value",
+     "prc0:value",
+     "enc0:flag",
+     "asp:value",
+     "per:value",
+     "num:value"
+    ]
+   }
+  }
+ },
+ "experiments_log": [
+  "c3d 0:500 7613 model u/l/b 77.8 90.0 73.1 noprob 46.3 71.8 40.7 full 78.3 88.6 74.8 conf0.9 {'coverage': 62.4, 'both': 81.2, 'upos': 84.5}",
+  "c3d 500: 7869 model u/l/b 78.1 90.8 73.4 noprob 47.6 72.9 41.0 full 77.5 87.8 73.5 conf0.9 {'coverage': 61.3, 'both': 81.9, 'upos': 84.6}",
+  "c3b 0:500 7613 model u/l/b 76.4 89.4 71.7 noprob 46.3 71.8 40.7 full 78.3 88.6 74.8 conf0.9 {'coverage': 62.7, 'both': 80.7, 'upos': 84.0}",
+  "c3b 500: 7869 model u/l/b 77.0 90.3 72.3 noprob 47.6 72.9 41.0 full 77.5 87.8 73.5 conf0.9 {'coverage': 61.4, 'both': 80.6, 'upos': 83.4}",
+  "pos (tags=pos, uniform init): full PUD upos 67.8 lemma 74.0 both 60.3",
+  "pos-un (tags=pos, unambiguous init): upos 64.3 lemma 72.3 both 57.2",
+  "clit-un (pos+prc3..prc0+enc0:flag): upos 69.8 lemma 77.0 both 64.0",
+  "c2 (+asp): upos 75.6 lemma 87.2 both 69.7",
+  "c3 (+per,num; dense add-alpha transitions, 97 MB): upos 76.8 lemma 89.9 both 72.1",
+  "c3k (c3, unigram-backoff transitions, 4.5 MB): dev 76.6/89.6/72.0 test 77.2/90.3/72.5",
+  "c3u (c3k, uniform init): full PUD upos 76.9 lemma 89.5 both 72.1",
+  "c3b (c3k on 25M tokens): dev 76.4/89.4/71.7 test 77.0/90.3/72.3",
+  "c3d (c3k + init discount noun_prop,abbrev,interj=0.1): dev 77.8/90.0/73.1 test 78.1/90.8/73.4  <- chosen on dev"
+ ]
+}

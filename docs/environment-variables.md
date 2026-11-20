@@ -378,6 +378,7 @@ operator candidate has no decoded-quality or release qualification.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_AR_MORPH` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/arabic_morph.cpp` | Kill switch: CRISPEMBED_AR_MORPH=0 disables the Camel Morph analyzer service. |
+| `CRISPEMBED_AR_MORPH_DISAMBIG` | on | off | bool | default-off experimental / opt-in | `src/arabic_morph.cpp` | Default-off gate of the context disambiguator: CRISPEMBED_AR_MORPH_DISAMBIG=1 enables it. |
 | `CRISPEMBED_AR_MORPH_MMAP` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/arabic_morph.cpp` | CRISPEMBED_AR_MORPH_MMAP=0 reads the binary database into one heap buffer instead of mapping it. |
 
 ### bert_ner
