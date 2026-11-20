@@ -18,7 +18,12 @@ library with the CLI's own ninja compile/link lines) prints text, per-token conf
 wall time; engine stage lines (bench/timing env) and generated IDs are taken from stderr. On the GPU a
 `sched` probe per engine (inventory-table, 8 tokens, GGML_SCHED_DEBUG=2) counts graph nodes per backend
 and the ops left on CPU; nvidia-smi is sampled during every run (mean utilisation, peak memory).
-Pusher substitutes __SHA__ and __DEVICE__. Output: summary.json only (small).
+Unlimited-OCR-2 engines (`uocr2`, `uocr2-fused`) also run the four trial pages whose ORIGINAL model IDs and
+decoded text are frozen in tests/results/unlimited-ocr2/trial.json (reference.cases; pages re-rendered with
+tools/kaggle/unlimited-ocr2-trial/trial_worker.py and checked against the trial's page SHA-256), so the default-off
+CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP is judged against the original as well as against the unfused path.
+Pusher substitutes __SHA__, __DEVICE__ and (optional) __ENGINES__. Output: summary.json only (small); the
+ccache seed export is disabled here (CE_CCACHE_EXPORT=never) so no cache tar lands in the outputs.
 """
 import hashlib, json, os, re, subprocess, sys, threading, time, zipfile
 from collections import Counter
@@ -233,8 +238,10 @@ try:
     sh(f"git clone -q {REPO} {SRC} && git -C {SRC} checkout -q {SHA} && "
        f"git -C {SRC} submodule update --init --recursive -q")
     sys.path.insert(0, str(SRC))
+    os.environ.setdefault("CE_CCACHE_EXPORT", "never")
     import kaggle_harness as kh
     kh.install_build_toolchain()
+    summary["cuda_arch"] = kh.detect_cuda_arch() if DEVICE == "gpu" else None
     t = time.time()
     if DEVICE == "gpu":
         flags, jobs = " ".join(kh.cuda_build_flags(kh.detect_cuda_arch())), kh.safe_build_jobs(gpu=True)
@@ -245,6 +252,7 @@ try:
     sh(f"cmake --build {BUILD} --target crispembed-cli -j{jobs}")
     summary["build_s"] = round(time.time() - t, 1)
     summary["ccache"] = subprocess.run("ccache -s 2>&1 | head -12", shell=True, capture_output=True, text=True).stdout
+    summary["ccache_counters"] = kh.ccache_counters()
     # Driver: reuse the CLI's exact compile and link commands with main.cpp swapped for the driver.
     (BUILD / "ab_driver.cpp").write_text(DRIVER)
     cmds = subprocess.run(f"ninja -C {BUILD} -t commands crispembed-cli", shell=True, capture_output=True,
@@ -282,6 +290,31 @@ try:
         cases[cid] = (rgb, im.width, im.height)
         summary.setdefault("documents", {})[cid] = {"png_sha256": frozen[cid]["input_png_sha256"],
                                                     "w": im.width, "h": im.height}
+
+    # Unlimited-OCR-2 trial pages with frozen ORIGINAL outputs (reference.cases of trial.json).
+    trial_ref, trial_cases = {}, {}
+    if any(n.startswith("uocr2") and (not ONLY or n in ONLY) for n, *_ in ENGINES):
+        venv = TMP / "tvenv"
+        sh(f"{sys.executable} -m pip install -q uv==0.8.17 && {sys.executable} -m uv venv -q --python 3.12 --seed {venv} "
+           f"&& {venv}/bin/python -m pip install -q pillow==11.3.0 numpy==2.2.6")
+        sh(f"cd {SRC} && {venv}/bin/python tools/kaggle/unlimited-ocr2-trial/trial_worker.py render {TMP}/trial")
+        trial = json.loads((SRC / "tests/results/unlimited-ocr2/trial.json").read_text())
+        want = {p["id"]: p["sha256"] for p in trial["pages"]}
+        for c in trial["reference"]["cases"]:
+            ids = c["ids"] if isinstance(c["ids"], list) else json.loads(c["ids"])
+            trial_ref[c["id"]] = {"ids": ids, "text": c["text"]}
+        for pg in json.loads((TMP / "trial/pages.json").read_text()):
+            if pg["id"] not in trial_ref:
+                continue
+            ok = pg["sha256"] == want.get(pg["id"])
+            summary.setdefault("trial_pages", {})[pg["id"]] = {"png_sha256": pg["sha256"], "matches_trial": ok}
+            if not ok:
+                continue
+            im = Image.open(pg["path"]).convert("RGB")
+            rgb = TMP / f"trial-{pg['id']}.rgb"
+            rgb.write_bytes(im.tobytes())
+            trial_cases["trial-" + pg["id"]] = (rgb, im.width, im.height)
+        save()
 
     models = {}
     for name, src, _, _ in ENGINES:
@@ -332,7 +365,8 @@ try:
         for name, _, eenv, prompt in ENGINES:
             if name not in models:
                 continue
-            for cid in CASES:
+            ecases = dict(cases, **(trial_cases if name.startswith("uocr2") else {}))
+            for cid in ecases:
                 row = {"engine": name, "arm": arm, "case": cid}
                 if el() > BUDGET_S:
                     row["skipped"] = "time budget"
@@ -340,11 +374,20 @@ try:
                 env = dict(base_env, **eenv)
                 if arm == "cpu" and DEVICE == "gpu":
                     env["CUDA_VISIBLE_DEVICES"] = ""
-                rgb, w, h = cases[cid]
+                rgb, w, h = ecases[cid]
                 errp = TMP / "e.txt"
                 row.update(run_case(binary, models[name], rgb, w, h, env, prompt,
                                     "cpu" if arm == "cpu" else "auto", MAX_NEW, errp))
                 parse_stderr(errp, row)
+                ref = trial_ref.get(cid[len("trial-"):]) if cid.startswith("trial-") else None
+                if ref is not None:
+                    got = row.get("ids") or []
+                    div = next((i for i, (a, b) in enumerate(zip(got, ref["ids"])) if a != b),
+                               None if len(got) == len(ref["ids"]) else min(len(got), len(ref["ids"])))
+                    row["original"] = {"ids_exact": got == ref["ids"], "first_id_divergence": div,
+                                       "n_ids": [len(got), len(ref["ids"])],
+                                       "text_exact": row.get("text") == ref["text"],
+                                       "text_exact_rstrip": (row.get("text") or "").rstrip("\n") == ref["text"]}
                 summary["runs"].append(row)
                 print(json.dumps({k: v for k, v in row.items() if k not in ("confidences", "ids", "text", "stage_lines")}),
                       flush=True)

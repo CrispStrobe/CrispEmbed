@@ -5175,6 +5175,8 @@ extern "C" const float * crispembed_ocr_model_confidences(const void * ctx, int 
         return got_ocr_confidences((const got_ocr_context *)u->ctx, n_tokens);
     case OCR_MODEL_DEEPSEEK_OCR2:
         return deepseek_ocr2_confidences((const deepseek_ocr2_context *)u->ctx, n_tokens);
+    case OCR_MODEL_UNLIMITED_OCR: // per generated token, same values the orchestrator already reports
+        return unlimited_ocr_confidences((const unlimited_ocr_context *)u->ctx, n_tokens);
     case OCR_MODEL_TESSERACT_LSTM:
         return tesseract_lstm_confidences((const tesseract_lstm_context *)u->ctx, n_tokens);
     case OCR_MODEL_GRANITE_VISION:

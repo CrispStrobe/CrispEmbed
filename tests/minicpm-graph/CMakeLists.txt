@@ -14,11 +14,17 @@ set(GGML_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GGML_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory("${CRISPEMBED_ROOT}/ggml" ggml)
 find_package(Threads REQUIRED)
+# qwen35_linear/attention/delta call the LightOn4B physical helpers; without the
+# CRISPEMBED_LIGHTON4B_F16_SGEMM_ABI definition these TUs compile to the same
+# closed stubs the main library uses, so the probe still links on any host.
 add_executable(minicpm-graph-controls controls.cpp
     "${CRISPEMBED_ROOT}/src/qwen35_graph_decoder.cpp"
     "${CRISPEMBED_ROOT}/src/qwen35_linear.cpp"
     "${CRISPEMBED_ROOT}/src/qwen35_delta.cpp"
-    "${CRISPEMBED_ROOT}/src/qwen35_profile.cpp")
+    "${CRISPEMBED_ROOT}/src/qwen35_profile.cpp"
+    "${CRISPEMBED_ROOT}/src/lighton4b_physical_gdn_source_ops.cpp"
+    "${CRISPEMBED_ROOT}/src/lighton4b_physical_q6_tiled.cpp"
+    "${CRISPEMBED_ROOT}/src/lighton4b_physical_f16_attention.cpp")
 target_include_directories(minicpm-graph-controls PRIVATE "${CRISPEMBED_ROOT}/src")
 target_link_libraries(minicpm-graph-controls PRIVATE ggml ggml-cpu ggml-base Threads::Threads)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -31,7 +37,10 @@ add_executable(minicpm-graph-probe probe.cpp
     "${CRISPEMBED_ROOT}/src/qwen35_linear.cpp"
     "${CRISPEMBED_ROOT}/src/qwen35_delta.cpp"
     "${CRISPEMBED_ROOT}/src/qwen35_profile.cpp"
-    "${CRISPEMBED_ROOT}/src/core/gguf_loader.cpp")
+    "${CRISPEMBED_ROOT}/src/core/gguf_loader.cpp"
+    "${CRISPEMBED_ROOT}/src/lighton4b_physical_gdn_source_ops.cpp"
+    "${CRISPEMBED_ROOT}/src/lighton4b_physical_q6_tiled.cpp"
+    "${CRISPEMBED_ROOT}/src/lighton4b_physical_f16_attention.cpp")
 target_include_directories(minicpm-graph-probe PRIVATE "${CRISPEMBED_ROOT}/src")
 target_compile_definitions(minicpm-graph-probe PRIVATE CRISPEMBED_MINICPM_GRAPH_AUDIT=1)
 target_link_libraries(minicpm-graph-probe PRIVATE ggml ggml-cpu ggml-base Threads::Threads)
