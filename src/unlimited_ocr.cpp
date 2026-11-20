@@ -3182,11 +3182,12 @@ static bool run_llm_decoder_v2_fast(uocr_ctx & ctx, const float * prompt_embeds,
         return true;
     };
 
-    // CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP (default off): single-row decode with graph B of layer l and
+    // CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP (default on since 21 November 2026; =0 restores the unfused
+    // two-graphs-per-layer step): single-row decode with graph B of layer l and
     // graph A of layer l+1 in one graph (L+1 graph computes per token instead of 2L). The same builders
     // and ops run in the same order; only graph boundaries move. DASH routing stays on the host between
     // A(l) and B(l), exactly as in forward(). Prefill (T > 1) is unchanged.
-    const bool fused_step = core_env::on("CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP");
+    const bool fused_step = !core_env::explicitly_off("CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP");
     auto forward_step = [&](std::vector<float> & h, int p0, int tok_c, int page_c,
                             const std::function<std::vector<uint8_t>(int, int)> & cand) -> bool {
         std::vector<float> cs(HDm), sn(HDm), q(QD), iq(HDm), ik(HDm);
