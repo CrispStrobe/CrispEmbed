@@ -13,6 +13,7 @@
 // tools/arabic_morph/gen_bin_fixture.py (arabic_morph_bin_fixture.h), against
 // the same camel_tools outputs projected onto the fixture's profile; the
 // compact ABI is checked against the JSON ABI for both formats.
+#include "core/clean_exit.h"
 #include "arabic_morph.h"
 #include "arabic_morph_bin_fixture.h"
 #include "core/json.h"
@@ -350,7 +351,7 @@ void check_binary(const std::string & manifest_dir) {
 
 } // namespace
 
-int main() {
+static int crispembed_test_main() {
     // The raw literal starts with a newline after R"DB(.
     const std::string db = std::string(k_db).substr(1);
     const std::string db_path = temp_path("crispembed-ar-morph-test.db");
@@ -427,4 +428,8 @@ int main() {
     if (failures) return 1;
     std::printf("arabic-morph contract: OK\n");
     return 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
