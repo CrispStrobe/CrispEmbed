@@ -68,9 +68,13 @@ sum and the ten F32 QK budget exceedances are sub-1e−3 effects against a
 - No runtime source changed, so no environment gate applies. Changing native
   arithmetic to flip this one logit would hide a weight-precision loss.
 
-## Open (artifact owner)
+## Resolved: mixed-precision default (20 November 2026)
 
-Publishing a mixed-precision 4-bit PCS artifact (enc.0 and the truecase head at
-Q8_0, +0.65 in the what-if) would let the downloaded default match ground
-truth on this corpus. That needs a re-quantization, native gate and Hub
-publication, and the downstream registry default lives in CrispASR.
+`pcs-xlmr-base-q4_k-mixed.gguf` (`cstr/pcs-xlmr-base-GGUF@a685c2ea`,
+SHA-256 `341c26b8…2839`) is the q4_k-imatrix recipe with `enc.0.*` and
+`head.tc.*` at Q8_0 (`--tensor-type GLOB=q8_0`). In the same replay its row37 `o`
+logit is +0.688. Natively it gives 67/67 on all four heads and 6/6 decoded, with
+no recorded loss. It is the registry default (`pcs`) in CrispEmbed and CrispASR.
+The old file stays selectable as `pcs-q4k-imatrix` and keeps its SHA-bound
+recorded loss. Candidates and the selection rule are in
+[the selection record](../tests/results/pcs/mixed-q4-selection-20261120.json).
