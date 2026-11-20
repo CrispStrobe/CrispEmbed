@@ -41,6 +41,18 @@ static bool ds_env_on(const char * name) {
     return e && *e && strcmp(e, "0") != 0;
 }
 
+// CRISPEMBED_DEEPSEEK_OCR2_TRACE_OUT=<path> (diagnostic, unset = off): per decode step, the
+// emitted id plus the top-2 logits and their margin ("S step id top1 l1 top2 l2 margin"), and on the
+// persistent step graph, per MoE layer, the router's K-th and (K+1)-th softmax probabilities and
+// expert ids ("R step layer eK pK eK1 pK1"). Used to tell a near-tie from a device/ISA defect.
+static FILE * ds_trace_file() {
+    static FILE * f = [] () -> FILE * {
+        const char * p = getenv("CRISPEMBED_DEEPSEEK_OCR2_TRACE_OUT");
+        return (p && *p) ? fopen(p, "w") : nullptr;
+    }();
+    return f;
+}
+
 // ---------------------------------------------------------------------------
 // Hyperparameters
 // ---------------------------------------------------------------------------
@@ -2299,6 +2311,10 @@ static ggml_cgraph * build_ds_decode_step_graph(ds_ocr2_ctx & ctx, ggml_context 
             ggml_tensor * logits = ggml_mul_mat(g, ly.router_w, hn);
             ggml_tensor * probs = ggml_soft_max(g, logits);
             ggml_tensor * ids = ggml_top_k(g, probs, K);
+            if (ds_trace_file()) {
+                ggml_set_name(probs, ("rprobs_" + std::to_string(li)).c_str());
+                ggml_set_output(probs);
+            }
             ggml_tensor * p3 = ggml_reshape_3d(g, probs, 1, n_exp, 1);
             ggml_tensor * top_w = ggml_reshape_2d(g, ggml_get_rows(g, p3, ids), K, 1);
             top_w = ggml_scale(g, top_w, lhp.routed_scaling_factor);
@@ -2479,6 +2495,21 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
             g_ds_compute_us += std::chrono::duration_cast<std::chrono::microseconds>(_t1 - _t0).count();
 
             ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "logits"), logits.data(), 0, (size_t)V * sizeof(float));
+            if (FILE * tf = ds_trace_file()) {
+                const int n_exp = lhp.n_experts, K = lhp.n_experts_top;
+                std::vector<float> pr(n_exp);
+                for (int li = 0; li < n_layers; li++) {
+                    ggml_tensor * pt = ggml_graph_get_tensor(gf, ("rprobs_" + std::to_string(li)).c_str());
+                    if (!pt || K >= n_exp) continue;
+                    ggml_backend_tensor_get(pt, pr.data(), 0, (size_t)n_exp * sizeof(float));
+                    std::vector<int> ord(n_exp);
+                    for (int e = 0; e < n_exp; e++) ord[e] = e;
+                    std::partial_sort(ord.begin(), ord.begin() + K + 1, ord.end(),
+                                      [&](int a, int b) { return pr[a] > pr[b] || (pr[a] == pr[b] && a < b); });
+                    fprintf(tf, "R %d %d %d %.9g %d %.9g\n", n_generated, li, ord[K - 1], pr[ord[K - 1]], ord[K],
+                            pr[ord[K]]);
+                }
+            }
             ggml_free(g);
             n_past += 1;
         } else {
@@ -2615,6 +2646,16 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
                 fprintf(stderr, "  logits: cos_min=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
                         r.is_pass() ? "PASS" : "FAIL");
             }
+        }
+
+        if (FILE * tf = ds_trace_file()) {
+            int a = 0, b = -1;
+            for (int v = 1; v < V; v++)
+                if (logits[v] > logits[a]) a = v;
+            for (int v = 0; v < V; v++)
+                if (v != a && (b < 0 || logits[v] > logits[b])) b = v;
+            fprintf(tf, "S %d %d %.9g %d %.9g %.9g\n", n_generated, a, logits[a], b, logits[b], logits[a] - logits[b]);
+            fflush(tf);
         }
 
         // Argmax, with the contract's no-repeat-ngram guard (both decode arms

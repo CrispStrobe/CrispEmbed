@@ -347,7 +347,7 @@ operator candidate has no decoded-quality or release qualification.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-516 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+517 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -516,6 +516,7 @@ operator candidate has no decoded-quality or release qualification.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_DEEPSEEK_OCR2_BENCH` | on | off | bool | debug | `src/deepseek_ocr2.cpp` | ppocrv6 convention, without ppocrv6's stage-entry correction: no stage here loads anything). |
+| `CRISPEMBED_DEEPSEEK_OCR2_TRACE_OUT` | value | unset | path | debug | `src/deepseek_ocr2.cpp` |  |
 
 ### dewarp
 
