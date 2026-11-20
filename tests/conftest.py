@@ -36,6 +36,10 @@ ROOT = Path(__file__).resolve().parents[1]
 # frozen copies of older test files kept as provenance. They are not part of
 # the live suite and share basenames with live tests.
 collect_ignore_glob = ["results/*"]
+# Standalone CLI scripts named test_*.py that parse required arguments at import
+# (run by their own workflow, e.g. worksheet-cleanup.yml). Collecting one aborts
+# the whole session with a collection error.
+collect_ignore = ["test_scan_rule_geometry.py"]
 
 
 # ---------------------------------------------------------------------------
