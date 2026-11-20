@@ -85,9 +85,7 @@ inline std::vector<std::string> pretokenize(const std::string & text,
     bool pending_space = false;
     auto push = [&](std::string w) {
         words.push_back(std::move(w));
-        if (out_space_before) {
-            out_space_before->push_back(pending_space ? 1 : 0);
-        }
+        if (out_space_before) out_space_before->push_back(pending_space ? 1 : 0);
         pending_space = false;
     };
     auto flush = [&]() {
