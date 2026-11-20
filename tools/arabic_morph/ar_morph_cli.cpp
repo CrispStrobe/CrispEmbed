@@ -9,6 +9,12 @@
 // --compact [--dedup] uses crispembed_ar_morph_analyze_compact in batches of
 // --batch words (default 512) and decodes its buffer into the same lines.
 // --repeat N analyzes the list N times (timing only; output from the first run).
+// --model M --model-sha256 HEX (a bare disambiguation model, or --model-manifest
+// for a bundle) with --sentences tokens.tsv (one sentence per line, tokens
+// separated by tabs) writes one line per sentence through
+// crispembed_ar_morph_disambiguate: {"s":n,"tokens":[{"ok":..,"analyses":[...],
+// "rank":[...],"score":[...]}, ...]}. The disambiguator is default-off; the CLI
+// enables CRISPEMBED_AR_MORPH_DISAMBIG for itself unless it is set.
 #include "arabic_morph.h"
 #include "core/json.h"
 
@@ -189,8 +195,119 @@ std::string objects_to_pairs(const std::string & j) {
 
 } // namespace
 
+void enable_disambig_gate() {
+#if defined(_WIN32)
+    size_t n = 0;
+    if (getenv_s(&n, nullptr, 0, "CRISPEMBED_AR_MORPH_DISAMBIG") == 0 && n == 0)
+        _putenv_s("CRISPEMBED_AR_MORPH_DISAMBIG", "1");
+#else
+    setenv("CRISPEMBED_AR_MORPH_DISAMBIG", "1", 0);
+#endif
+}
+
+std::vector<std::string> split_tabs(const std::string & line) {
+    std::vector<std::string> out(1);
+    for (char c : line) {
+        if (c == '\t')
+            out.emplace_back();
+        else if (c != '\r')
+            out.back() += c;
+    }
+    return out;
+}
+
+// Disambiguates every line of `path` (tab-separated tokens) in batches of
+// `batch` sentences; one JSON line per sentence.
+int run_sentences(crispembed_ar_morph * m, crispembed_ar_morph_disambig * d, const std::string & path, FILE * out,
+                  size_t batch) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        std::fprintf(stderr, "cannot read %s\n", path.c_str());
+        return 1;
+    }
+    std::vector<std::vector<std::string>> sentences;
+    std::string line;
+    while (std::getline(in, line)) {
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        if (!line.empty()) sentences.push_back(split_tabs(line));
+    }
+    const std::vector<std::string> keys = info_keys(crispembed_ar_morph_info(m));
+    char err[512];
+    size_t n_words = 0, n_analyses = 0;
+    double secs = 0;
+    for (size_t start = 0; start < sentences.size(); start += batch) {
+        const size_t end = std::min(sentences.size(), start + batch);
+        std::string concat;
+        std::vector<uint32_t> lens, sent_lens;
+        for (size_t s = start; s < end; ++s) {
+            sent_lens.push_back(uint32_t(sentences[s].size()));
+            for (const std::string & w : sentences[s]) {
+                concat += w;
+                lens.push_back(uint32_t(w.size()));
+            }
+        }
+        uint8_t * buf = nullptr;
+        size_t len = 0;
+        const double a0 = now_s();
+        const int rc = crispembed_ar_morph_disambiguate(m, d, concat.data(), lens.data(), uint32_t(lens.size()),
+                                                        sent_lens.data(), uint32_t(sent_lens.size()),
+                                                        CRISPEMBED_AR_MORPH_COMPACT_DEDUP, &buf, &len, err, sizeof err);
+        secs += now_s() - a0;
+        if (rc != CRISPEMBED_AR_MORPH_OK) {
+            std::fprintf(stderr, "disambiguation failed %d: %s\n", rc, err);
+            return 1;
+        }
+        // Records first, then the score section.
+        std::vector<std::string> records(lens.size());
+        const uint8_t * p = buf + 8;
+        for (size_t i = 0; i < lens.size(); ++i) {
+            const uint32_t status = rd32(p), bytes = rd32(p + 4);
+            p += 8;
+            records[i] = status == CRISPEMBED_AR_MORPH_OK ? compact_to_pairs(p, keys, n_analyses) : std::string();
+            p += bytes;
+        }
+        if (rd32(p) != CRISPEMBED_AR_MORPH_SCORES_MAGIC) {
+            std::fprintf(stderr, "bad score section\n");
+            return 1;
+        }
+        p += 8;
+        size_t w = 0;
+        for (size_t s = start; s < end; ++s) {
+            std::string line_out = "{\"s\":" + std::to_string(s) + ",\"tokens\":[";
+            for (size_t i = 0; i < sentences[s].size(); ++i, ++w) {
+                const uint32_t n = rd32(p);
+                p += 8;
+                std::string ranks, scores;
+                for (uint32_t a = 0; a < n; ++a) {
+                    float score;
+                    std::memcpy(&score, p + 4, 4);
+                    char item[48];
+                    std::snprintf(item, sizeof item, "%s%.6g", a ? "," : "", double(score));
+                    ranks += (a ? "," : "") + std::to_string(rd32(p));
+                    scores += item;
+                    p += 8;
+                }
+                if (i) line_out += ',';
+                line_out +=
+                    records[w].empty() ? "{\"ok\":false,\"analyses\":[]" : "{\"ok\":true,\"analyses\":" + records[w];
+                line_out += ",\"rank\":[" + ranks + "],\"score\":[" + scores + "]}";
+            }
+            line_out += "]}\n";
+            std::fputs(line_out.c_str(), out);
+        }
+        n_words += lens.size();
+        crispembed_ar_morph_buffer_free(buf);
+    }
+    std::fprintf(stderr,
+                 "{\"sentences\":%zu,\"words\":%zu,\"analyses\":%zu,\"disambiguate_s\":%.3f,\"words_per_s\":%.1f,"
+                 "\"peak_rss_kib\":%ld}\n",
+                 sentences.size(), n_words, n_analyses, secs, secs > 0 ? double(n_words) / secs : 0.0, peak_rss_kib());
+    return 0;
+}
+
 int main(int argc, char ** argv) {
     std::string manifest, db, sha, jsonl, out_path, backoff = "NONE";
+    std::string model, model_manifest, model_sha, sentences_path;
     std::vector<std::string> words;
     bool info = false, compact = false, dedup = false;
     int repeat = 1;
@@ -226,15 +343,25 @@ int main(int argc, char ** argv) {
             repeat = std::max(1, std::atoi(next().c_str()));
         else if (a == "--batch")
             batch = size_t(std::max(1, std::atoi(next().c_str())));
+        else if (a == "--model")
+            model = next();
+        else if (a == "--model-manifest")
+            model_manifest = next();
+        else if (a == "--model-sha256")
+            model_sha = next();
+        else if (a == "--sentences")
+            sentences_path = next();
         else
             words.push_back(a);
     }
     const int bo = backoff_of(backoff);
     if ((manifest.empty() == db.empty()) || sha.empty() || bo < 0) {
-        std::fprintf(stderr,
-                     "usage: crispembed-ar-morph (--manifest M | --db D) --sha256 HEX [--backoff MODE] [--info]\n"
-                     "       [--jsonl words.jsonl --out out.jsonl [--compact [--dedup] [--batch N]] [--repeat N]]\n"
-                     "       [WORD...]\n");
+        std::fprintf(
+            stderr,
+            "usage: crispembed-ar-morph (--manifest M | --db D) --sha256 HEX [--backoff MODE] [--info]\n"
+            "       [--jsonl words.jsonl --out out.jsonl [--compact [--dedup] [--batch N]] [--repeat N]]\n"
+            "       [--model F | --model-manifest M] --model-sha256 HEX --sentences tokens.tsv [--out out.jsonl]\n"
+            "       [WORD...]\n");
         return 2;
     }
     char err[512];
@@ -302,8 +429,8 @@ int main(int argc, char ** argv) {
                     size_t len = 0;
                     const double a0 = now_s();
                     const int rc = crispembed_ar_morph_analyze_compact(
-                        m, concat.data(), lens.data(), uint32_t(lens.size()), dedup ? CRISPEMBED_AR_MORPH_COMPACT_DEDUP : 0,
-                        &buf, &len, err, sizeof err);
+                        m, concat.data(), lens.data(), uint32_t(lens.size()),
+                        dedup ? CRISPEMBED_AR_MORPH_COMPACT_DEDUP : 0, &buf, &len, err, sizeof err);
                     secs += now_s() - a0;
                     if (rc != CRISPEMBED_AR_MORPH_OK) {
                         std::fprintf(stderr, "compact analysis failed %d: %s\n", rc, err);
@@ -342,7 +469,8 @@ int main(int argc, char ** argv) {
                         for (size_t k = 0; k + 1 < body.size(); ++k)
                             if (body[k] == '}' && body[k + 1] == ',') ++n_analyses;
                         if (body.size() > 2) ++n_analyses;
-                        std::fprintf(out, "{\"i\":%zu,\"ok\":true,\"analyses\":%s}\n", i, objects_to_pairs(body).c_str());
+                        std::fprintf(out, "{\"i\":%zu,\"ok\":true,\"analyses\":%s}\n", i,
+                                     objects_to_pairs(body).c_str());
                         crispembed_ar_morph_string_free(json);
                     } else {
                         std::fprintf(out, "{\"i\":%zu,\"ok\":false,\"status\":%d,\"error\":\"%s\"}\n", i, rc,
@@ -361,6 +489,28 @@ int main(int argc, char ** argv) {
                      "\"runs\":%d,\"mode\":\"%s\"}\n",
                      load_s, list.size(), n_analyses, analyze_s, analyze_s > 0 ? double(list.size()) / analyze_s : 0.0,
                      rss_after_load, current_rss_kib(), peak_rss_kib(), repeat, compact ? "compact" : "json");
+    }
+    if (!sentences_path.empty()) {
+        if ((model.empty() == model_manifest.empty()) || model_sha.empty()) {
+            std::fprintf(stderr, "--sentences needs --model or --model-manifest and --model-sha256\n");
+            return 2;
+        }
+        enable_disambig_gate();
+        crispembed_ar_morph_disambig * d =
+            model.empty()
+                ? crispembed_ar_morph_disambig_open(model_manifest.c_str(), model_sha.c_str(), err, sizeof err)
+                : crispembed_ar_morph_disambig_open_file(model.c_str(), model_sha.c_str(), err, sizeof err);
+        if (!d) {
+            std::fprintf(stderr, "model open failed: %s\n", err);
+            return 1;
+        }
+        if (info) std::printf("%s\n", crispembed_ar_morph_disambig_info(d));
+        FILE * out = out_path.empty() ? stdout : std::fopen(out_path.c_str(), "wb");
+        if (!out) return 1;
+        const int rc = run_sentences(m, d, sentences_path, out, batch);
+        if (out != stdout) std::fclose(out);
+        crispembed_ar_morph_disambig_free(d);
+        if (rc) return rc;
     }
     crispembed_ar_morph_free(m);
     return 0;

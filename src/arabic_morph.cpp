@@ -57,6 +57,7 @@
 #include "core/sha256.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -2622,7 +2623,10 @@ void put_u16(std::string & out, uint32_t v) {
 }
 
 // One word's compact record (see crispembed_ar_morph_analyze_compact).
-void append_compact(std::string & out, const db_common & db, const std::vector<result_t> & analyses, bool dedup) {
+// `kept`, when given, receives the index of every analysis written (all of
+// them unless dedup dropped some).
+void append_compact(std::string & out, const db_common & db, const std::vector<result_t> & analyses, bool dedup,
+                    std::vector<uint32_t> * kept = nullptr) {
     constexpr uint32_t none_ref = 0xFFFFFFFFu;
     std::unordered_map<std::string, uint32_t> index; // kind byte + text
     std::vector<const std::string *> strings;
@@ -2631,7 +2635,9 @@ void append_compact(std::string & out, const db_common & db, const std::vector<r
     std::unordered_set<std::string> seen;
     uint32_t max_key = 0;
     std::string scratch;
-    for (const result_t & r : analyses) {
+    if (kept) kept->clear();
+    for (size_t ai = 0; ai < analyses.size(); ++ai) {
+        const result_t & r = analyses[ai];
         std::vector<std::pair<uint32_t, uint32_t>> row;
         row.reserve(r.size());
         for (const rfeat & f : r) {
@@ -2662,6 +2668,7 @@ void append_compact(std::string & out, const db_common & db, const std::vector<r
             }
             if (!seen.insert(std::move(sig)).second) continue;
         }
+        if (kept) kept->push_back(uint32_t(ai));
         rows.push_back(std::move(row));
     }
     if (rows.size() > 0xFFFFFFFFull || strings.size() >= 0xFFFFFFFFull) throw std::runtime_error("result too large");
@@ -2696,6 +2703,361 @@ const std::string * check_word(std::string_view in) {
     if (in.size() > CRISPEMBED_AR_MORPH_MAX_WORD_BYTES) return &too_long;
     if (!valid_utf8(in)) return &bad_utf8;
     return nullptr;
+}
+
+// ---------------------------------------------------------------------------
+// Context disambiguation (docs/arabic-morph-disambig-format.md).
+//
+// A bigram hidden Markov model over candidates. A candidate groups the
+// analyses of a token that share (tag, lex, pos), where the tag joins the
+// model's tag features. A sentence scores
+//   prod_i T(tag_i | tag_i-1) * L(lex_i, pos_i | pos_i)
+// with the boundary tag before the first and after the last token. The
+// forward-backward posterior of each candidate is its score. A token without
+// analyses is the single candidate (<oov>, <oov>, <oov>).
+
+constexpr char k_dis_magic[8] = { 'C', 'E', 'M', 'D', 'I', 'S', 'A', 'M' };
+constexpr uint32_t k_dis_version = 1;
+constexpr size_t k_max_model_bytes = size_t(64) << 20;
+constexpr uint32_t k_max_tag_features = 32;
+constexpr uint32_t k_max_tags = 8192;
+// Log-probability of a lexeme whose pos the model has never seen.
+constexpr double k_dis_unknown_logp = -30.0;
+// Probability of a transition from or to a tag the model has never seen.
+constexpr double k_dis_unknown_trans = 1e-12;
+constexpr uint32_t k_scores_magic = 0x31534D41u; // "AMS1" little-endian
+constexpr uint32_t k_max_sentence_words = 1u << 16;
+
+struct disambig_model {
+    struct tag_feature {
+        std::string name;
+        bool flag = false; // presence (0/1) instead of the value
+    };
+    std::vector<tag_feature> spec;
+    std::unordered_map<std::string, uint32_t> tag_ids;
+    uint32_t n_tags = 0;
+    // T(cur | prev): the listed entry, else backoff[prev] * uni[cur].
+    std::vector<double> uni, backoff;
+    std::unordered_map<uint64_t, double> trans;
+    std::unordered_map<std::string, double> unseen; // pos -> log-probability of an unlisted lexeme
+    std::unordered_map<std::string, double> lexp;   // pos '\t' lex -> log-probability
+    std::string info;
+};
+
+void load_disambig(disambig_model & m, const uint8_t * f, size_t n, const std::string & sha256,
+                   const std::string & manifest_sha256) {
+    if (!little_endian_host()) throw data_error("disambiguation model requires a little-endian host");
+    if (n < k_bin_header_bytes || std::memcmp(f, k_dis_magic, 8) != 0) throw data_error("not a disambiguation model");
+    if (rd32(f + 8) != k_dis_version) throw data_error("disambiguation model: unsupported format version");
+    if (rd32(f + 12) != k_bin_header_bytes) throw data_error("disambiguation model: header size");
+    const uint32_t n_sections = rd32(f + 16);
+    if (rd32(f + 20) != 0) throw data_error("disambiguation model: flags");
+    if (rd64(f + 24) != uint64_t(n)) throw data_error("disambiguation model: file size mismatch");
+    {
+        uint8_t header[k_bin_header_bytes];
+        std::memcpy(header, f, k_bin_header_bytes);
+        std::memset(header + 36, 0, 4);
+        if (crc32_bytes(header, k_bin_header_bytes) != rd32(f + 36))
+            throw data_error("disambiguation model: header checksum");
+    }
+    if (n_sections == 0 || n_sections > 64 || uint64_t(k_bin_header_bytes) + 24ull * n_sections > n)
+        throw data_error("disambiguation model: section directory");
+    const uint8_t * dir = f + k_bin_header_bytes;
+    if (crc32_bytes(dir, 24 * size_t(n_sections)) != rd32(f + 32))
+        throw data_error("disambiguation model: directory checksum");
+    static const char * const names[] = { "STRS", "SPEC", "TAGS", "TRAN", "UNSN", "LEXP", "META" };
+    constexpr size_t n_names = sizeof names / sizeof names[0];
+    struct section {
+        const uint8_t * p = nullptr;
+        size_t n = 0;
+    } sec[n_names];
+    for (uint32_t i = 0; i < n_sections; ++i) {
+        const uint8_t * d = dir + 24 * size_t(i);
+        const uint64_t off = rd64(d + 8), len = rd64(d + 16);
+        if (off % 8 != 0 || off > n || len > n - off) throw data_error("disambiguation model: section bounds");
+        if (crc32_bytes(f + off, size_t(len)) != rd32(d + 4))
+            throw data_error("disambiguation model: section checksum");
+        // The padding to the next 8-byte boundary is zero (and so covered).
+        for (uint64_t q = off + len; q < n && q % 8 != 0; ++q)
+            if (f[q] != 0) throw data_error("disambiguation model: section padding");
+        for (size_t t = 0; t < n_names; ++t) {
+            if (rd32(d) != rd32(reinterpret_cast<const uint8_t *>(names[t]))) continue;
+            if (sec[t].p) throw data_error("disambiguation model: duplicate section");
+            sec[t].p = f + off;
+            sec[t].n = size_t(len);
+        }
+    }
+    for (size_t t = 0; t < n_names; ++t)
+        if (!sec[t].p) throw data_error(std::string("disambiguation model: missing section ") + names[t]);
+    auto fail = [](const char * what) { throw data_error(std::string("disambiguation model: ") + what); };
+
+    // STRS: unique, sorted by bytes, valid UTF-8.
+    std::vector<std::string_view> strings;
+    {
+        bin_reader r(sec[0].p, sec[0].n, "STRS");
+        const uint32_t count = r.u32();
+        const uint8_t * offs = r.take_array(uint64_t(count) + 1, 4);
+        const uint32_t total = rd32(offs + 4 * size_t(count));
+        const char * bytes = reinterpret_cast<const char *>(r.take(total));
+        uint32_t prev = 0;
+        strings.reserve(count);
+        for (uint32_t i = 0; i < count; ++i) {
+            const uint32_t a = rd32(offs + 4 * size_t(i)), b = rd32(offs + 4 * size_t(i) + 4);
+            if ((i == 0 && a != 0) || a < prev || b < a || b > total) fail("string offsets");
+            prev = a;
+            const std::string_view sv(bytes + a, b - a);
+            if (!valid_utf8(sv)) fail("string encoding");
+            if (!strings.empty() && !(strings.back() < sv)) fail("string order");
+            strings.push_back(sv);
+        }
+    }
+    auto str = [&](uint32_t id) -> std::string_view {
+        if (id >= strings.size()) fail("string id");
+        return strings[id];
+    };
+    // SPEC: the tag features; the first is pos by value.
+    {
+        bin_reader r(sec[1].p, sec[1].n, "SPEC");
+        const uint32_t count = r.u32();
+        if (count == 0 || count > k_max_tag_features) fail("tag features");
+        for (uint32_t i = 0; i < count; ++i) {
+            disambig_model::tag_feature tf;
+            tf.name = std::string(str(r.u32()));
+            const uint32_t mode = r.u32();
+            if (mode > 1) fail("tag feature mode");
+            tf.flag = mode == 1;
+            m.spec.push_back(std::move(tf));
+        }
+        if (m.spec[0].name != "pos" || m.spec[0].flag) fail("the first tag feature must be pos");
+    }
+    // TAGS: unique; tag 0 is the sentence boundary <s>.
+    {
+        bin_reader r(sec[2].p, sec[2].n, "TAGS");
+        m.n_tags = r.u32();
+        if (m.n_tags == 0 || m.n_tags > k_max_tags) fail("tag count");
+        for (uint32_t i = 0; i < m.n_tags; ++i)
+            if (!m.tag_ids.emplace(std::string(str(r.u32())), i).second) fail("duplicate tag");
+        if (m.tag_ids.find("<s>") == m.tag_ids.end() || m.tag_ids.at("<s>") != 0) fail("boundary tag");
+    }
+    auto read_logp = [&](bin_reader & r) {
+        float lp;
+        std::memcpy(&lp, r.take(4), 4);
+        if (!(lp <= 0.0f) || !std::isfinite(lp)) fail("log-probability");
+        return double(lp);
+    };
+    // TRAN: unigram and backoff weights per tag, then the listed transitions
+    // (prev, cur, log-probability), strictly ascending.
+    {
+        bin_reader r(sec[3].p, sec[3].n, "TRAN");
+        if (r.u32() != m.n_tags) fail("transition size");
+        m.uni.resize(m.n_tags);
+        m.backoff.resize(m.n_tags);
+        for (double & u : m.uni) u = std::exp(read_logp(r));
+        for (double & b : m.backoff) b = std::exp(read_logp(r));
+        const uint32_t count = r.u32();
+        if (uint64_t(count) > uint64_t(m.n_tags) * m.n_tags) fail("transition count");
+        m.trans.reserve(count);
+        uint64_t prev = 0;
+        for (uint32_t i = 0; i < count; ++i) {
+            const uint32_t a = r.u32(), b = r.u32();
+            if (a >= m.n_tags || b >= m.n_tags) fail("transition tag");
+            const uint64_t k = (uint64_t(a) << 32) | b;
+            if (i && k <= prev) fail("transition order");
+            prev = k;
+            m.trans.emplace(k, std::exp(read_logp(r)));
+        }
+    }
+    // UNSN: per pos, the log-probability of a lexeme the model does not list.
+    {
+        bin_reader r(sec[4].p, sec[4].n, "UNSN");
+        const uint32_t count = r.u32();
+        for (uint32_t i = 0; i < count; ++i) {
+            const std::string pos(str(r.u32()));
+            if (!m.unseen.emplace(pos, read_logp(r)).second) fail("duplicate pos");
+        }
+    }
+    // LEXP: (pos, lex, log-probability), strictly ascending by (pos, lex).
+    {
+        bin_reader r(sec[5].p, sec[5].n, "LEXP");
+        const uint32_t count = r.u32();
+        uint64_t prev = 0;
+        m.lexp.reserve(count);
+        for (uint32_t i = 0; i < count; ++i) {
+            const uint32_t pos = r.u32(), lex = r.u32();
+            const uint64_t k = (uint64_t(pos) << 32) | lex;
+            if (i && k <= prev) fail("lexeme order");
+            prev = k;
+            std::string key(str(pos));
+            key += '\t';
+            key += str(lex);
+            m.lexp.emplace(std::move(key), read_logp(r));
+        }
+    }
+    // META: the training description, a JSON object.
+    const std::string meta(reinterpret_cast<const char *>(sec[6].p), sec[6].n);
+    try {
+        if (core_json_value::parse(meta).kind != core_json_value::value::object_t) fail("META");
+    } catch (const data_error &) {
+        throw;
+    } catch (const std::exception &) {
+        fail("META");
+    }
+    m.info = "{\"abi_version\":" + std::to_string(CRISPEMBED_AR_MORPH_ABI_VERSION) +
+             ",\"model_format\":\"crispembed-camel-morph-disambig-v1\",\"model_sha256\":\"" + sha256 + "\"";
+    if (!manifest_sha256.empty()) m.info += ",\"manifest_sha256\":\"" + manifest_sha256 + "\"";
+    m.info += ",\"tags\":" + std::to_string(m.n_tags) + ",\"transitions\":" + std::to_string(m.trans.size()) +
+              ",\"lexemes\":" + std::to_string(m.lexp.size()) + ",\"tag_features\":[";
+    for (size_t i = 0; i < m.spec.size(); ++i) {
+        if (i) m.info += ',';
+        m.info += '"' + core_json::json_escape_strict(m.spec[i].name) + (m.spec[i].flag ? ":flag" : "") + '"';
+    }
+    m.info += "],\"meta\":" + meta + '}';
+}
+
+// One token's candidates and their posteriors.
+struct dis_token {
+    std::vector<uint32_t> cand_of; // per analysis
+    std::vector<int64_t> tag;      // per candidate; -1 = unknown to the model
+    std::vector<double> emit;      // per candidate
+    std::vector<double> alpha, beta, post;
+};
+
+void build_candidates(const disambig_model & m, const db_common & db, const std::vector<result_t> & analyses,
+                      dis_token & t) {
+    static const std::string absent = "-";
+    std::vector<uint32_t> keys;
+    keys.reserve(m.spec.size());
+    for (const auto & tf : m.spec) {
+        auto it = db.key_ids.find(tf.name);
+        keys.push_back(it == db.key_ids.end() ? 0xFFFFFFFFu : it->second);
+    }
+    const auto lex_it = db.key_ids.find("lex");
+    const auto pos_it = db.key_ids.find("pos");
+    auto feature = [](const result_t & r, uint32_t key) -> const std::string * {
+        for (const rfeat & f : r)
+            if (f.key == key) return f.v.kind == value::str_t ? &f.v.s : nullptr;
+        return nullptr;
+    };
+    std::unordered_map<std::string, uint32_t> index;
+    std::vector<std::string> lp_keys, poses;
+    std::vector<std::string> tag_keys;
+    t.cand_of.clear();
+    auto add = [&](std::string tag, std::string pos, const std::string & lex) {
+        std::string key = tag + '\n' + pos + '\t' + lex;
+        auto it = index.find(key);
+        if (it != index.end()) return it->second;
+        const uint32_t id = uint32_t(tag_keys.size());
+        index.emplace(std::move(key), id);
+        lp_keys.push_back(pos + '\t' + lex);
+        poses.push_back(std::move(pos));
+        tag_keys.push_back(std::move(tag));
+        return id;
+    };
+    if (analyses.empty()) {
+        add("<oov>", "<oov>", "<oov>");
+    } else {
+        for (const result_t & r : analyses) {
+            std::string tag;
+            for (size_t i = 0; i < keys.size(); ++i) {
+                if (i) tag += '|';
+                const std::string * v = keys[i] == 0xFFFFFFFFu ? nullptr : feature(r, keys[i]);
+                if (m.spec[i].flag)
+                    tag += (!v || v->empty() || *v == "0" || *v == "na") ? '0' : '1';
+                else
+                    tag += v ? *v : absent;
+            }
+            const std::string * lex = lex_it == db.key_ids.end() ? nullptr : feature(r, lex_it->second);
+            const std::string * pos = pos_it == db.key_ids.end() ? nullptr : feature(r, pos_it->second);
+            t.cand_of.push_back(add(std::move(tag), pos ? *pos : std::string(), lex ? *lex : std::string()));
+        }
+    }
+    const size_t n = tag_keys.size();
+    t.tag.assign(n, -1);
+    t.emit.assign(n, 0.0);
+    for (size_t c = 0; c < n; ++c) {
+        auto tg = m.tag_ids.find(tag_keys[c]);
+        if (tg != m.tag_ids.end()) t.tag[c] = tg->second;
+        double lp = k_dis_unknown_logp;
+        auto lx = m.lexp.find(lp_keys[c]);
+        if (lx != m.lexp.end()) {
+            lp = lx->second;
+        } else {
+            auto un = m.unseen.find(poses[c]);
+            if (un != m.unseen.end()) lp = un->second;
+        }
+        t.emit[c] = std::exp(lp);
+    }
+}
+
+double dis_trans(const disambig_model & m, int64_t prev, int64_t cur) {
+    if (prev < 0 || cur < 0) return k_dis_unknown_trans;
+    auto it = m.trans.find((uint64_t(prev) << 32) | uint64_t(cur));
+    return it != m.trans.end() ? it->second : m.backoff[size_t(prev)] * m.uni[size_t(cur)];
+}
+
+// Scaled forward-backward; fills every token's post (sums to 1).
+void forward_backward(const disambig_model & m, std::vector<dis_token> & toks) {
+    const size_t len = toks.size();
+    if (!len) return;
+    std::vector<double> scale(len, 1.0);
+    for (size_t i = 0; i < len; ++i) {
+        dis_token & t = toks[i];
+        const size_t nc = t.tag.size();
+        t.alpha.assign(nc, 0.0);
+        double sum = 0;
+        for (size_t c = 0; c < nc; ++c) {
+            double in = 0;
+            if (i == 0) {
+                in = dis_trans(m, 0, t.tag[c]);
+            } else {
+                const dis_token & p = toks[i - 1];
+                for (size_t q = 0; q < p.tag.size(); ++q) in += p.alpha[q] * dis_trans(m, p.tag[q], t.tag[c]);
+            }
+            t.alpha[c] = in * t.emit[c];
+            sum += t.alpha[c];
+        }
+        if (!(sum > 0) || !std::isfinite(sum)) {
+            // Underflow: restart from uniform weights at this token.
+            for (size_t c = 0; c < nc; ++c) t.alpha[c] = 1.0 / double(nc);
+            sum = 1.0;
+        } else {
+            for (double & a : t.alpha) a /= sum;
+        }
+        scale[i] = sum;
+    }
+    dis_token & last = toks[len - 1];
+    double end = 0;
+    for (size_t c = 0; c < last.tag.size(); ++c) end += last.alpha[c] * dis_trans(m, last.tag[c], 0);
+    if (!(end > 0) || !std::isfinite(end)) end = 1.0;
+    last.beta.assign(last.tag.size(), 0.0);
+    for (size_t c = 0; c < last.tag.size(); ++c) last.beta[c] = dis_trans(m, last.tag[c], 0) / end;
+    for (size_t i = len - 1; i > 0; --i) {
+        const dis_token & t = toks[i];
+        dis_token & p = toks[i - 1];
+        p.beta.assign(p.tag.size(), 0.0);
+        for (size_t q = 0; q < p.tag.size(); ++q) {
+            double b = 0;
+            for (size_t c = 0; c < t.tag.size(); ++c) b += dis_trans(m, p.tag[q], t.tag[c]) * t.emit[c] * t.beta[c];
+            p.beta[q] = b / scale[i];
+        }
+        double mx = 0;
+        for (double b : p.beta) mx = std::max(mx, b);
+        if (!(mx > 0) || !std::isfinite(mx)) std::fill(p.beta.begin(), p.beta.end(), 1.0);
+    }
+    for (dis_token & t : toks) {
+        const size_t nc = t.tag.size();
+        t.post.assign(nc, 0.0);
+        double z = 0;
+        for (size_t c = 0; c < nc; ++c) z += t.alpha[c] * t.beta[c];
+        for (size_t c = 0; c < nc; ++c)
+            t.post[c] = z > 0 && std::isfinite(z) ? t.alpha[c] * t.beta[c] / z : 1.0 / double(nc);
+    }
+}
+
+void put_f32(std::string & out, float v) {
+    uint32_t u;
+    std::memcpy(&u, &v, 4);
+    put_u32(out, u);
 }
 
 } // namespace
@@ -2951,6 +3313,251 @@ const char * crispembed_ar_morph_info(const crispembed_ar_morph * morph) {
 
 void crispembed_ar_morph_free(crispembed_ar_morph * morph) {
     delete morph;
+}
+
+} // extern "C"
+
+struct crispembed_ar_morph_disambig {
+    disambig_model model;
+};
+
+namespace {
+
+bool disambig_gate(char * error, size_t error_capacity) {
+    if (core_env::explicitly_off("CRISPEMBED_AR_MORPH")) {
+        put_error(error, error_capacity, "disabled by CRISPEMBED_AR_MORPH");
+        return false;
+    }
+    // Default-off gate of the context disambiguator: CRISPEMBED_AR_MORPH_DISAMBIG=1 enables it.
+    if (!core_env::on("CRISPEMBED_AR_MORPH_DISAMBIG")) {
+        put_error(error, error_capacity, "disabled: set CRISPEMBED_AR_MORPH_DISAMBIG=1 to enable");
+        return false;
+    }
+    return true;
+}
+
+crispembed_ar_morph_disambig * finish_disambig(const uint8_t * p, size_t n, const std::string & sha256,
+                                               const std::string & manifest_sha256) {
+    auto d = std::make_unique<crispembed_ar_morph_disambig>();
+    load_disambig(d->model, p, n, sha256, manifest_sha256);
+    return d.release();
+}
+
+} // namespace
+
+extern "C" {
+
+crispembed_ar_morph_disambig * crispembed_ar_morph_disambig_open_file(const char * model_path,
+                                                                      const char * model_sha256, char * error,
+                                                                      size_t error_capacity) {
+    put_error(error, error_capacity, "");
+    if (!disambig_gate(error, error_capacity)) return nullptr;
+    if (!model_path || !is_sha256_hex(model_sha256)) {
+        put_error(error, error_capacity, "invalid argument (path or lowercase SHA-256)");
+        return nullptr;
+    }
+    try {
+        const std::string bytes = read_bounded(model_path, k_max_model_bytes);
+        const std::string digest = core_sha256::bytes(bytes.data(), bytes.size());
+        if (digest != model_sha256) throw data_error("model SHA-256 mismatch");
+        return finish_disambig(reinterpret_cast<const uint8_t *>(bytes.data()), bytes.size(), digest, "");
+    } catch (const std::bad_alloc &) {
+        put_error(error, error_capacity, "allocation failed");
+    } catch (const std::exception & e) {
+        put_error(error, error_capacity, e.what());
+    }
+    return nullptr;
+}
+
+crispembed_ar_morph_disambig * crispembed_ar_morph_disambig_open(const char * manifest_path,
+                                                                 const char * manifest_sha256, char * error,
+                                                                 size_t error_capacity) {
+    put_error(error, error_capacity, "");
+    if (!disambig_gate(error, error_capacity)) return nullptr;
+    if (!manifest_path || !is_sha256_hex(manifest_sha256)) {
+        put_error(error, error_capacity, "invalid argument (path or lowercase SHA-256)");
+        return nullptr;
+    }
+    try {
+        const std::string mtext = read_bounded(manifest_path, k_max_manifest_bytes);
+        if (core_sha256::bytes(mtext.data(), mtext.size()) != manifest_sha256)
+            throw data_error("manifest SHA-256 mismatch");
+        const core_json_value::value m = core_json_value::parse(mtext);
+        auto get_str = [&](const char * key) {
+            const core_json_value::value * v = m.get(key);
+            if (!v || v->kind != core_json_value::value::string_t) throw data_error(std::string("manifest: ") + key);
+            return v->s;
+        };
+        if (get_str("format") != "crispembed-camel-morph-disambig-bundle") throw data_error("manifest: unknown format");
+        const core_json_value::value * fv = m.get("format_version");
+        if (!fv || fv->kind != core_json_value::value::int_t || fv->i != 1)
+            throw data_error("manifest: unsupported format_version");
+        if (get_str("model_format") != "crispembed-camel-morph-disambig-v1")
+            throw data_error("manifest: unsupported model_format");
+        const std::string model_name = get_str("model");
+        const core_json_value::value * files = m.get("files");
+        if (!files || files->kind != core_json_value::value::array_t || files->a.size() > 16)
+            throw data_error("manifest: files");
+        const std::string dir = dirname_of(manifest_path);
+        std::string model_bytes, model_digest;
+        bool have_model = false;
+        for (const auto & f : files->a) {
+            const core_json_value::value * p = f.get("path");
+            const core_json_value::value * h = f.get("sha256");
+            const core_json_value::value * s = f.get("size");
+            if (!p || p->kind != core_json_value::value::string_t || !plain_file_name(p->s) || !h ||
+                h->kind != core_json_value::value::string_t || !is_sha256_hex(h->s.c_str()) || !s ||
+                s->kind != core_json_value::value::int_t || s->i < 0)
+                throw data_error("manifest: file entry");
+            const bool is_model = p->s == model_name;
+            if (size_t(s->i) > (is_model ? k_max_model_bytes : k_max_aux_file_bytes))
+                throw data_error("manifest: file too large");
+            std::string bytes = read_bounded(dir + p->s, size_t(s->i));
+            if (bytes.size() != size_t(s->i)) throw data_error("size mismatch: " + p->s);
+            const std::string digest = core_sha256::bytes(bytes.data(), bytes.size());
+            if (digest != h->s) throw data_error("SHA-256 mismatch: " + p->s);
+            if (is_model) {
+                model_bytes = std::move(bytes);
+                model_digest = digest;
+                have_model = true;
+            }
+        }
+        if (!have_model) throw data_error("manifest: model not listed");
+        return finish_disambig(reinterpret_cast<const uint8_t *>(model_bytes.data()), model_bytes.size(), model_digest,
+                               manifest_sha256);
+    } catch (const std::bad_alloc &) {
+        put_error(error, error_capacity, "allocation failed");
+    } catch (const std::exception & e) {
+        put_error(error, error_capacity, e.what());
+    }
+    return nullptr;
+}
+
+int crispembed_ar_morph_disambiguate(const crispembed_ar_morph * morph, const crispembed_ar_morph_disambig * model,
+                                     const char * words, const uint32_t * word_lens, uint32_t n_words,
+                                     const uint32_t * sentence_lens, uint32_t n_sentences, uint32_t flags,
+                                     uint8_t ** out, size_t * out_len, char * error, size_t error_capacity) {
+    put_error(error, error_capacity, "");
+    if (out) *out = nullptr;
+    if (out_len) *out_len = 0;
+    if (!morph || !model || !out || (n_words && !word_lens) || (n_sentences && !sentence_lens) ||
+        (flags & ~uint32_t(CRISPEMBED_AR_MORPH_COMPACT_DEDUP))) {
+        put_error(error, error_capacity, "invalid argument");
+        return CRISPEMBED_AR_MORPH_INVALID_ARGUMENT;
+    }
+    uint64_t total = 0, covered = 0;
+    for (uint32_t i = 0; i < n_words; ++i) total += word_lens[i];
+    for (uint32_t i = 0; i < n_sentences; ++i) {
+        if (sentence_lens[i] > k_max_sentence_words) {
+            put_error(error, error_capacity, "sentence exceeds 65536 words");
+            return CRISPEMBED_AR_MORPH_INVALID_ARGUMENT;
+        }
+        covered += sentence_lens[i];
+    }
+    if ((total && !words) || covered != n_words) {
+        put_error(error, error_capacity, "invalid argument (sentence lengths must sum to n_words)");
+        return CRISPEMBED_AR_MORPH_INVALID_ARGUMENT;
+    }
+    if (!disambig_gate(error, error_capacity)) return CRISPEMBED_AR_MORPH_DISABLED;
+    try {
+        const db_common & db = morph->an->common();
+        const bool dedup = (flags & CRISPEMBED_AR_MORPH_COMPACT_DEDUP) != 0;
+        // Per distinct word: status, compact record, kept analyses, candidates.
+        struct word_result {
+            uint32_t status = CRISPEMBED_AR_MORPH_OK;
+            std::string record;
+            std::vector<result_t> analyses;
+            std::vector<uint32_t> kept;
+        };
+        std::unordered_map<std::string_view, size_t> seen;
+        std::vector<word_result> results;
+        std::vector<size_t> word_of(n_words);
+        size_t at = 0;
+        for (uint32_t i = 0; i < n_words; ++i) {
+            const std::string_view in(words ? words + at : "", word_lens[i]);
+            at += word_lens[i];
+            auto it = seen.find(in);
+            if (it != seen.end()) {
+                word_of[i] = it->second;
+                continue;
+            }
+            word_result r;
+            if (check_word(in)) {
+                r.status = CRISPEMBED_AR_MORPH_INPUT_ERROR;
+            } else {
+                try {
+                    std::vector<result_t> all = morph->an->analyze(from_utf8_valid(in));
+                    append_compact(r.record, db, all, dedup, &r.kept);
+                    for (uint32_t k : r.kept) r.analyses.push_back(std::move(all[k]));
+                } catch (const input_error &) {
+                    r.status = CRISPEMBED_AR_MORPH_INPUT_ERROR;
+                    r.record.clear();
+                    r.analyses.clear();
+                }
+            }
+            seen.emplace(in, results.size());
+            word_of[i] = results.size();
+            results.push_back(std::move(r));
+        }
+        std::string buf;
+        put_u32(buf, CRISPEMBED_AR_MORPH_COMPACT_MAGIC);
+        put_u32(buf, n_words);
+        for (uint32_t i = 0; i < n_words; ++i) {
+            const word_result & r = results[word_of[i]];
+            put_u32(buf, r.status);
+            put_u32(buf, uint32_t(r.record.size()));
+            buf += r.record;
+        }
+        put_u32(buf, k_scores_magic);
+        put_u32(buf, n_words);
+        std::vector<dis_token> toks;
+        uint32_t first = 0;
+        for (uint32_t s = 0; s < n_sentences; ++s) {
+            const uint32_t len = sentence_lens[s];
+            toks.assign(len, dis_token());
+            for (uint32_t i = 0; i < len; ++i)
+                build_candidates(model->model, db, results[word_of[first + i]].analyses, toks[i]);
+            forward_backward(model->model, toks);
+            for (uint32_t i = 0; i < len; ++i) {
+                const dis_token & t = toks[i];
+                std::vector<uint32_t> order(t.post.size()), rank(t.post.size());
+                for (uint32_t c = 0; c < order.size(); ++c) order[c] = c;
+                std::stable_sort(order.begin(), order.end(),
+                                 [&](uint32_t a, uint32_t b) { return t.post[a] > t.post[b]; });
+                for (uint32_t r = 0; r < order.size(); ++r) rank[order[r]] = r;
+                put_u32(buf, uint32_t(t.cand_of.size()));
+                put_u32(buf, uint32_t(t.post.size()));
+                for (uint32_t c : t.cand_of) {
+                    put_u32(buf, rank[c]);
+                    put_f32(buf, float(t.post[c]));
+                }
+            }
+            first += len;
+        }
+        uint8_t * mem = static_cast<uint8_t *>(std::malloc(buf.size()));
+        if (!mem) {
+            put_error(error, error_capacity, "allocation failed");
+            return CRISPEMBED_AR_MORPH_ALLOCATION_ERROR;
+        }
+        std::memcpy(mem, buf.data(), buf.size());
+        *out = mem;
+        if (out_len) *out_len = buf.size();
+        return CRISPEMBED_AR_MORPH_OK;
+    } catch (const std::bad_alloc &) {
+        put_error(error, error_capacity, "allocation failed");
+        return CRISPEMBED_AR_MORPH_ALLOCATION_ERROR;
+    } catch (const std::exception & e) {
+        put_error(error, error_capacity, e.what());
+        return CRISPEMBED_AR_MORPH_RUNTIME_ERROR;
+    }
+}
+
+const char * crispembed_ar_morph_disambig_info(const crispembed_ar_morph_disambig * model) {
+    return model ? model->model.info.c_str() : nullptr;
+}
+
+void crispembed_ar_morph_disambig_free(crispembed_ar_morph_disambig * model) {
+    delete model;
 }
 
 } // extern "C"

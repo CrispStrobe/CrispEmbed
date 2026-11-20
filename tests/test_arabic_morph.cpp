@@ -13,12 +13,19 @@
 // tools/arabic_morph/gen_bin_fixture.py (arabic_morph_bin_fixture.h), against
 // the same camel_tools outputs projected onto the fixture's profile; the
 // compact ABI is checked against the JSON ABI for both formats.
+//
+// The context disambiguator (ABI 3) is checked with a hand-made model
+// (tools/arabic_morph/gen_disambig_fixture.py, arabic_morph_disambig_fixture.h)
+// against the posteriors of its Python reference, and for its default-off
+// gate, bundle pinning, corruption checks and buffer layout.
 #include "core/clean_exit.h"
 #include "arabic_morph.h"
 #include "arabic_morph_bin_fixture.h"
+#include "arabic_morph_disambig_fixture.h"
 #include "core/json.h"
 #include "core/sha256.h"
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -349,6 +356,206 @@ void check_binary(const std::string & manifest_dir) {
     std::remove(path.c_str());
 }
 
+std::vector<std::string> split(const std::string & s, char sep) {
+    std::vector<std::string> out(1);
+    for (char c : s) {
+        if (c == sep)
+            out.emplace_back();
+        else
+            out.back() += c;
+    }
+    return out;
+}
+
+// Runs the disambiguator on `sentences`; returns per word "rank:score,..."
+// with scores to 6 decimals, words separated by '|' and sentences by '#'.
+// Also checks that the buffer starts with the analyze_compact buffer.
+std::string disambiguate(crispembed_ar_morph * m, crispembed_ar_morph_disambig * d,
+                         const std::vector<std::vector<std::string>> & sentences, int * rc_out = nullptr) {
+    std::string concat;
+    std::vector<uint32_t> lens, sent_lens;
+    for (const auto & s : sentences) {
+        sent_lens.push_back(uint32_t(s.size()));
+        for (const std::string & w : s) {
+            concat += w;
+            lens.push_back(uint32_t(w.size()));
+        }
+    }
+    unsigned char * buf = nullptr;
+    size_t len = 0;
+    char err[256];
+    const int rc =
+        crispembed_ar_morph_disambiguate(m, d, concat.data(), lens.data(), uint32_t(lens.size()), sent_lens.data(),
+                                         uint32_t(sent_lens.size()), 0, &buf, &len, err, sizeof err);
+    if (rc_out) *rc_out = rc;
+    if (rc != CRISPEMBED_AR_MORPH_OK) return std::string("<error ") + std::to_string(rc) + ">";
+    unsigned char * cbuf = nullptr;
+    size_t clen = 0;
+    crispembed_ar_morph_analyze_compact(m, concat.data(), lens.data(), uint32_t(lens.size()), 0, &cbuf, &clen, err,
+                                        sizeof err);
+    check(cbuf && clen < len && std::memcmp(cbuf, buf, clen) == 0, "disambiguation starts with the compact buffer");
+    crispembed_ar_morph_buffer_free(cbuf);
+    const unsigned char * p = buf + clen;
+    const unsigned char * end = buf + len;
+    std::string out;
+    if (rd32(p) != CRISPEMBED_AR_MORPH_SCORES_MAGIC || rd32(p + 4) != lens.size()) return "<bad scores>";
+    p += 8;
+    size_t w = 0;
+    for (size_t s = 0; s < sentences.size(); ++s) {
+        if (s) out += '#';
+        for (size_t i = 0; i < sentences[s].size(); ++i, ++w) {
+            if (i) out += '|';
+            const uint32_t n = rd32(p), n_cand = rd32(p + 4);
+            p += 8;
+            check(n_cand >= 1, "at least one candidate");
+            for (uint32_t a = 0; a < n; ++a) {
+                float score;
+                std::memcpy(&score, p + 4, 4);
+                char item[64];
+                std::snprintf(item, sizeof item, "%s%u:%.6f", a ? "," : "", rd32(p), double(score));
+                out += item;
+                p += 8;
+            }
+        }
+    }
+    crispembed_ar_morph_buffer_free(buf);
+    return p == end ? out : "<bad length>";
+}
+
+// Scores agree with the Python reference to 1e-5 and ranks exactly.
+bool same_scores(const std::string & got, const std::string & want) {
+    const auto gw = split(got, '|'), ww = split(want, '|');
+    if (gw.size() != ww.size()) return false;
+    for (size_t i = 0; i < gw.size(); ++i) {
+        const auto ga = split(gw[i], ','), wa = split(ww[i], ',');
+        if (ga.size() != wa.size()) return false;
+        for (size_t a = 0; a < ga.size(); ++a) {
+            if (ga[a].empty() && wa[a].empty()) continue;
+            const auto g = split(ga[a], ':'), x = split(wa[a], ':');
+            if (g.size() != 2 || x.size() != 2 || g[0] != x[0]) return false;
+            if (std::fabs(std::atof(g[1].c_str()) - std::atof(x[1].c_str())) > 1e-5) return false;
+        }
+    }
+    return true;
+}
+
+void check_disambig(const std::string & db_path, const std::string & db_sha) {
+    char err[256];
+    const std::string model(reinterpret_cast<const char *>(k_disambig_model), sizeof k_disambig_model);
+    const std::string model_path = temp_path("crispembed-ar-morph-test.cmdis");
+    check(write_file(model_path, model), "write model fixture");
+    const std::string msha = core_sha256::bytes(model.data(), model.size());
+    crispembed_ar_morph * m = crispembed_ar_morph_open_db(db_path.c_str(), db_sha.c_str(),
+                                                          CRISPEMBED_AR_MORPH_BACKOFF_ADD_PROP, err, sizeof err);
+    check(m != nullptr, "open fixture (ADD_PROP)");
+    if (!m) return;
+
+    // Default off: unset, empty and the off spellings keep it disabled.
+    for (const char * off : { (const char *)nullptr, "", "0", "false", "OFF", "no" }) {
+        set_env("CRISPEMBED_AR_MORPH_DISAMBIG", off);
+        check(!crispembed_ar_morph_disambig_open_file(model_path.c_str(), msha.c_str(), err, sizeof err),
+              "disambiguator is default-off");
+        check(std::strstr(err, "CRISPEMBED_AR_MORPH_DISAMBIG") != nullptr, "gate error message");
+    }
+    set_env("CRISPEMBED_AR_MORPH_DISAMBIG", "1");
+    const std::string wrong(64, '0');
+    check(!crispembed_ar_morph_disambig_open_file(model_path.c_str(), wrong.c_str(), err, sizeof err),
+          "model hash enforced");
+    crispembed_ar_morph_disambig * d =
+        crispembed_ar_morph_disambig_open_file(model_path.c_str(), msha.c_str(), err, sizeof err);
+    check(d != nullptr, "open model");
+    if (!d) {
+        std::fprintf(stderr, "%s\n", err);
+        crispembed_ar_morph_free(m);
+        return;
+    }
+    const char * info = crispembed_ar_morph_disambig_info(d);
+    check(std::strstr(info, "\"tags\":7") && std::strstr(info, "\"prc2:flag\"") &&
+              std::strstr(info, "\"fixture\":true"),
+          "model info");
+
+    // Every case against the Python reference, one call per case and all at once.
+    std::vector<std::vector<std::string>> all;
+    std::string want_all;
+    for (const disambig_expected & c : k_disambig_cases) {
+        const std::vector<std::string> words = split(c.words, '\t');
+        const std::string got = disambiguate(m, d, { words });
+        if (!same_scores(got, c.scores)) {
+            std::fprintf(stderr, "sentence %s\n got: %s\nwant: %s\n", c.words, got.c_str(), c.scores);
+            check(false, "disambiguation matches the Python reference");
+        }
+        all.push_back(words);
+        want_all += (want_all.empty() ? "" : "#") + std::string(c.scores);
+    }
+    const std::string got_all = disambiguate(m, d, all);
+    const auto ga = split(got_all, '#'), wa = split(want_all, '#');
+    bool same = ga.size() == wa.size();
+    for (size_t i = 0; same && i < ga.size(); ++i) same = same_scores(ga[i], wa[i]);
+    check(same, "sentences are independent in one call");
+
+    // Rejected words are single-candidate tokens; sentence lengths must cover the words.
+    check(disambiguate(m, d, { { std::string("\xff\xfe"), "2024" } }).rfind("|0:1.000000") != std::string::npos,
+          "rejected word is context");
+    const char * w = "2024";
+    const uint32_t wl = 4, two = 2;
+    unsigned char * buf = nullptr;
+    size_t len = 0;
+    check(crispembed_ar_morph_disambiguate(m, d, w, &wl, 1, &two, 1, 0, &buf, &len, err, sizeof err) ==
+              CRISPEMBED_AR_MORPH_INVALID_ARGUMENT,
+          "sentence lengths must sum to the word count");
+    check(crispembed_ar_morph_disambiguate(m, d, nullptr, nullptr, 0, nullptr, 0, 0, &buf, &len, err, sizeof err) ==
+                  CRISPEMBED_AR_MORPH_OK &&
+              buf,
+          "empty batch");
+    crispembed_ar_morph_buffer_free(buf);
+    set_env("CRISPEMBED_AR_MORPH_DISAMBIG", "0");
+    int rc = 0;
+    disambiguate(m, d, { { "2024" } }, &rc);
+    check(rc == CRISPEMBED_AR_MORPH_DISABLED, "gate is read on every call");
+    set_env("CRISPEMBED_AR_MORPH_DISAMBIG", "1");
+
+    // Corruption: any flipped byte fails a checksum or a structural check.
+    for (size_t at : { size_t(3), size_t(40), size_t(70), model.size() / 2, model.size() - 3 }) {
+        std::string bad = model;
+        bad[at] = char(bad[at] ^ 0x5a);
+        check(write_file(model_path, bad), "write corrupt model");
+        const std::string bsha = core_sha256::bytes(bad.data(), bad.size());
+        check(!crispembed_ar_morph_disambig_open_file(model_path.c_str(), bsha.c_str(), err, sizeof err),
+              "corrupt model rejected");
+    }
+    check(!crispembed_ar_morph_disambig_open_file(db_path.c_str(), db_sha.c_str(), err, sizeof err),
+          "a database is not a model");
+
+    // Bundle: manifest pin and per-file pins.
+    check(write_file(model_path, model), "rewrite model");
+    const std::string name = "crispembed-ar-morph-test.cmdis";
+    auto manifest_for = [&](const std::string & sha) {
+        return std::string("{\"format\":\"crispembed-camel-morph-disambig-bundle\",\"format_version\":1,") +
+               "\"model_format\":\"crispembed-camel-morph-disambig-v1\",\"model\":\"" + name +
+               "\",\"files\":[{\"path\":\"" + name + "\",\"size\":" + std::to_string(model.size()) + ",\"sha256\":\"" +
+               sha + "\"}]}";
+    };
+    const std::string manifest = manifest_for(msha);
+    const std::string manifest_path = temp_path("crispembed-ar-morph-disambig-manifest.json");
+    check(write_file(manifest_path, manifest), "write model manifest");
+    const std::string mfsha = core_sha256::bytes(manifest.data(), manifest.size());
+    crispembed_ar_morph_disambig * bd =
+        crispembed_ar_morph_disambig_open(manifest_path.c_str(), mfsha.c_str(), err, sizeof err);
+    check(bd != nullptr && std::strstr(crispembed_ar_morph_disambig_info(bd), mfsha.c_str()), "open model bundle");
+    crispembed_ar_morph_disambig_free(bd);
+    const std::string tampered = manifest_for(wrong);
+    check(write_file(manifest_path, tampered), "write tampered model manifest");
+    const std::string tsha = core_sha256::bytes(tampered.data(), tampered.size());
+    check(!crispembed_ar_morph_disambig_open(manifest_path.c_str(), tsha.c_str(), err, sizeof err),
+          "model pin enforced");
+
+    crispembed_ar_morph_disambig_free(d);
+    crispembed_ar_morph_free(m);
+    set_env("CRISPEMBED_AR_MORPH_DISAMBIG", nullptr);
+    std::remove(model_path.c_str());
+    std::remove(manifest_path.c_str());
+}
+
 } // namespace
 
 static int crispembed_test_main() {
@@ -422,6 +629,7 @@ static int crispembed_test_main() {
     crispembed_ar_morph_free(none);
     crispembed_ar_morph_free(prop);
     check_binary(temp_path(""));
+    check_disambig(db_path, sha);
     std::remove(db_path.c_str());
     std::remove(notice_path.c_str());
     std::remove(manifest_path.c_str());

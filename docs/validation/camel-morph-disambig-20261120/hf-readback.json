@@ -1,0 +1,34 @@
+{
+  "repo": "cstr/camel-morph-msa-disambig",
+  "revision": "07fd9e65200a3ea92a081efa9b0714817178df5f",
+  "files": {
+    "README.md": {
+      "size": 2952,
+      "sha256": "fd6c8507322f1d9936348f4203d43b4d97e6ff7e98e868d9da3fbf4428de4edb",
+      "match": true
+    },
+    "bigram-v1/LICENSE": {
+      "size": 363,
+      "sha256": "ef2c6367af269181d259bbda4b6167684f85242bb04b28923f91e2861be4c695",
+      "match": true
+    },
+    "bigram-v1/NOTICE": {
+      "size": 1484,
+      "sha256": "12f44e5787019e5eb5595663cb7275408d961f430b74d108fa77006235e2638b",
+      "match": true
+    },
+    "bigram-v1/camel_morph_msa_v1.0.disambig.cmdis": {
+      "size": 4487296,
+      "sha256": "987250d64ec36e631b125f9f7ba52f4e5fe48da694ea3a6a21786b4ac4aabf61",
+      "match": true
+    },
+    "bigram-v1/manifest.json": {
+      "size": 1753,
+      "sha256": "02b8fc1cdfd8c925f6737029eafd79aea22148f2ce0af31b8b0e07a95053cbaa",
+      "match": true
+    }
+  },
+  "extra_remote": [],
+  "missing_remote": [],
+  "all_match": true
+}

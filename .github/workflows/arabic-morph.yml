@@ -1,7 +1,8 @@
 name: Arabic morphology (Camel Morph)
 
 # Builds the standalone native Camel Morph analyzer (tools/arabic_morph) and
-# runs its C-ABI contract test on a synthetic database. The CC BY 4.0 Camel
+# runs its C-ABI contract test on a synthetic database, including the context
+# disambiguator against a hand-made model and its Python reference. The CC BY 4.0 Camel
 # Morph data is not needed; full-database exactness against camel_tools is a
 # recorded developer receipt (docs/validation/camel-morph-msa-20261119).
 
@@ -17,6 +18,8 @@ on:
       - 'src/core/env_gate.h'
       - 'tests/test_arabic_morph.cpp'
       - 'tests/arabic_morph_bin_fixture.h'
+      - 'tests/arabic_morph_disambig_fixture.h'
+      - 'docs/arabic-morph-disambig-format.md'
       - 'models/convert-camel-morph-db.py'
       - 'tools/arabic_morph/**'
       - '.github/workflows/arabic-morph.yml'
@@ -31,6 +34,8 @@ on:
       - 'src/core/env_gate.h'
       - 'tests/test_arabic_morph.cpp'
       - 'tests/arabic_morph_bin_fixture.h'
+      - 'tests/arabic_morph_disambig_fixture.h'
+      - 'docs/arabic-morph-disambig-format.md'
       - 'models/convert-camel-morph-db.py'
       - 'tools/arabic_morph/**'
       - '.github/workflows/arabic-morph.yml'
@@ -60,3 +65,9 @@ jobs:
         run: |
           python3 tools/arabic_morph/gen_bin_fixture.py
           git diff --exit-code tests/arabic_morph_bin_fixture.h
+      - name: Disambiguation fixture matches its generator and the Python reference
+        if: runner.os == 'Linux'
+        run: |
+          python3 -m pip install --quiet numpy==2.2.6
+          python3 tools/arabic_morph/gen_disambig_fixture.py
+          git diff --exit-code tests/arabic_morph_disambig_fixture.h
