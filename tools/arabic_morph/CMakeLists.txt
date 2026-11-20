@@ -43,6 +43,12 @@ if(MSVC)
     target_compile_options(crispembed-ar-morph-cli PRIVATE /utf-8)
 endif()
 
+# Developer tool: expectation maximization for the context disambiguator
+# (driven by disambig_train.py; not installed).
+find_package(Threads REQUIRED)
+add_executable(ar-morph-disambig-em "${CMAKE_CURRENT_LIST_DIR}/ar_morph_disambig_em.cpp")
+target_link_libraries(ar-morph-disambig-em PRIVATE Threads::Threads)
+
 include(CTest)
 if(BUILD_TESTING)
     add_executable(test-arabic-morph "${CRISPEMBED_ROOT}/tests/test_arabic_morph.cpp")

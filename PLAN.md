@@ -216,7 +216,26 @@ Open:
 - iOS and Android packaging of the standalone library;
 - the full-feature text bundle stays heap-parsed; a binary `full` variant is
   only worth building if a consumer needs gloss or bw;
-- a disambiguator (camel_tools MLE/BERT) is not ported.
+- camel_tools' disambiguators (MLE/BERT) are not ported; see the context
+  disambiguator below instead.
+
+### Morphology — context disambiguator (`feat/arabic-morph-disambig-20261120`)
+
+A bigram HMM over the analyzer's own candidates, trained by EM on raw Arabic
+Wikipedia (CC BY-SA 4.0) with no annotated data, ranks analyses in context
+(`crispembed_ar_morph_disambiguate`, ABI 3, default-off behind
+`CRISPEMBED_AR_MORPH_DISAMBIG`; [format](docs/arabic-morph-disambig-format.md),
+trainer `tools/arabic_morph/disambig_train.py`). On UD Arabic-PUD
+(evaluation only) top-1 UPOS rises from 47.0% (noprob order) to 77.9%, equal
+to the PATB-trained `full` ranking; lemma 90.4% (full 88.2%). Published as
+`cstr/camel-morph-msa-disambig@07fd9e65` (`bigram-v1/`, 4.5 MB, CC BY-SA 4.0).
+[Receipt](docs/validation/camel-morph-disambig-20261120/README.md).
+
+Open:
+
+- a trigram or richer tag set (case/state) needs sparse EM counts (the dense
+  trainer table does not scale past ~5k tags);
+- hosted CI of the new contract test on Windows/Linux (this PR).
 
 ## Active work in flight — native spaCy, 18 November 2026
 

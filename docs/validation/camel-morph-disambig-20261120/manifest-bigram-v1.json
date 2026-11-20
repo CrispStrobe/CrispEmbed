@@ -1,0 +1,58 @@
+{
+  "format": "crispembed-camel-morph-disambig-bundle",
+  "format_version": 1,
+  "model": "camel_morph_msa_v1.0.disambig.cmdis",
+  "model_format": "crispembed-camel-morph-disambig-v1",
+  "license": "CC-BY-SA-4.0",
+  "attribution": "Camel Morph MSA context disambiguation model, CC BY-SA 4.0; trained on Arabic Wikipedia (Wikipedia contributors, CC BY-SA 4.0) over Camel Morph MSA v1.0 (c) 2024 New York University Abu Dhabi (CC BY 4.0)",
+  "database": {
+    "variant": "proofing-bin",
+    "db": "camel_morph_msa_v1.0.proofing.cmorph",
+    "sha256": "fc9d9109ddb5430da94def715df05b563cb37ffaec508f3514668ded19438909",
+    "manifest_sha256": "357540af897af5dd2a0f7fc84518cc875c4481e3e566c30ca0a5043a52290f71"
+  },
+  "training": {
+    "alpha": 0.1,
+    "beta": 0.1,
+    "corpus": {
+      "sentences": 885657,
+      "tokens": 12000927,
+      "types": 496071
+    },
+    "format": "crispembed-camel-morph-disambig-v1",
+    "init": "unambiguous",
+    "init_discount": "noun_prop=0.1,abbrev=0.1,interj=0.1",
+    "iterations": 10,
+    "kappa": 1.0,
+    "min_count": 0.5,
+    "min_trans": 0.1,
+    "tags": [
+      "pos:value",
+      "prc3:value",
+      "prc2:value",
+      "prc1:value",
+      "prc0:value",
+      "enc0:flag",
+      "asp:value",
+      "per:value",
+      "num:value"
+    ]
+  },
+  "files": [
+    {
+      "path": "LICENSE",
+      "size": 363,
+      "sha256": "ef2c6367af269181d259bbda4b6167684f85242bb04b28923f91e2861be4c695"
+    },
+    {
+      "path": "NOTICE",
+      "size": 1484,
+      "sha256": "12f44e5787019e5eb5595663cb7275408d961f430b74d108fa77006235e2638b"
+    },
+    {
+      "path": "camel_morph_msa_v1.0.disambig.cmdis",
+      "size": 4487296,
+      "sha256": "987250d64ec36e631b125f9f7ba52f4e5fe48da694ea3a6a21786b4ac4aabf61"
+    }
+  ]
+}
