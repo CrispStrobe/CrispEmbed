@@ -1,6 +1,7 @@
 # PCS causal diagnostic checkpoint — 18 November 2026
 
-Status: diagnostic work stopped at the user's final checkpoint. PCS remains
+Status (20 November 2026): superseded — root cause in [pcs-quality-root-cause.md](pcs-quality-root-cause.md).
+Original status: diagnostic work stopped at the user's final checkpoint. PCS remained
 quality-negative. No production weights, production PCS source, dependency
 pins, defaults, frozen references or acceptance thresholds were changed.
 See the [operator comparison contract and measured results](pcs-step-diff.md).

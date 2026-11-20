@@ -1,49 +1,13 @@
 # CrispEmbed plan — open work (updated 18 November 2026)
 
-## PCS matched-operator continuation — 18 November 2026
+## PCS mixed-precision 4-bit artifact (artifact owner) — 20 November 2026
 
-Final user checkpoint: stopped after selective-payload metadata inspection.
-The [causal diagnostic handoff](docs/pcs-causal-checkpoint-20261118.md) records
-completed evidence, exact target tensors and byte bounds, unrun operations and
-remaining dependencies. The original ONNX cache candidate exists but its
-content identity is not newly verified; the exact stored GGUF was absent from
-the scoped locations inspected. No payload extraction or new model run began.
-Unique tensor/conversion causality and the original decoded quality failure
-remain unresolved.
-
-Direct user authorization continues the PCS diagnostic with the established
-tools dumper and shared crispembed-diff implementation. See the
-[matched-operator contract](docs/pcs-step-diff.md). Scope is original graph/code
-comparison, matched captures, identical stored weights/inputs, observer
-neutrality and independent-input replay. Production PCS, dependency pins,
-frozen references, gates and distributed artifacts remain unchanged. The
-original layer-boundary and stored-weight quality failures stay open.
-Prepared source is not a numerical result; record actual source-bound runs
-before claiming a finer first divergence or repair.
-
-The first scoped operator run 44334585175 completed all arms and 13 source
-controls. Independent raw metrics locate the stored-weight difference at token
-lookup and the first legacy same-weight budget failure at layer0 query multiplication.
-The composed context capture exposed a view/backing-allocation lifetime limit;
-the diagnostic now uses owned snapshots. Corrected source `9860370c4` is
-qualified on the frozen request by run 44347337837: original-driver/OFF and
-OFF/ON four-head/decoded bytes match; all 12 context snapshots pass, max
-5.185604095e-6. Independent raw-array checks verify the full panel. Ten composed
-F32 QK budget exceedances and the decoded `oK` failure remain. Keep all first-run
-negatives, original gates and production bytes; this is observer qualification,
-not a PCS model fix or full-gate closure.
-
-Offline captured-operand analysis now separates carried Q/K differences from
-local arithmetic at all 12 QK boundaries. At the first failing coordinate,
-layer1/head8/query11/key9, operand propagation contributes +0.0002894699423
-to the +0.0002994537354 discrepancy; the measured reference-input local error
-is +0.00001907348633, with -0.000009089693243 input-dependent remainder.
-Six new algebra/axis/refusal controls pass. All four retained head biases match
-their original bytes. Token and position table contributions are isolated at
-the pre-normalization embedding sum only. The unique tensor/conversion cause
-of decoded `oK` remains unresolved; the admitted activation panel lacks casing
-projection weight payloads for a parameter-held-fixed intervention. No model,
-capture, production artifact or original full gate was rerun by this analysis.
+The PCS `oK` failure is solved as a root cause (see
+[the record](docs/pcs-quality-root-cause.md), HISTORY 20 November 2026): the
+q4_k-imatrix weights lose the decision in exact arithmetic. Optional follow-up:
+publish a 4-bit artifact with enc.0 and the truecase head at Q8_0 (what-if
++0.65), qualify it natively to 67/67 and 6/6 strict, then drop its recorded loss
+and update the CrispASR registry default. Not started.
 
 ## Free OCR model priorities from ParseBench 2 — 18 November 2026
 
@@ -67,56 +31,6 @@ CrispEmbed results and reflects v0.17.19 LightOn0.8 progress and the later
 LightOn4B source-aligned audit without promoting either beyond its evidence.
 No model execution, default, registry, runtime release or app pin changes are
 part of this documentation update.
-
-## PCS main failure: confirmed stored-weight quality blocker — 18 November 2026
-
-Dedicated PCS ownership continued the preserved `7d9a952f` diagnostic branch.
-The retained main `be20e497` push failure remains open: post/pre/segmentation
-67/67, casing 66/67, decoded 5/6 (`OK` → `oK`); fullstop was not reached.
-No production PCS, original driver, corpus, reference, scorer, threshold or
-acceptance tolerance was changed. No release, waiver or main-green claim.
-
-Actual [Intel native control](tests/results/pcs/frozen-native-control-20261118.json)
-44272906599 passes 67/67 all heads, decoded 6/6; actual
-[AVX2 reproduction](tests/results/pcs/frozen-avx2-failure-20261118.json)
-44273793050 reproduces the exact negative. Original versus diagnostic OFF and
-OFF versus ON match all four existing head dumps and decoded bytes exactly.
-Actual native IDs/pieces and chunk mappings align. Row 37 is ID3664, `▁ok`,
-request3/local3, one 11-token chunk, conditioning false. Native AVX2 `o` logit
-is −0.09815823286771774 (`0xbdc9072f`); the pinned original ONNX gives
-+1.0832455158233643 with the same conditioning. All16 logits/bits are retained.
-Model revision `27f17edbd7e33949f42a9a4fe4322b5af8172e6b`, SHA-256
-`faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da`.
-
-The [same-weight F32 matrix alternative](tests/results/pcs/rejected-f32-matrix-control-20261118.json)
-44274761438 is **rejected**, still 66/67 and 5/6 (`o` −0.2383114547).
-The [independent stored-weight replay](tests/results/pcs/original-graph-stored-weight-blocker-20261118.json)
-44276378964 maps all214 native tensors into the immutable original ONNX graph
-and executes the pinned original collector. It independently produces `I'm oK`
-with `o` −0.2383120805, casing66/67 and decoded5/6. Original collector reference
-reconstruction passes6/6. Dense native versus same-weight original max error
-is ≤7.63e−6 across13 encoder stages and3.64e−6 across all16 row37 logits.
-The earliest compared difference from original uncompressed weights is embedding
-normalization, max0.2691585422; same-weight original/native embeddings match
-within2.39e−7. The immutable artifact remains quality-negative when PCS runtime
-is bypassed. Changing source arithmetic to hide this result is not a repair.
-
-The exact offending tensor, conversion operation and conversion commit are not
-proven. No artifact regeneration or additional owner is authorized here.
-
-**External dependency:** an authorized model/artifact owner must repair and
-independently qualify the stored-weight artifact; model/quantization changes are
-excluded from this PCS lane. No PCS production fix or fix commit is claimed.
-After an authorized repaired artifact: run the unchanged PCS gate to67/67 on
-every head and6/6 decoded, reach/pass fullstop, then normal repair PR/exact-head
-checks/owner merge and push-only main verification. Do not repeat completed
-native builds/captures for checkpoints. All large model/expanded graphs stayed
-on hosted runners; reports and immutable artifact identities are retained.
-
-Initial replay44276100741's singleton-axis shape failure is preserved. Corrected
-44276378964's execution was successful but quality negative; the report-only
-verifier returns1. The diagnostic now propagates negative comparisons to its
-process exit without changing any outputs or repeating model inference.
 
 ## W7 completion ownership — 18 November 2026
 

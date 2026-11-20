@@ -1,3 +1,33 @@
+## PCS `I'm oK` root cause: 4-bit artifact precision, gate re-pinned — 20 November 2026
+
+Closes the PLAN items "PCS main failure: confirmed stored-weight quality
+blocker" and "PCS matched-operator continuation" (18 November). Full record:
+[docs/pcs-quality-root-cause.md](docs/pcs-quality-root-cause.md).
+
+- **Root cause.** The q4_k-imatrix artifact (`faee4bf8…`) loses row37's `o`
+  casing decision in exact arithmetic: the pinned original ONNX graph with its
+  dequantized weights gives −0.2383 versus +1.0832 with the original weights.
+  New `tools/pcs_tensor_bisect.py` replaces one tensor group at a time; no group
+  flips the sign alone (enc.0 −0.435, head.tc −0.268, enc.3 −0.260, enc.2 −0.185,
+  enc.6–11 ≈0), so it is summed 4-bit rounding, not a defective tensor, converter
+  step or runtime operator. AVX2 native (−0.098) agrees in sign; the Intel 67/67
+  pass was rounding luck at a near-zero margin. q8_0 gives +0.9921
+  ([attribution](tests/results/pcs/tensor-group-attribution-20261120.json)).
+- **Ruled out as causal** (preserved, 18 Nov): the one-ULP embedding-sum
+  difference and the ten composed F32 QK budget exceedances (sub-1e−3 against a
+  1.3-logit weight-precision shift); the F32-matrix runtime alternative
+  (rejected, still 66/67).
+- **Gate.** `punct-parity` now gates q8_0 strictly (ground truth) and
+  q4_k-imatrix exactly except for one SHA-bound recorded loss
+  (`tests/pcs_parity.py --recorded-quant-loss`,
+  `tests/regression/pcs/q4_k-imatrix-recorded-loss.json`); any other difference
+  or file fails. No runtime source, default or environment variable changed.
+- **Diagnostics folded in** from draft PR #243 (step-diff, gate capture, operand
+  analysis), with `tests/pcs_step_diff.cpp` routed through `core_util::clean_exit`
+  and formatted with clang-format 18.
+- Open, optional: a mixed-precision 4-bit artifact (enc.0 + truecase head at
+  Q8_0, what-if +0.65) — PLAN.
+
 ## OvisOCR2 GPU drift bisect: F32 device-matrix gates — 20 November 2026
 
 Two default-off gates for `CRISPEMBED_QWEN35_OCR_GPU`, `CRISPEMBED_QWEN35_OCR_GPU_F32_VISION` and

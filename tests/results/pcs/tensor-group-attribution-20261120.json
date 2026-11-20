@@ -1,0 +1,31 @@
+{
+  "tool": "tools/pcs_tensor_bisect.py",
+  "original": {"repository": "1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase",
+               "revision": "d1769a597ce8dfaa070d436bc67d4ee761f58884",
+               "model_onnx_sha256": "c43ca686dabc237c3b06be834b9423c07580fef7e2b1a6c09976f7d60caa5d89"},
+  "stored": {"repository": "cstr/pcs-xlmr-base-GGUF", "filename": "pcs-xlmr-base-q4_k-imatrix.gguf",
+             "sha256": "faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da"},
+  "alternative": {"repository": "cstr/pcs-xlmr-base-GGUF", "filename": "pcs-xlmr-base-q8_0.gguf"},
+  "arithmetic": "ONNX Runtime CPU, F32, pinned original graph; only the named groups replaced",
+  "quantity": "row37 = frozen case 3 token `▁ok` (id 3664), cap head logit for character `o` (bit 1); > 0 means `O`",
+  "groups_replaced_from_q4_k_imatrix": {
+    "NONE (original F32)": 1.083245039,
+    "emb.,enc.,head. (whole artifact)": -0.238313034,
+    "emb.": 1.145773530,
+    "enc.": 0.034746915,
+    "head.": 0.814836860,
+    "head.tc.": 0.814836860,
+    "enc.0-5": 0.024256147,
+    "enc.6-11": 1.098789692,
+    "enc.0.": 0.647890270,
+    "enc.1.": 1.150479317,
+    "enc.2.": 0.898224950,
+    "enc.3.": 0.823725641,
+    "enc.4.": 1.043897271,
+    "enc.5.": 1.010811210
+  },
+  "whole_artifact_q8_0": 0.992126107,
+  "mixed_q4_k_imatrix_with_enc0_and_head_tc_from_q8_0": 0.646475792,
+  "tensor_types_q4_k_imatrix": "tok/pos embeddings and all encoder/head matmul weights Q4_K; head.tc.fc2 and head.sbd.fc2 Q4_0; head.tc.fc1/head.sbd.fc1 F32; norms/biases F32",
+  "conclusion": "No single defective tensor or conversion step: the decoded `oK` is the summed 4-bit rounding of many tensors (largest: enc.0, head.tc, enc.3, enc.2). The q8_0 artifact preserves the decision (+0.99). Native AVX2 (-0.098) and the exact replay (-0.238) agree in sign; the earlier Intel 67/67 pass was the native rounding landing on the other side of a margin the stored weights no longer have."
+}
