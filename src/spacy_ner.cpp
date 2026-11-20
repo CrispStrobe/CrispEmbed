@@ -5,6 +5,7 @@
 #include "ggml-cpu.h"
 #include "ggml.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <limits>
@@ -25,18 +26,12 @@ constexpr std::size_t hidden = 64;
 constexpr std::size_t hidden_pieces = 2;
 constexpr std::size_t slot = hidden * hidden_pieces;         // 128 per state feature
 constexpr std::size_t cache_columns = state_features * slot; // 384
-constexpr std::size_t classes = 18;
-constexpr std::size_t entity_labels = 4;
 constexpr std::size_t embedding_rows[features_count] = { 5000, 1000, 2500, 2500 };
 constexpr float layer_norm_epsilon = 1e-8f;
 
-// Source class order: B-x4, I-x4, L-x4, U-x4 (LOC, PER, ORG, MISC), U- (label 0), O.
+// Class names follow spaCy's BiluoPushDown order (get_class_name): "B-X",
+// "I-X", "L-X", "U-X", "U-" (label 0, valid only for preset blocks) and "O".
 enum Move { BEGIN, IN, LAST, UNIT, UNIT_BLOCKED, OUT };
-
-Move move_of(std::size_t c) {
-    if (c < 16) return static_cast<Move>(c / entity_labels);
-    return c == 16 ? UNIT_BLOCKED : OUT;
-}
 
 struct ContextDeleter {
     void operator()(ggml_context * context) const { ggml_free(context); }
@@ -67,24 +62,56 @@ std::vector<float> read(const ggml_tensor * tensor) {
 
 } // namespace
 
-const std::vector<std::string> & NerModel::labels() {
-    static const std::vector<std::string> names = { "LOC", "PER", "ORG", "MISC" };
-    return names;
+const std::vector<std::string> & NerModel::labels() const {
+    return labels_;
 }
 
-NerModel::NerModel(std::map<std::string, ggml_tensor *> weights, ggml_backend_t backend)
+NerModel::NerModel(std::map<std::string, ggml_tensor *> weights, ggml_backend_t backend,
+                   const std::vector<std::string> & class_names)
     : weights_(std::move(weights)), backend_(backend) {
+    if (class_names.empty() || class_names.size() > 1024)
+        throw std::invalid_argument("Invalid spaCy NER class inventory");
+    for (const auto & name : class_names) {
+        std::uint32_t label = 0;
+        int move = -1;
+        if (name == "O")
+            move = OUT;
+        else if (name == "U-")
+            move = UNIT_BLOCKED;
+        else if (name.size() > 2 && name[1] == '-') {
+            const char kind = name[0];
+            move = kind == 'B' ? BEGIN : kind == 'I' ? IN : kind == 'L' ? LAST : kind == 'U' ? UNIT : -1;
+            const auto text = name.substr(2);
+            const auto found = std::find(labels_.begin(), labels_.end(), text);
+            label = static_cast<std::uint32_t>(found - labels_.begin());
+            if (found == labels_.end()) labels_.push_back(text);
+        }
+        if (move < 0) throw std::invalid_argument("Unsupported spaCy NER class " + name);
+        class_moves_.push_back(move);
+        class_labels_.push_back(label);
+    }
     if (!backend_ || !ggml_backend_is_cpu(backend_)) throw std::invalid_argument("spaCy NER requires a CPU backend");
     for (const auto & item : weights_)
         if (!item.second || item.second->type != GGML_TYPE_F32)
             throw std::invalid_argument("spaCy NER tensors must be F32: " + item.first);
     lower_bias_ = read(weight("ner.lower.b"));
     lower_pad_ = read(weight("ner.lower.pad"));
-    upper_w_ = read(weight("ner.upper.W"));
-    upper_b_ = read(weight("ner.upper.b"));
-    if (lower_bias_.size() != slot || lower_pad_.size() != cache_columns || upper_w_.size() != classes * hidden ||
-        upper_b_.size() != classes)
+    const std::size_t classes = class_moves_.size();
+    // Hidden width from the lower layer: 64 for the CNN NER, n_moves for an
+    // upper-less transformer-listener NER (maxout output = class scores).
+    hidden_ = lower_bias_.size() / hidden_pieces;
+    slot_ = hidden_ * hidden_pieces;
+    columns_ = state_features * slot_;
+    has_upper_ = weights_.find("ner.upper.W") != weights_.end();
+    if (has_upper_) {
+        upper_w_ = read(weight("ner.upper.W"));
+        upper_b_ = read(weight("ner.upper.b"));
+    }
+    if (lower_bias_.size() % hidden_pieces != 0 || lower_pad_.size() != columns_ ||
+        (has_upper_ ? upper_w_.size() != classes * hidden_ || upper_b_.size() != classes : hidden_ != classes))
         throw std::invalid_argument("Invalid spaCy NER parser tensor geometry");
+    listener_ = weights_.find("ner.embed.0.E") == weights_.end();
+    if (!listener_ && hidden_ != hidden) throw std::invalid_argument("Invalid spaCy NER parser tensor geometry");
     allocator_ = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend_));
     if (!allocator_) throw std::bad_alloc();
 }
@@ -194,6 +221,8 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
     std::vector<float> cache(lower_pad_);
     const auto lower_values = read(lower);
     cache.insert(cache.end(), lower_values.begin(), lower_values.end());
+    std::vector<std::uint8_t> spaces(count);
+    for (std::size_t i = 0; i < count; ++i) spaces[i] = features[i][5] != 0;
     if (trace) {
         const auto t2v = read(tok2vec);
         trace("ner.tok2vec.output", TensorView{ { count, static_cast<std::size_t>(width) }, t2v.data(), t2v.size() });
@@ -203,22 +232,49 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
               TensorView{ { count + 1, state_features, hidden, hidden_pieces }, cache.data(), cache.size() });
     }
 
+    return decode(cache, count, spaces, sentence_starts, trace, cancelled);
+}
+
+std::vector<Entity> NerModel::run_cached(const std::vector<float> & lower_rows,
+                                         const std::vector<std::uint8_t> & is_space,
+                                         const std::vector<std::uint8_t> & sentence_starts, const TraceSink & trace,
+                                         const CancelCheck & cancelled) const {
+    check_cancelled(cancelled);
+    const auto count = is_space.size();
+    if (!listener_) throw std::invalid_argument("spaCy NER run_cached needs a transformer-listener NER");
+    if (sentence_starts.size() != count || lower_rows.size() != count * columns_)
+        throw std::invalid_argument("spaCy NER cache geometry mismatch");
+    if (count == 0) return {};
+    std::vector<float> cache(lower_pad_);
+    cache.insert(cache.end(), lower_rows.begin(), lower_rows.end());
+    if (trace)
+        trace("ner.lower_cache",
+              TensorView{ { count + 1, state_features, hidden_, hidden_pieces }, cache.data(), cache.size() });
+    return decode(cache, count, is_space, sentence_starts, trace, cancelled);
+}
+
+std::vector<Entity> NerModel::decode(const std::vector<float> & cache, std::size_t count,
+                                     const std::vector<std::uint8_t> & is_spaces,
+                                     const std::vector<std::uint8_t> & sentence_starts, const TraceSink & trace,
+                                     const CancelCheck & cancelled) const {
+    const std::size_t slot = slot_, cache_columns = columns_, hidden = hidden_;
     // Greedy BILUO transitions (no preset entities, beam width 1).
     std::vector<Entity> entities;
     bool open = false;
     Entity current;
-    std::array<float, slot> summed{};
-    std::array<float, hidden> activation{};
-    std::array<float, classes> scores{};
+    std::vector<float> summed(slot);
+    std::vector<float> activation(hidden);
+    const std::size_t classes = class_moves_.size();
+    std::vector<float> scores(classes);
     for (std::size_t b0 = 0; b0 < count; ++b0) {
         check_cancelled(cancelled);
         const std::size_t remaining = count - b0;
         const bool next_starts_sentence = b0 + 1 < count && sentence_starts[b0 + 1] != 0;
-        const bool is_space = features[b0][5] != 0;
+        const bool is_space = is_spaces[b0] != 0;
         const std::array<std::int32_t, state_features> ids = { static_cast<std::int32_t>(b0),
                                                                open ? static_cast<std::int32_t>(current.start) : -1,
                                                                open ? static_cast<std::int32_t>(b0) - 1 : -1 };
-        summed.fill(0.0f);
+        std::fill(summed.begin(), summed.end(), 0.0f);
         for (std::size_t f = 0; f < state_features; ++f) {
             const float * source =
                 ids[f] < 0 ? lower_pad_.data() + f * slot
@@ -232,18 +288,22 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
             activation[h] = second > first ? second : first;
         }
         for (std::size_t c = 0; c < classes; ++c) {
-            const float * w = upper_w_.data() + c * hidden;
-            float sum = 0.0f;
-            for (std::size_t h = 0; h < hidden; ++h) sum += activation[h] * w[h];
-            scores[c] = sum + upper_b_[c];
+            if (has_upper_) {
+                const float * w = upper_w_.data() + c * hidden;
+                float sum = 0.0f;
+                for (std::size_t h = 0; h < hidden; ++h) sum += activation[h] * w[h];
+                scores[c] = sum + upper_b_[c];
+            } else {
+                scores[c] = activation[c];
+            }
             if (!std::isfinite(scores[c])) throw std::runtime_error("spaCy NER produced a nonfinite score");
         }
-        std::array<float, classes> valid{};
+        std::vector<float> valid(classes);
         int best = -1;
         for (std::size_t c = 0; c < classes; ++c) {
-            const auto label = static_cast<std::uint32_t>(c % entity_labels);
+            const auto label = class_labels_[c];
             bool ok = false;
-            switch (move_of(c)) {
+            switch (static_cast<Move>(class_moves_[c])) {
             case BEGIN:
                 ok = !open && remaining >= 2 && !next_starts_sentence && !is_space;
                 break;
@@ -277,8 +337,8 @@ std::vector<Entity> NerModel::run(const std::vector<FeatureRow> & features,
             trace(prefix + "state.chosen_action", TensorView{ { 1 }, &choice, 1 });
         }
         const auto chosen = static_cast<std::size_t>(best);
-        const auto label = static_cast<std::uint32_t>(chosen % entity_labels);
-        switch (move_of(chosen)) {
+        const auto label = class_labels_[chosen];
+        switch (static_cast<Move>(class_moves_[chosen])) {
         case BEGIN:
             open = true;
             current = { static_cast<std::uint32_t>(b0), 0, label };

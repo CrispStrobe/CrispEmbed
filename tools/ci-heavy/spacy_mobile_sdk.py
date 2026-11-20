@@ -150,7 +150,7 @@ def compare(run, out, smoke_output, oracle_dir, label):
     subprocess.run([sys.executable, ROOT / 'tests/spacy_smoke_compare.py', '--smoke', smoke_output,
                     '--oracle', oracle_dir / 'oracle.json', '--ner-oracle', oracle_dir / 'ner-oracle.json',
                     '--report', report], check=False)
-    data = json.loads(report.read_text())
+    data = json.loads(report.read_text(encoding='utf-8'))
     data['passed'] = data['exact_cases'] == data['cases'] and not data['differences']
     return data
 
@@ -164,11 +164,11 @@ def publish_sdk(scratch, out, report, target, archive, receipt_data):
     assert token, 'Hosted Hub write credential unavailable'
     hub = HfApi(token=token)
     card = plat._load('spacy_model_card', ROOT / 'tools/spacy/model_card.py')
-    tracked = json.loads((ROOT / 'tools/spacy/hub_catalog.json').read_text())
+    tracked = json.loads((ROOT / 'tools/spacy/hub_catalog.json').read_text(encoding='utf-8'))
     source = report['source']
     prefix = f'sdk/{target}/{source}'
     receipt = scratch / 'receipt.json'
-    receipt.write_text(json.dumps(receipt_data, indent=2) + '\n')
+    receipt.write_text(json.dumps(receipt_data, indent=2) + '\n', encoding='utf-8', newline='\n')
 
     def commit(uploads, message):
         before = set(hub.list_repo_files(common.REPOSITORY))
@@ -199,8 +199,8 @@ def publish_sdk(scratch, out, report, target, archive, receipt_data):
     catalog['sdks'].sort(key=lambda s: s['target'])
     payload = scratch / 'card'
     payload.mkdir()
-    (payload / plat.HUB_CATALOG).write_text(json.dumps(catalog, indent=2) + '\n')
-    (payload / 'README.md').write_text(card.render(catalog))
+    (payload / plat.HUB_CATALOG).write_text(json.dumps(catalog, indent=2) + '\n', encoding='utf-8', newline='\n')
+    (payload / 'README.md').write_text(card.render(catalog), encoding='utf-8', newline='\n')
     card_revision, card_readback = commit({plat.HUB_CATALOG: payload / plat.HUB_CATALOG,
                                            'README.md': payload / 'README.md'}, 'Update model card and SDK catalog')
     report['card_publication'] = {'revision': card_revision, 'fresh_readback': card_readback}
@@ -226,7 +226,7 @@ def main():
     report_path = out / f'mobile-{args.command}.json'
 
     def save():
-        report_path.write_text(json.dumps(report, indent=2) + '\n')
+        report_path.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8', newline='\n')
 
     try:
         if args.command == 'oracle':
@@ -316,7 +316,7 @@ def main():
             corpus_lines(run_dir / 'texts.txt')
             (run_dir / 'hashes.env').write_text(
                 f"MODEL_SHA={digest(bundle / 'model.gguf')}\nRESOURCES_SHA={digest(bundle / 'resources.json')}\n"
-                f"NER_SHA={NER_SHA}\n")
+                f"NER_SHA={NER_SHA}\n", encoding='utf-8', newline='\n')
             report['ndk'] = ndk.name
             for abi in ('arm64-v8a', 'x86_64'):
                 flags = ['-DCMAKE_TOOLCHAIN_FILE=' + str(ndk / 'build/cmake/android.toolchain.cmake'),
@@ -334,10 +334,10 @@ def main():
                 assert not [n for n in report['elf_needed'][abi] if 'pcre' in n], report['elf_needed'][abi]
         elif args.command == 'android-finish':
             run_dir = args.run_dir
-            build_report = json.loads((out / 'mobile-android-build.json').read_text())
+            build_report = json.loads((out / 'mobile-android-build.json').read_text(encoding='utf-8'))
             output = run_dir / 'emulator-smoke-x86_64.jsonl'
             assert output.exists() and output.stat().st_size > 0, 'Emulator produced no smoke output'
-            report['emulator'] = {'abi': 'x86_64', 'api': (run_dir / 'emulator-api.txt').read_text().strip(),
+            report['emulator'] = {'abi': 'x86_64', 'api': (run_dir / 'emulator-api.txt').read_text(encoding='utf-8').strip(),
                                   'comparison': compare(run, out, output, args.oracle_dir, 'android-emulator')}
             save()
             assert report['emulator']['comparison']['passed'], 'Android emulator output differs from original spaCy'

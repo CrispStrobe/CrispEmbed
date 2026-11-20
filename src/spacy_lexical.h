@@ -28,6 +28,23 @@ std::vector<std::size_t> utf8_boundaries(std::string_view text);
 // MurmurHash64A over the original UTF-8 bytes with seed 1. Empty string is 0.
 std::uint64_t spacy_string_id(std::string_view text);
 
+// Python `re.search` with spaCy-exported patterns, compiled through the same
+// pinned Python-to-PCRE2 translation as the tokenizer (attribute-ruler REGEX).
+class PythonRegex {
+public:
+    explicit PythonRegex(const std::string & pattern);
+    ~PythonRegex();
+    PythonRegex(PythonRegex &&) noexcept;
+    PythonRegex & operator=(PythonRegex &&) noexcept;
+    bool search(std::string_view text) const;
+    // Python re.findall spans (byte offsets), non-overlapping, left to right.
+    std::vector<std::pair<std::size_t, std::size_t>> find_all(std::string_view text) const;
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
 class LexicalModel {
 public:
     // The caller must authenticate these bytes against the model resource hash.
@@ -44,6 +61,12 @@ public:
     // network, locale-dependent classification, normalization or Python runtime.
     // Calls on an admitted immutable model are safe from independent threads.
     std::vector<LexicalToken> tokenize(std::string_view text, const CancelCheck & cancelled = {}) const;
+
+    // CPython str.lower() (pinned Unicode tables, contextual final sigma) and
+    // str.isalpha() (nonempty, every scalar alphabetic) for arbitrary valid
+    // UTF-8, as used by attribute-ruler LOWER patterns and rule lemmatizers.
+    std::string python_lower(std::string_view text) const;
+    bool python_isalpha(std::string_view text) const;
 
 private:
     struct Impl;

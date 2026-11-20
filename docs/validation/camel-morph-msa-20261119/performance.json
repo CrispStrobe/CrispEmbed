@@ -1,0 +1,12 @@
+{
+  "host": "Apple M1 (8 cores, 16 GB), macOS, shared machine (load average 4-8 during the runs); single thread",
+  "input": "9,571 words (PUD + stress), backoff NONE, full bundle",
+  "native_runs": [
+    {"load_s": 1.295, "analyze_s": 3.005, "words_per_s": 3185.2, "rss_after_load_kib": 243296, "peak_rss_kib": 317056},
+    {"load_s": 1.482, "analyze_s": 4.146, "words_per_s": 2308.6, "rss_after_load_kib": 243216, "peak_rss_kib": 316976},
+    {"load_s": 1.438, "analyze_s": 3.490, "words_per_s": 2742.3, "rss_after_load_kib": 243232, "peak_rss_kib": 316992}
+  ],
+  "native_load_includes": "manifest and NOTICE/LICENSE/DB SHA-256 authentication (85 MB) and ALMOR parsing",
+  "camel_tools_run": {"load_s": 2.996, "analyze_s": 28.737, "words_per_s": 333.1, "max_rss_bytes": 790642688, "note": "no hash check; JSON serialization of results included in both"},
+  "native_add_all": {"words_per_s": 287.1, "analyses": 1704695}
+}

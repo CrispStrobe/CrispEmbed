@@ -94,5 +94,23 @@
     "status": "pending canonical CPython 3.12.14 conversion and publication",
     "files": {},
     "qualification": "Opt-in (CRISPEMBED_SPACY_NER=1). Runtime-owner receipts: 1,776/1,776 UD GSD sentences and 1,758/1,758 entities identical to original spaCy."
-  }
+  },
+  "language_bundles": [
+    {
+      "language": "English",
+      "model": "en_core_web_sm 3.8.0",
+      "repository": "cstr/crispembed-spacy-en-core-web-sm-3.8.0",
+      "revision": "eb659259b489593ddf29c747bc4562fbad5570f4",
+      "license": "MIT",
+      "claims": "Analysis incl. entities; exact vs original spaCy on UD English-EWT test (2,077 texts) with the v2 capsules listed on its card. No grammar claim."
+    },
+    {
+      "language": "French",
+      "model": "fr_core_news_sm 3.8.0",
+      "repository": "cstr/crispembed-spacy-fr-core-news-sm-3.8.0",
+      "revision": "5e90593195cc4ecd20ceb864d932d7d7f5e3d762",
+      "license": "LGPL-LR",
+      "claims": "Analysis incl. entities; exact vs original spaCy on UD French-GSD test (416 texts) with the v2 capsules listed on its card. No grammar claim."
+    }
+  ]
 }

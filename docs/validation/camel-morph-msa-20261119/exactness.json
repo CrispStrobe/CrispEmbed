@@ -1,0 +1,62 @@
+{
+  "reference": "camel_tools 1.6.0 (CPython 3.12.10, macOS arm64), MorphologyDB(db,'a'), Analyzer(db, backoff)",
+  "native": "crispembed-ar-morph CLI over the C ABI (tools/arabic_morph/ar_morph_cli.cpp), branch feat/camel-morph-msa-20261119",
+  "words_file_sha256": "a87b5dd481806f6b8c067787e408c9d046a74667a943bfe44728567d8bd75468",
+  "words": {
+    "pud_unique": 9447,
+    "stress": 124,
+    "total": 9571
+  },
+  "pud_conllu": {
+    "url": "https://raw.githubusercontent.com/UniversalDependencies/UD_Arabic-PUD/r2.14/ar_pud-ud-test.conllu",
+    "sha256": "a6d574a46815f6d6e7fa2e92944a2bbde0acaad5013010d92a99f1ef711ce17b",
+    "texts": 1000
+  },
+  "comparisons": {
+    "full/NONE (default)": {
+      "words": 9571,
+      "word_exact": 9571,
+      "word_exact_ordered": 2378,
+      "errors_both": 0,
+      "analyses": 217053,
+      "analyses_equal": 217053,
+      "features": 9740479,
+      "set_group_reordered_analyses": 216679,
+      "mismatch_words": 0
+    },
+    "full/NOAN_PROP": {
+      "words": 9571,
+      "word_exact": 9571,
+      "word_exact_ordered": 384,
+      "errors_both": 1,
+      "analyses": 273703,
+      "analyses_equal": 273703,
+      "features": 12289729,
+      "set_group_reordered_analyses": 273329,
+      "mismatch_words": 0
+    },
+    "full/ADD_ALL": {
+      "words": 9571,
+      "word_exact": 9571,
+      "word_exact_ordered": 385,
+      "errors_both": 2,
+      "analyses": 1704695,
+      "analyses_equal": 1704695,
+      "features": 76491407,
+      "set_group_reordered_analyses": 1704321,
+      "mismatch_words": 0
+    },
+    "noprob/NONE": {
+      "words": 9571,
+      "word_exact": 9571,
+      "word_exact_ordered": 2378,
+      "errors_both": 0,
+      "analyses": 217053,
+      "analyses_equal": 217053,
+      "features": 9740479,
+      "set_group_reordered_analyses": 216679,
+      "mismatch_words": 0
+    }
+  },
+  "key_order_note": "word_exact requires identical analysis lists, values (str/null/float), key sets and key order after sorting each run of keys that merge_features appends from one frozenset; those runs follow PYTHONHASHSEED in camel_tools. word_exact_ordered counts words whose order also matches the reference process byte for byte."
+}

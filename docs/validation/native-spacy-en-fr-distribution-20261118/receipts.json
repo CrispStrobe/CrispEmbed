@@ -1,0 +1,445 @@
+{
+ "schema": "crispembed.spacy.v2_bundle_receipts.v1",
+ "en_core_web_sm": {
+  "publication_run": "44372635419",
+  "source": "e91b054d4c5a6b4b0ed8df668a7e3c45f6dcd21c",
+  "publisher": "cstr",
+  "bundle_revision": "eb659259b489593ddf29c747bc4562fbad5570f4",
+  "bundle_files": {
+   "bundle/model.gguf": {
+    "sha256": "17b18871a2c1e766be4572c1dd9a9902ba01c4a46679797ccb3c4d0048d24e7d",
+    "bytes": 12752960
+   },
+   "bundle/resources.json": {
+    "sha256": "d585e59b9b2f1aedfd5eb37716ff0d362969f6f8ba8535dad4ae50991567981a",
+    "bytes": 3451396
+   },
+   "bundle/manifest.json": {
+    "sha256": "5cba3b979c67e6a6ecd2f5414bc953728cc4601c2cbe69bf89e9b62465d8dc6c",
+    "bytes": 21889
+   },
+   "bundle/LICENSE": {
+    "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+    "bytes": 1056
+   },
+   "bundle/LICENSES_SOURCES": {
+    "sha256": "20d9dfacd215112251f15341edd1a47b1f98bf393a212f10f194ffdc7ee98a90",
+    "bytes": 2347
+   }
+  },
+  "immutable_tree": [
+   ".gitattributes",
+   "bundle/LICENSE",
+   "bundle/LICENSES_SOURCES",
+   "bundle/manifest.json",
+   "bundle/model.gguf",
+   "bundle/resources.json"
+  ],
+  "fresh_readback": {
+   "bundle/model.gguf": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-en-core-web-sm-3.8.0/resolve/eb659259b489593ddf29c747bc4562fbad5570f4/bundle/model.gguf",
+    "sha256": "17b18871a2c1e766be4572c1dd9a9902ba01c4a46679797ccb3c4d0048d24e7d",
+    "bytes": 12752960,
+    "http_status": 200,
+    "response_repo_commit": null,
+    "fresh_empty_cache": true
+   },
+   "bundle/resources.json": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-en-core-web-sm-3.8.0/resolve/eb659259b489593ddf29c747bc4562fbad5570f4/bundle/resources.json",
+    "sha256": "d585e59b9b2f1aedfd5eb37716ff0d362969f6f8ba8535dad4ae50991567981a",
+    "bytes": 3451396,
+    "http_status": 200,
+    "response_repo_commit": "eb659259b489593ddf29c747bc4562fbad5570f4",
+    "fresh_empty_cache": true
+   },
+   "bundle/manifest.json": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-en-core-web-sm-3.8.0/resolve/eb659259b489593ddf29c747bc4562fbad5570f4/bundle/manifest.json",
+    "sha256": "5cba3b979c67e6a6ecd2f5414bc953728cc4601c2cbe69bf89e9b62465d8dc6c",
+    "bytes": 21889,
+    "http_status": 200,
+    "response_repo_commit": "eb659259b489593ddf29c747bc4562fbad5570f4",
+    "fresh_empty_cache": true
+   },
+   "bundle/LICENSE": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-en-core-web-sm-3.8.0/resolve/eb659259b489593ddf29c747bc4562fbad5570f4/bundle/LICENSE",
+    "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+    "bytes": 1056,
+    "http_status": 200,
+    "response_repo_commit": "eb659259b489593ddf29c747bc4562fbad5570f4",
+    "fresh_empty_cache": true
+   },
+   "bundle/LICENSES_SOURCES": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-en-core-web-sm-3.8.0/resolve/eb659259b489593ddf29c747bc4562fbad5570f4/bundle/LICENSES_SOURCES",
+    "sha256": "20d9dfacd215112251f15341edd1a47b1f98bf393a212f10f194ffdc7ee98a90",
+    "bytes": 2347,
+    "http_status": 200,
+    "response_repo_commit": "eb659259b489593ddf29c747bc4562fbad5570f4",
+    "fresh_empty_cache": true
+   }
+  },
+  "card_run": "44377019364",
+  "card_revision": "e1808ee0a8083336a609822b7b4aa8e75a03ed02",
+  "card_readback": {
+   "bundle-catalog.json": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-en-core-web-sm-3.8.0/resolve/e1808ee0a8083336a609822b7b4aa8e75a03ed02/bundle-catalog.json",
+    "sha256": "52313f5ec90bb331c44e6c73776dba964563ebf34d6b68b384cc51ae76a4f24b",
+    "bytes": 6290,
+    "http_status": 200,
+    "response_repo_commit": "e1808ee0a8083336a609822b7b4aa8e75a03ed02",
+    "fresh_empty_cache": true
+   },
+   "README.md": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-en-core-web-sm-3.8.0/resolve/e1808ee0a8083336a609822b7b4aa8e75a03ed02/README.md",
+    "sha256": "ee1b447f1d8e644de79c784c018bc9bb00d048cc2db6e915a5a9580d2adde8ef",
+    "bytes": 8454,
+    "http_status": 200,
+    "response_repo_commit": "e1808ee0a8083336a609822b7b4aa8e75a03ed02",
+    "fresh_empty_cache": true
+   }
+  },
+  "consumers": [
+   {
+    "platform": "linux-arm64",
+    "passed": true,
+    "run": "44377019364",
+    "bundle_revision": "eb659259b489593ddf29c747bc4562fbad5570f4",
+    "failure": null,
+    "library": {
+     "library_sha256": "21d15c1e48418d7db0d7cf5626330ce6d9c31c637a09cd1ae57020a9f9a17c45",
+     "capsule_path": "packages/linux-arm64/45b057700880e125d701d941a9e3123679960d35/spacy-de_core_news_sm-3.8.0-linux-arm64-f32.tar.gz",
+     "capsule_revision": "fd75184d58944ec5f6c4cb037a48eae6e6f5942f",
+     "capsule_sha256": "41c07dbe1ecc21fb2c3409aa5d6d13a1d47cb213bff485e2c4e06bfe0d02b0c6",
+     "source_commit": "45b057700880e125d701d941a9e3123679960d35"
+    },
+    "controls": {
+     "disabled_without_gate": true,
+     "wrong_model_hash_rejected": true,
+     "wrong_resource_hash_rejected": true,
+     "foreign_resources_rejected": true,
+     "v1_model_with_v2_resources_rejected": true,
+     "admitted": true,
+     "text_only_capabilities": true,
+     "numeric_service_rejected": true,
+     "attach_ner_rejected": true
+    },
+    "comparison": {
+     "cases": 2077,
+     "exact_cases": 2077,
+     "tokens": 25531,
+     "entities": {
+      "oracle": 1876,
+      "matched": 1876
+     },
+     "passed": true
+    }
+   },
+   {
+    "platform": "linux-x86_64",
+    "passed": true,
+    "run": "44377019364",
+    "bundle_revision": "eb659259b489593ddf29c747bc4562fbad5570f4",
+    "failure": null,
+    "library": {
+     "library_sha256": "6e21ae15b08922520a2cb6bcba3ed27ae7f6476a6bde1cec33607ab9489045f4",
+     "capsule_path": "packages/linux-x86_64/45b057700880e125d701d941a9e3123679960d35/spacy-de_core_news_sm-3.8.0-linux-x86_64-f32.tar.gz",
+     "capsule_revision": "d143d26a3edd7b51bdfdf12a6cda5b6243ec69d0",
+     "capsule_sha256": "c8bbbb86fdd362117c2b5c94453f975b33fab6953a78c13db37b255caa816ce5",
+     "source_commit": "45b057700880e125d701d941a9e3123679960d35"
+    },
+    "controls": {
+     "disabled_without_gate": true,
+     "wrong_model_hash_rejected": true,
+     "wrong_resource_hash_rejected": true,
+     "foreign_resources_rejected": true,
+     "v1_model_with_v2_resources_rejected": true,
+     "admitted": true,
+     "text_only_capabilities": true,
+     "numeric_service_rejected": true,
+     "attach_ner_rejected": true
+    },
+    "comparison": {
+     "cases": 2077,
+     "exact_cases": 2077,
+     "tokens": 25531,
+     "entities": {
+      "oracle": 1876,
+      "matched": 1876
+     },
+     "passed": true
+    }
+   },
+   {
+    "platform": "macos-arm64",
+    "passed": true,
+    "run": "44377019364",
+    "bundle_revision": "eb659259b489593ddf29c747bc4562fbad5570f4",
+    "failure": null,
+    "library": {
+     "library_sha256": "f3300152c8b063960ff9c21785241bb8b99ffc8f1b2150e362b46d78b0272647",
+     "capsule_path": "packages/macos-arm64/45b057700880e125d701d941a9e3123679960d35/spacy-de_core_news_sm-3.8.0-macos-arm64-f32.tar.gz",
+     "capsule_revision": "cf833ae59e6e92773af90c4cbae67a2ba68dec03",
+     "capsule_sha256": "200a09b1f582e67abf813355424c0ae9066d47a076c2bf641daed0ff605c7d8c",
+     "source_commit": "45b057700880e125d701d941a9e3123679960d35"
+    },
+    "controls": {
+     "disabled_without_gate": true,
+     "wrong_model_hash_rejected": true,
+     "wrong_resource_hash_rejected": true,
+     "foreign_resources_rejected": true,
+     "v1_model_with_v2_resources_rejected": true,
+     "admitted": true,
+     "text_only_capabilities": true,
+     "numeric_service_rejected": true,
+     "attach_ner_rejected": true
+    },
+    "comparison": {
+     "cases": 2077,
+     "exact_cases": 2077,
+     "tokens": 25531,
+     "entities": {
+      "oracle": 1876,
+      "matched": 1876
+     },
+     "passed": true
+    }
+   },
+   {
+    "platform": "windows-x86_64",
+    "passed": false,
+    "run": "44377019364",
+    "bundle_revision": "eb659259b489593ddf29c747bc4562fbad5570f4",
+    "failure": "AssertionError: No published v2-capable windows-x86_64 capsule in cstr/crispembed-spacy-de-core-news-sm-3.8.0",
+    "library": {
+     "library_sha256": null,
+     "capsule_path": null,
+     "capsule_revision": null,
+     "capsule_sha256": null,
+     "source_commit": null
+    },
+    "controls": null,
+    "comparison": {}
+   }
+  ]
+ },
+ "fr_core_news_sm": {
+  "publication_run": "44372635419",
+  "source": "e91b054d4c5a6b4b0ed8df668a7e3c45f6dcd21c",
+  "publisher": "cstr",
+  "bundle_revision": "5e90593195cc4ecd20ceb864d932d7d7f5e3d762",
+  "bundle_files": {
+   "bundle/model.gguf": {
+    "sha256": "8b8f9ab4aa322191faa1735d1b7d53e0e744e18f4025290fe37242faa9a8e53e",
+    "bytes": 12780352
+   },
+   "bundle/resources.json": {
+    "sha256": "bbdd7b6a51478abcc8e6d6e9cfad0d70e3a3f44a76de6ed4be4fdbb699825f8d",
+    "bytes": 35391368
+   },
+   "bundle/manifest.json": {
+    "sha256": "986d620edc745624198c56d3494fa30f3b649786c1d93a29db76fe55196f2264",
+    "bytes": 21928
+   },
+   "bundle/LICENSE": {
+    "sha256": "fcfeb5f3a67aa25d659d1162b4f4a9c52a92171d4df68a11d87c52e3af982a17",
+    "bytes": 4424
+   },
+   "bundle/LICENSES_SOURCES": {
+    "sha256": "21ea31093799e954757d62505687652dfd059d8685f97266d1a442f8a39fcdde",
+    "bytes": 28874
+   }
+  },
+  "immutable_tree": [
+   ".gitattributes",
+   "bundle/LICENSE",
+   "bundle/LICENSES_SOURCES",
+   "bundle/manifest.json",
+   "bundle/model.gguf",
+   "bundle/resources.json"
+  ],
+  "fresh_readback": {
+   "bundle/model.gguf": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-fr-core-news-sm-3.8.0/resolve/5e90593195cc4ecd20ceb864d932d7d7f5e3d762/bundle/model.gguf",
+    "sha256": "8b8f9ab4aa322191faa1735d1b7d53e0e744e18f4025290fe37242faa9a8e53e",
+    "bytes": 12780352,
+    "http_status": 200,
+    "response_repo_commit": null,
+    "fresh_empty_cache": true
+   },
+   "bundle/resources.json": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-fr-core-news-sm-3.8.0/resolve/5e90593195cc4ecd20ceb864d932d7d7f5e3d762/bundle/resources.json",
+    "sha256": "bbdd7b6a51478abcc8e6d6e9cfad0d70e3a3f44a76de6ed4be4fdbb699825f8d",
+    "bytes": 35391368,
+    "http_status": 200,
+    "response_repo_commit": null,
+    "fresh_empty_cache": true
+   },
+   "bundle/manifest.json": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-fr-core-news-sm-3.8.0/resolve/5e90593195cc4ecd20ceb864d932d7d7f5e3d762/bundle/manifest.json",
+    "sha256": "986d620edc745624198c56d3494fa30f3b649786c1d93a29db76fe55196f2264",
+    "bytes": 21928,
+    "http_status": 200,
+    "response_repo_commit": "5e90593195cc4ecd20ceb864d932d7d7f5e3d762",
+    "fresh_empty_cache": true
+   },
+   "bundle/LICENSE": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-fr-core-news-sm-3.8.0/resolve/5e90593195cc4ecd20ceb864d932d7d7f5e3d762/bundle/LICENSE",
+    "sha256": "fcfeb5f3a67aa25d659d1162b4f4a9c52a92171d4df68a11d87c52e3af982a17",
+    "bytes": 4424,
+    "http_status": 200,
+    "response_repo_commit": "5e90593195cc4ecd20ceb864d932d7d7f5e3d762",
+    "fresh_empty_cache": true
+   },
+   "bundle/LICENSES_SOURCES": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-fr-core-news-sm-3.8.0/resolve/5e90593195cc4ecd20ceb864d932d7d7f5e3d762/bundle/LICENSES_SOURCES",
+    "sha256": "21ea31093799e954757d62505687652dfd059d8685f97266d1a442f8a39fcdde",
+    "bytes": 28874,
+    "http_status": 200,
+    "response_repo_commit": "5e90593195cc4ecd20ceb864d932d7d7f5e3d762",
+    "fresh_empty_cache": true
+   }
+  },
+  "card_run": "44377019364",
+  "card_revision": "577d2711cdd147a0cfa81b5794034003d6141cbb",
+  "card_readback": {
+   "bundle-catalog.json": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-fr-core-news-sm-3.8.0/resolve/577d2711cdd147a0cfa81b5794034003d6141cbb/bundle-catalog.json",
+    "sha256": "632fefc6722c7cb250b73ecac0565088c4c73d12b89f60a1e4a83609521979f6",
+    "bytes": 6243,
+    "http_status": 200,
+    "response_repo_commit": "577d2711cdd147a0cfa81b5794034003d6141cbb",
+    "fresh_empty_cache": true
+   },
+   "README.md": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-fr-core-news-sm-3.8.0/resolve/577d2711cdd147a0cfa81b5794034003d6141cbb/README.md",
+    "sha256": "ba371d411fd836cdac7f4e9489d0580ac0a8535ce1bcb958b14299202d1d2402",
+    "bytes": 8685,
+    "http_status": 200,
+    "response_repo_commit": "577d2711cdd147a0cfa81b5794034003d6141cbb",
+    "fresh_empty_cache": true
+   }
+  },
+  "consumers": [
+   {
+    "platform": "linux-arm64",
+    "passed": true,
+    "run": "44377019364",
+    "bundle_revision": "5e90593195cc4ecd20ceb864d932d7d7f5e3d762",
+    "failure": null,
+    "library": {
+     "library_sha256": "21d15c1e48418d7db0d7cf5626330ce6d9c31c637a09cd1ae57020a9f9a17c45",
+     "capsule_path": "packages/linux-arm64/45b057700880e125d701d941a9e3123679960d35/spacy-de_core_news_sm-3.8.0-linux-arm64-f32.tar.gz",
+     "capsule_revision": "fd75184d58944ec5f6c4cb037a48eae6e6f5942f",
+     "capsule_sha256": "41c07dbe1ecc21fb2c3409aa5d6d13a1d47cb213bff485e2c4e06bfe0d02b0c6",
+     "source_commit": "45b057700880e125d701d941a9e3123679960d35"
+    },
+    "controls": {
+     "disabled_without_gate": true,
+     "wrong_model_hash_rejected": true,
+     "wrong_resource_hash_rejected": true,
+     "foreign_resources_rejected": true,
+     "v1_model_with_v2_resources_rejected": true,
+     "admitted": true,
+     "text_only_capabilities": true,
+     "numeric_service_rejected": true,
+     "attach_ner_rejected": true
+    },
+    "comparison": {
+     "cases": 416,
+     "exact_cases": 416,
+     "tokens": 9786,
+     "entities": {
+      "oracle": 469,
+      "matched": 469
+     },
+     "passed": true
+    }
+   },
+   {
+    "platform": "linux-x86_64",
+    "passed": true,
+    "run": "44377019364",
+    "bundle_revision": "5e90593195cc4ecd20ceb864d932d7d7f5e3d762",
+    "failure": null,
+    "library": {
+     "library_sha256": "6e21ae15b08922520a2cb6bcba3ed27ae7f6476a6bde1cec33607ab9489045f4",
+     "capsule_path": "packages/linux-x86_64/45b057700880e125d701d941a9e3123679960d35/spacy-de_core_news_sm-3.8.0-linux-x86_64-f32.tar.gz",
+     "capsule_revision": "d143d26a3edd7b51bdfdf12a6cda5b6243ec69d0",
+     "capsule_sha256": "c8bbbb86fdd362117c2b5c94453f975b33fab6953a78c13db37b255caa816ce5",
+     "source_commit": "45b057700880e125d701d941a9e3123679960d35"
+    },
+    "controls": {
+     "disabled_without_gate": true,
+     "wrong_model_hash_rejected": true,
+     "wrong_resource_hash_rejected": true,
+     "foreign_resources_rejected": true,
+     "v1_model_with_v2_resources_rejected": true,
+     "admitted": true,
+     "text_only_capabilities": true,
+     "numeric_service_rejected": true,
+     "attach_ner_rejected": true
+    },
+    "comparison": {
+     "cases": 416,
+     "exact_cases": 416,
+     "tokens": 9786,
+     "entities": {
+      "oracle": 469,
+      "matched": 469
+     },
+     "passed": true
+    }
+   },
+   {
+    "platform": "macos-arm64",
+    "passed": true,
+    "run": "44377019364",
+    "bundle_revision": "5e90593195cc4ecd20ceb864d932d7d7f5e3d762",
+    "failure": null,
+    "library": {
+     "library_sha256": "f3300152c8b063960ff9c21785241bb8b99ffc8f1b2150e362b46d78b0272647",
+     "capsule_path": "packages/macos-arm64/45b057700880e125d701d941a9e3123679960d35/spacy-de_core_news_sm-3.8.0-macos-arm64-f32.tar.gz",
+     "capsule_revision": "cf833ae59e6e92773af90c4cbae67a2ba68dec03",
+     "capsule_sha256": "200a09b1f582e67abf813355424c0ae9066d47a076c2bf641daed0ff605c7d8c",
+     "source_commit": "45b057700880e125d701d941a9e3123679960d35"
+    },
+    "controls": {
+     "disabled_without_gate": true,
+     "wrong_model_hash_rejected": true,
+     "wrong_resource_hash_rejected": true,
+     "foreign_resources_rejected": true,
+     "v1_model_with_v2_resources_rejected": true,
+     "admitted": true,
+     "text_only_capabilities": true,
+     "numeric_service_rejected": true,
+     "attach_ner_rejected": true
+    },
+    "comparison": {
+     "cases": 416,
+     "exact_cases": 416,
+     "tokens": 9786,
+     "entities": {
+      "oracle": 469,
+      "matched": 469
+     },
+     "passed": true
+    }
+   },
+   {
+    "platform": "windows-x86_64",
+    "passed": false,
+    "run": "44377019364",
+    "bundle_revision": "5e90593195cc4ecd20ceb864d932d7d7f5e3d762",
+    "failure": "AssertionError: No published v2-capable windows-x86_64 capsule in cstr/crispembed-spacy-de-core-news-sm-3.8.0",
+    "library": {
+     "library_sha256": null,
+     "capsule_path": null,
+     "capsule_revision": null,
+     "capsule_sha256": null,
+     "source_commit": null
+    },
+    "controls": null,
+    "comparison": {}
+   }
+  ]
+ }
+}

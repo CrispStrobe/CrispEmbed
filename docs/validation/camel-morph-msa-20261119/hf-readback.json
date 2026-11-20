@@ -1,0 +1,64 @@
+{
+  "repo": "cstr/camel-morph-msa-v1.0",
+  "revision": "b31cf4a83f8ad63bb1989cf2879e72f23fadbfb0",
+  "files": {
+    "LICENSE": {
+      "size": 442,
+      "sha256": "214965747a90efe3e5268d367192bb077f1101620662cba71d59d902000b2d94",
+      "match": true
+    },
+    "NOTICE": {
+      "size": 1381,
+      "sha256": "b10936a72acb6f6dbc246ed75003e45f5f130deb6c7a0003c0a54ec11785bc9f",
+      "match": true
+    },
+    "README.md": {
+      "size": 2189,
+      "sha256": "61e8e4bbbddbf545c58dec10e953bf3b3c1974450b2ada51411aaa47d73be9a7",
+      "match": true
+    },
+    "full/LICENSE": {
+      "size": 442,
+      "sha256": "214965747a90efe3e5268d367192bb077f1101620662cba71d59d902000b2d94",
+      "match": true
+    },
+    "full/NOTICE": {
+      "size": 1084,
+      "sha256": "8fad1d1f4984d61e42c2ba4f45ce251f102cd11c5212f0fdb520d819990d3a8d",
+      "match": true
+    },
+    "full/camel_morph_msa_v1.0.db": {
+      "size": 84959404,
+      "sha256": "110e03baa282874062d076e23d9671e985b6f76520b891d58cba4e55de0b8f60",
+      "match": true
+    },
+    "full/manifest.json": {
+      "size": 1346,
+      "sha256": "6fc4a6fe6eab991d5ae62219116bbdf9e7354d835df1a2d9ac71402e57716e35",
+      "match": true
+    },
+    "noprob/LICENSE": {
+      "size": 442,
+      "sha256": "214965747a90efe3e5268d367192bb077f1101620662cba71d59d902000b2d94",
+      "match": true
+    },
+    "noprob/NOTICE": {
+      "size": 1381,
+      "sha256": "b10936a72acb6f6dbc246ed75003e45f5f130deb6c7a0003c0a54ec11785bc9f",
+      "match": true
+    },
+    "noprob/camel_morph_msa_v1.0.noprob.db": {
+      "size": 78083392,
+      "sha256": "2dfbec413288e7da96723d7926c0e74f2e90ef6994c6f7e995a27a8df079ecff",
+      "match": true
+    },
+    "noprob/manifest.json": {
+      "size": 1430,
+      "sha256": "96b949981e76c0d2b4892ec7aac1f1e519813ac6d55d4e39303d94822df68050",
+      "match": true
+    }
+  },
+  "extra_remote": [],
+  "missing_remote": [],
+  "all_match": true
+}

@@ -119,6 +119,23 @@ def render(catalog: dict) -> str:
             lines += ["| File | Bytes | SHA-256 |", "| --- | ---: | --- |"]
             for path, pin in ner["files"].items():
                 lines.append(f"| [`{path}`]({resolve}/{ner['revision']}/{path}) | {pin['bytes']:,} | `{pin['sha256']}` |")
+    bundles = catalog.get("language_bundles") or []
+    if bundles:
+        lines += [
+            "",
+            "## Other languages (same native library)",
+            "",
+            "The library is language-independent: builds from CrispEmbed source that contains the v2 runtime "
+            "(PR #244) also open these separately published bundles, dispatching on the GGUF architecture. "
+            "Earlier builds reject them. Each bundle's card lists the exact library digests verified with it.",
+            "",
+            "| Language | Pipeline | Repository (bundle revision) | License | Claims |",
+            "| --- | --- | --- | --- | --- |",
+        ]
+        for item in bundles:
+            lines.append(f"| {item['language']} | `{item['model']}` | [`{item['repository']}`]"
+                         f"(https://huggingface.co/{item['repository']}) ({_short(item.get('revision'))}) | "
+                         f"{item['license']} | {item['claims']} |")
     lines += [
         "",
         "## Not qualified",
@@ -154,7 +171,7 @@ def main() -> int:
     parser.add_argument("--catalog", type=Path, default=CATALOG)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    args.output.write_text(render(json.loads(args.catalog.read_text())))
+    args.output.write_text(render(json.loads(args.catalog.read_text(encoding='utf-8'))), encoding='utf-8', newline='\n')
     return 0
 
 

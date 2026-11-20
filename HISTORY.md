@@ -1,3 +1,39 @@
+## OvisOCR2 GPU drift bisect: F32 device-matrix gates — 20 November 2026
+
+Two default-off gates for `CRISPEMBED_QWEN35_OCR_GPU`, `CRISPEMBED_QWEN35_OCR_GPU_F32_VISION` and
+`CRISPEMBED_QWEN35_OCR_GPU_F32_DECODER`, upload the vision or decoder matrices to the device widened to F32.
+The Kaggle bisect kernel `tools/kaggle/ovisocr2-gpu-precision` ran on 12 November (both the T4 and the P100
+request were served on a Tesla T4, sm_75); the results were not recorded until now
+(`tests/results/qwen35-ocr/ovisocr2-gpu-precision.json`). All arms are token- and text-exact on the three
+documents. Maximum confidence drift against the frozen CPU receipt: GPU default 1.49e-3, F32 vision
+1.49e-3 (identical), F32 decoder 1.11e-3 (historical receipt 1.15e-3 → 1.25e-4), both 1.11e-3, at about
+25% longer recognition. F16 rounding of decoder GEMM inputs is part of the drift, not all of it; the
+remainder comes from CUDA reduction order. Defaults are unchanged. P100 (sm_60) remains unmeasured because
+CUDA 13.0 on the current image cannot target it.
+## Main health: Arabic morph test routes through clean_exit — 20 November 2026
+
+`tests/test_arabic_morph.cpp` (from the Arabic morph PRs) had a bare `main()`,
+failing the `Static guards` clean-exit check on main. It now wraps
+`crispembed_test_main()` in `core_util::clean_exit`; the guard passes for all
+339 one-shot mains.
+
+## spaCy English and French bundles published — 18 November 2026
+
+`cstr/crispembed-spacy-en-core-web-sm-3.8.0` (`eb659259`, MIT) and
+`cstr/crispembed-spacy-fr-core-news-sm-3.8.0` (`5e905931`, LGPL-LR) hold the v2
+bundles; v2 capsules from main `45b05770` load them exactly on Linux x86-64,
+Linux arm64 and macOS arm64 (EN 2,077/2,077, FR 416/416 texts incl. entities).
+[Receipts](docs/validation/native-spacy-en-fr-distribution-20261118/README.md).
+
+## spaCy v2 profile: English and French exact — 18 November 2026
+
+Branch `feat/spacy-en-v2-20261118`. A generic spaCy 3.8 CNN converter and
+runtime path (`spacy_pipeline_v2`) add en_core_web_sm and fr_core_news_sm:
+2,077/2,077 UD English-EWT test texts (25,531 tokens, 1,876/1,876 entities)
+and 416/416 UD French-GSD test texts (9,786 tokens, 469/469 entities) are
+identical to original spaCy through the C ABI. German v1 is unchanged.
+[Audit](docs/validation/native-spacy-v2-20261118/README.md).
+
 ## spaCy ggml+SGEMM default, F16 upcast and opt-in NER — 18 November 2026
 
 Branch `feat/spacy-default-ner-20261118`. On 1,776 UD German GSD sentences

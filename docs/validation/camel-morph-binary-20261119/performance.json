@@ -1,0 +1,774 @@
+{
+  "host": "Apple M1 (8 cores, 16 GB), macOS 26.2; shared machine with other agents; single analyzer thread",
+  "load_average": "session 1 (CLI first runs, Dart 3 runs each, Node, Chrome): 4-18; session 2 (interleaved CLI and Dart, 5 runs each): 9-26, under memory pressure",
+  "inputs": {
+    "cli": "9,571 words (PUD + stress), backoff NONE",
+    "dart_node_chrome": "1,000 UD Arabic-PUD r2.14 # text lines: 7,419 distinct Arabic words, 7,144 analyzed"
+  },
+  "native_cli_session1_single_runs": {
+    "text_json": {
+      "load_s": 1.083,
+      "words_per_s": 3690.5,
+      "rss_after_load_kib": 238880,
+      "peak_rss_kib": 310592
+    },
+    "binary_json": {
+      "load_s": 0.106,
+      "words_per_s": 6189.0,
+      "rss_after_load_kib": 13632,
+      "rss_after_analysis_kib": 17952,
+      "peak_rss_kib": 17952
+    },
+    "binary_compact": {
+      "load_s": 0.107,
+      "words_per_s": 6742.0,
+      "rss_after_load_kib": 13616,
+      "rss_after_analysis_kib": 21296
+    },
+    "text_compact": {
+      "load_s": 1.101,
+      "words_per_s": 4611.3
+    },
+    "binary_NOAN_PROP": {
+      "load_s": 0.134,
+      "words_per_s": 5300.9
+    },
+    "binary_ADD_ALL": {
+      "load_s": 0.106,
+      "words_per_s": 941.5,
+      "analyses": 1704695
+    }
+  },
+  "native_cli_session2_interleaved_medians_of_5": {
+    "textjson": {
+      "load_s": 2.685,
+      "words_per_s": 1489.1,
+      "rss_after_load_kib": 230128,
+      "rss_after_analysis_kib": 75424,
+      "max_rss_kib_time_l": 298912,
+      "range": {
+        "load_s": [
+          1.834,
+          5.635
+        ],
+        "words_per_s": [
+          538.5,
+          1891.8
+        ]
+      },
+      "analyses": 217053,
+      "runs": 5
+    },
+    "textcompact": {
+      "load_s": 2.913,
+      "words_per_s": 1096.9,
+      "rss_after_load_kib": 232800,
+      "rss_after_analysis_kib": 87424,
+      "max_rss_kib_time_l": 304064,
+      "range": {
+        "load_s": [
+          2.019,
+          6.212
+        ],
+        "words_per_s": [
+          870.7,
+          2366.1
+        ]
+      },
+      "analyses": 217053,
+      "runs": 5
+    },
+    "binjson": {
+      "load_s": 0.237,
+      "words_per_s": 2635.4,
+      "rss_after_load_kib": 13632,
+      "rss_after_analysis_kib": 17936,
+      "max_rss_kib_time_l": 17936,
+      "range": {
+        "load_s": [
+          0.196,
+          0.346
+        ],
+        "words_per_s": [
+          1132.9,
+          3664.3
+        ]
+      },
+      "analyses": 217053,
+      "runs": 5
+    },
+    "bincompact": {
+      "load_s": 0.285,
+      "words_per_s": 2858.3,
+      "rss_after_load_kib": 13648,
+      "rss_after_analysis_kib": 21536,
+      "max_rss_kib_time_l": 22752,
+      "range": {
+        "load_s": [
+          0.222,
+          0.629
+        ],
+        "words_per_s": [
+          1175.9,
+          3364.0
+        ]
+      },
+      "analyses": 217053,
+      "runs": 5
+    },
+    "bincompactdedup": {
+      "load_s": 0.356,
+      "words_per_s": 1783.3,
+      "rss_after_load_kib": 13632,
+      "rss_after_analysis_kib": 21280,
+      "max_rss_kib_time_l": 22048,
+      "range": {
+        "load_s": [
+          0.196,
+          0.401
+        ],
+        "words_per_s": [
+          1479.2,
+          3717.6
+        ]
+      },
+      "analyses": 203681,
+      "runs": 5
+    }
+  },
+  "native_cli_tools": "/usr/bin/time -l (max_rss), CLI reports load_s (manifest + all SHA-256 + parse/validate), current RSS after load and after analysis",
+  "dart_session1": {
+    "before (JSON, noprob, 3 runs)": [
+      {
+        "load_seconds": 2.462,
+        "cold_words_per_second": 709,
+        "rss_mb": {
+          "start": 18,
+          "after_load": 230,
+          "after_analysis_and_cache": 373,
+          "peak": 433
+        },
+        "analyses": 215212
+      },
+      {
+        "load_seconds": 1.905,
+        "cold_words_per_second": 890,
+        "rss_mb": {
+          "start": 18,
+          "after_load": 250,
+          "after_analysis_and_cache": 415,
+          "peak": 477
+        },
+        "analyses": 215212
+      },
+      {
+        "load_seconds": 1.492,
+        "cold_words_per_second": 921,
+        "rss_mb": {
+          "start": 18,
+          "after_load": 250,
+          "after_analysis_and_cache": 415,
+          "peak": 430
+        },
+        "analyses": 215212
+      }
+    ],
+    "after (compact, proofing-bin, 3 runs)": [
+      {
+        "load_seconds": 0.404,
+        "cold_words_per_second": 1410,
+        "read_all_features_seconds": 1.888,
+        "rss_mb": {
+          "start": 18,
+          "after_load": 30,
+          "after_analysis_and_cache": 68,
+          "after_reading_all_features": 120,
+          "peak": 120
+        },
+        "analyses": 201930
+      },
+      {
+        "load_seconds": 0.291,
+        "cold_words_per_second": 1651,
+        "read_all_features_seconds": 1.975,
+        "rss_mb": {
+          "start": 18,
+          "after_load": 30,
+          "after_analysis_and_cache": 87,
+          "after_reading_all_features": 122,
+          "peak": 136
+        },
+        "analyses": 201930
+      },
+      {
+        "load_seconds": 0.25,
+        "cold_words_per_second": 1590,
+        "read_all_features_seconds": 2.176,
+        "rss_mb": {
+          "start": 18,
+          "after_load": 30,
+          "after_analysis_and_cache": 84,
+          "after_reading_all_features": 111,
+          "peak": 122
+        },
+        "analyses": 201930
+      }
+    ]
+  },
+  "dart_session2_interleaved_medians_of_5": {
+    "before": {
+      "runs": 5,
+      "load_seconds": 4.18,
+      "cold_words_per_second": 429,
+      "range_words_per_second": [
+        304,
+        528
+      ],
+      "range_load": [
+        2.807,
+        5.865
+      ],
+      "rss_mb": {
+        "start": 18,
+        "after_load": 239,
+        "after_analysis_and_cache": 249,
+        "peak": 311
+      },
+      "analyses": 215212
+    },
+    "after": {
+      "runs": 5,
+      "load_seconds": 0.313,
+      "cold_words_per_second": 1802,
+      "range_words_per_second": [
+        866,
+        3012
+      ],
+      "range_load": [
+        0.194,
+        0.39
+      ],
+      "rss_mb": {
+        "start": 18,
+        "after_load": 30,
+        "after_analysis_and_cache": 89,
+        "after_reading_all_features": 108,
+        "peak": 138
+      },
+      "analyses": 201930
+    }
+  },
+  "dart_heap_verbose_gc": "old space in use at the end of a full PUD run: about 40 MB after (compact) vs about 180 MB before (JSON maps); RSS also holds uncollected garbage",
+  "node_wasm": {
+    "before": [
+      {
+        "protocol_checks": 6,
+        "load_seconds": 1.43780475,
+        "wasm_heap_mb": 320,
+        "process_rss_growth_mb": 340,
+        "distinct_words": 7419,
+        "analyzed": 7144,
+        "analyses": 215212,
+        "seconds": 4.299759042,
+        "words_per_second": 1725,
+        "wasm_heap_mb_after": 320
+      },
+      {
+        "protocol_checks": 6,
+        "load_seconds": 1.371644625,
+        "wasm_heap_mb": 320,
+        "process_rss_growth_mb": 340,
+        "distinct_words": 7419,
+        "analyzed": 7144,
+        "analyses": 215212,
+        "seconds": 4.161498667,
+        "words_per_second": 1783,
+        "wasm_heap_mb_after": 320
+      },
+      {
+        "protocol_checks": 6,
+        "load_seconds": 1.841701417,
+        "wasm_heap_mb": 320,
+        "process_rss_growth_mb": 340,
+        "distinct_words": 7419,
+        "analyzed": 7144,
+        "analyses": 215212,
+        "seconds": 4.1571549590000005,
+        "words_per_second": 1785,
+        "wasm_heap_mb_after": 320
+      }
+    ],
+    "after": [
+      {
+        "protocol_checks": 6,
+        "load_seconds": 0.13151949999999998,
+        "wasm_heap_mb": 32,
+        "process_rss_growth_mb": 41,
+        "distinct_words": 7419,
+        "analyzed": 7144,
+        "analyses": 201930,
+        "seconds": 2.2687472909999995,
+        "words_per_second": 3270,
+        "wasm_heap_mb_after": 32,
+        "process_rss_growth_mb_after": 279
+      },
+      {
+        "protocol_checks": 6,
+        "load_seconds": 0.13153658299999998,
+        "wasm_heap_mb": 32,
+        "process_rss_growth_mb": 47,
+        "distinct_words": 7419,
+        "analyzed": 7144,
+        "analyses": 201930,
+        "seconds": 2.2553248329999995,
+        "words_per_second": 3290,
+        "wasm_heap_mb_after": 32,
+        "process_rss_growth_mb_after": 278
+      },
+      {
+        "protocol_checks": 6,
+        "load_seconds": 0.130160042,
+        "wasm_heap_mb": 32,
+        "process_rss_growth_mb": 41,
+        "distinct_words": 7419,
+        "analyzed": 7144,
+        "analyses": 201930,
+        "seconds": 2.2498875,
+        "words_per_second": 3297,
+        "wasm_heap_mb_after": 32,
+        "process_rss_growth_mb_after": 277
+      }
+    ]
+  },
+  "node_wasm_initial_memory_16mb": {
+    "wasm_heap_mb_after_load": 16,
+    "wasm_heap_mb_after_pud": 19,
+    "load_seconds": 0.146,
+    "words_per_second": 3092
+  },
+  "chrome_headless_157_dart2js": {
+    "before": [
+      {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+        "page_heap_mb_with_bundle_bytes": 76,
+        "load_seconds": 1.417,
+        "available": true,
+        "page_heap_mb_after_load": 2,
+        "failure": null,
+        "info": {
+          "abi_version": 1,
+          "variant": "noprob",
+          "db_sha256": "2dfbec413288e7da96723d7926c0e74f2e90ef6994c6f7e995a27a8df079ecff",
+          "manifest_sha256": "96b949981e76c0d2b4892ec7aac1f1e519813ac6d55d4e39303d94822df68050",
+          "backoff": "NONE",
+          "prefix_forms": 383,
+          "suffix_forms": 1557,
+          "stem_forms": 96989,
+          "stem_entries": 175972,
+          "unicode_version": "15.0.0"
+        },
+        "database_bytes_left_in_page": 0,
+        "katabu_verb_plural": true,
+        "walmadrasa_noun_wa_al": true,
+        "distinct_words": 7419,
+        "analyzed_words": 7144,
+        "analyses": 215212,
+        "cold_seconds": 7.825,
+        "page_heap_mb_with_cached_analyses": 203,
+        "words_per_second": 948,
+        "status": "passed",
+        "chrome_peak_rss_mb_all_processes": 1887
+      },
+      {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+        "page_heap_mb_with_bundle_bytes": 76,
+        "load_seconds": 1.372,
+        "available": true,
+        "page_heap_mb_after_load": 1,
+        "failure": null,
+        "info": {
+          "abi_version": 1,
+          "variant": "noprob",
+          "db_sha256": "2dfbec413288e7da96723d7926c0e74f2e90ef6994c6f7e995a27a8df079ecff",
+          "manifest_sha256": "96b949981e76c0d2b4892ec7aac1f1e519813ac6d55d4e39303d94822df68050",
+          "backoff": "NONE",
+          "prefix_forms": 383,
+          "suffix_forms": 1557,
+          "stem_forms": 96989,
+          "stem_entries": 175972,
+          "unicode_version": "15.0.0"
+        },
+        "database_bytes_left_in_page": 0,
+        "katabu_verb_plural": true,
+        "walmadrasa_noun_wa_al": true,
+        "distinct_words": 7419,
+        "analyzed_words": 7144,
+        "analyses": 215212,
+        "cold_seconds": 8.1,
+        "page_heap_mb_with_cached_analyses": 203,
+        "words_per_second": 916,
+        "status": "passed",
+        "chrome_peak_rss_mb_all_processes": 1735
+      },
+      {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+        "page_heap_mb_with_bundle_bytes": 76,
+        "load_seconds": 1.406,
+        "available": true,
+        "page_heap_mb_after_load": 1,
+        "failure": null,
+        "info": {
+          "abi_version": 1,
+          "variant": "noprob",
+          "db_sha256": "2dfbec413288e7da96723d7926c0e74f2e90ef6994c6f7e995a27a8df079ecff",
+          "manifest_sha256": "96b949981e76c0d2b4892ec7aac1f1e519813ac6d55d4e39303d94822df68050",
+          "backoff": "NONE",
+          "prefix_forms": 383,
+          "suffix_forms": 1557,
+          "stem_forms": 96989,
+          "stem_entries": 175972,
+          "unicode_version": "15.0.0"
+        },
+        "database_bytes_left_in_page": 0,
+        "katabu_verb_plural": true,
+        "walmadrasa_noun_wa_al": true,
+        "distinct_words": 7419,
+        "analyzed_words": 7144,
+        "analyses": 215212,
+        "cold_seconds": 7.893,
+        "page_heap_mb_with_cached_analyses": 203,
+        "words_per_second": 940,
+        "status": "passed",
+        "chrome_peak_rss_mb_all_processes": 1839
+      }
+    ],
+    "after": [
+      {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+        "page_heap_mb_with_bundle_bytes": 14,
+        "load_seconds": 0.146,
+        "available": true,
+        "page_heap_mb_after_load": 1,
+        "failure": null,
+        "info": {
+          "abi_version": 2,
+          "variant": "proofing-bin",
+          "db_format": "binary",
+          "db_sha256": "fc9d9109ddb5430da94def715df05b563cb37ffaec508f3514668ded19438909",
+          "manifest_sha256": "357540af897af5dd2a0f7fc84518cc875c4481e3e566c30ca0a5043a52290f71",
+          "backoff": "NONE",
+          "prefix_forms": 383,
+          "suffix_forms": 1557,
+          "stem_forms": 96989,
+          "stem_entries": 175972,
+          "unicode_version": "15.0.0",
+          "storage": "heap",
+          "keys": [
+            "diac",
+            "lex",
+            "gloss",
+            "bw",
+            "pos",
+            "pattern",
+            "caphi",
+            "catib6",
+            "ud",
+            "root",
+            "d3tok",
+            "d3seg",
+            "atbseg",
+            "d2seg",
+            "d1seg",
+            "d1tok",
+            "d2tok",
+            "atbtok",
+            "bwtok",
+            "stem",
+            "stemgloss",
+            "stemcat",
+            "source",
+            "gen",
+            "num",
+            "form_gen",
+            "form_num",
+            "pos_logprob",
+            "lex_logprob",
+            "pos_lex_logprob",
+            "prc3",
+            "prc2",
+            "prc1",
+            "prc1.5",
+            "prc0",
+            "per",
+            "asp",
+            "vox",
+            "mod",
+            "stt",
+            "cas",
+            "enc0",
+            "enc1",
+            "enc2",
+            "rat"
+          ],
+          "profile": [
+            "diac",
+            "lex",
+            "pos",
+            "root",
+            "source",
+            "gen",
+            "num",
+            "form_gen",
+            "form_num",
+            "prc3",
+            "prc2",
+            "prc1",
+            "prc1.5",
+            "prc0",
+            "per",
+            "asp",
+            "vox",
+            "mod",
+            "stt",
+            "cas",
+            "enc0",
+            "enc1",
+            "enc2",
+            "rat"
+          ]
+        },
+        "database_bytes_left_in_page": 0,
+        "katabu_verb_plural": true,
+        "walmadrasa_noun_wa_al": true,
+        "distinct_words": 7419,
+        "analyzed_words": 7144,
+        "analyses": 201930,
+        "cold_seconds": 2.114,
+        "page_heap_mb_with_cached_analyses": 41,
+        "words_per_second": 3509,
+        "status": "passed",
+        "chrome_peak_rss_mb_all_processes": 1067
+      },
+      {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+        "page_heap_mb_with_bundle_bytes": 13,
+        "load_seconds": 0.146,
+        "available": true,
+        "page_heap_mb_after_load": 2,
+        "failure": null,
+        "info": {
+          "abi_version": 2,
+          "variant": "proofing-bin",
+          "db_format": "binary",
+          "db_sha256": "fc9d9109ddb5430da94def715df05b563cb37ffaec508f3514668ded19438909",
+          "manifest_sha256": "357540af897af5dd2a0f7fc84518cc875c4481e3e566c30ca0a5043a52290f71",
+          "backoff": "NONE",
+          "prefix_forms": 383,
+          "suffix_forms": 1557,
+          "stem_forms": 96989,
+          "stem_entries": 175972,
+          "unicode_version": "15.0.0",
+          "storage": "heap",
+          "keys": [
+            "diac",
+            "lex",
+            "gloss",
+            "bw",
+            "pos",
+            "pattern",
+            "caphi",
+            "catib6",
+            "ud",
+            "root",
+            "d3tok",
+            "d3seg",
+            "atbseg",
+            "d2seg",
+            "d1seg",
+            "d1tok",
+            "d2tok",
+            "atbtok",
+            "bwtok",
+            "stem",
+            "stemgloss",
+            "stemcat",
+            "source",
+            "gen",
+            "num",
+            "form_gen",
+            "form_num",
+            "pos_logprob",
+            "lex_logprob",
+            "pos_lex_logprob",
+            "prc3",
+            "prc2",
+            "prc1",
+            "prc1.5",
+            "prc0",
+            "per",
+            "asp",
+            "vox",
+            "mod",
+            "stt",
+            "cas",
+            "enc0",
+            "enc1",
+            "enc2",
+            "rat"
+          ],
+          "profile": [
+            "diac",
+            "lex",
+            "pos",
+            "root",
+            "source",
+            "gen",
+            "num",
+            "form_gen",
+            "form_num",
+            "prc3",
+            "prc2",
+            "prc1",
+            "prc1.5",
+            "prc0",
+            "per",
+            "asp",
+            "vox",
+            "mod",
+            "stt",
+            "cas",
+            "enc0",
+            "enc1",
+            "enc2",
+            "rat"
+          ]
+        },
+        "database_bytes_left_in_page": 0,
+        "katabu_verb_plural": true,
+        "walmadrasa_noun_wa_al": true,
+        "distinct_words": 7419,
+        "analyzed_words": 7144,
+        "analyses": 201930,
+        "cold_seconds": 2.124,
+        "page_heap_mb_with_cached_analyses": 41,
+        "words_per_second": 3493,
+        "status": "passed",
+        "chrome_peak_rss_mb_all_processes": 1082
+      },
+      {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+        "page_heap_mb_with_bundle_bytes": 14,
+        "load_seconds": 0.148,
+        "available": true,
+        "page_heap_mb_after_load": 2,
+        "failure": null,
+        "info": {
+          "abi_version": 2,
+          "variant": "proofing-bin",
+          "db_format": "binary",
+          "db_sha256": "fc9d9109ddb5430da94def715df05b563cb37ffaec508f3514668ded19438909",
+          "manifest_sha256": "357540af897af5dd2a0f7fc84518cc875c4481e3e566c30ca0a5043a52290f71",
+          "backoff": "NONE",
+          "prefix_forms": 383,
+          "suffix_forms": 1557,
+          "stem_forms": 96989,
+          "stem_entries": 175972,
+          "unicode_version": "15.0.0",
+          "storage": "heap",
+          "keys": [
+            "diac",
+            "lex",
+            "gloss",
+            "bw",
+            "pos",
+            "pattern",
+            "caphi",
+            "catib6",
+            "ud",
+            "root",
+            "d3tok",
+            "d3seg",
+            "atbseg",
+            "d2seg",
+            "d1seg",
+            "d1tok",
+            "d2tok",
+            "atbtok",
+            "bwtok",
+            "stem",
+            "stemgloss",
+            "stemcat",
+            "source",
+            "gen",
+            "num",
+            "form_gen",
+            "form_num",
+            "pos_logprob",
+            "lex_logprob",
+            "pos_lex_logprob",
+            "prc3",
+            "prc2",
+            "prc1",
+            "prc1.5",
+            "prc0",
+            "per",
+            "asp",
+            "vox",
+            "mod",
+            "stt",
+            "cas",
+            "enc0",
+            "enc1",
+            "enc2",
+            "rat"
+          ],
+          "profile": [
+            "diac",
+            "lex",
+            "pos",
+            "root",
+            "source",
+            "gen",
+            "num",
+            "form_gen",
+            "form_num",
+            "prc3",
+            "prc2",
+            "prc1",
+            "prc1.5",
+            "prc0",
+            "per",
+            "asp",
+            "vox",
+            "mod",
+            "stt",
+            "cas",
+            "enc0",
+            "enc1",
+            "enc2",
+            "rat"
+          ]
+        },
+        "database_bytes_left_in_page": 0,
+        "katabu_verb_plural": true,
+        "walmadrasa_noun_wa_al": true,
+        "distinct_words": 7419,
+        "analyzed_words": 7144,
+        "analyses": 201930,
+        "cold_seconds": 2.106,
+        "page_heap_mb_with_cached_analyses": 41,
+        "words_per_second": 3523,
+        "status": "passed",
+        "chrome_peak_rss_mb_all_processes": 1093
+      }
+    ],
+    "note": "after runs used INITIAL_MEMORY 32 MB; the final build uses 16 MB (Node: 16 MB after load, 19 MB after PUD)"
+  },
+  "rule_findings": {
+    "tool": "quds_arabic_morph tool/pud_rule_findings.dart over the 1,000 PUD sentences",
+    "before_json_noprob": 673,
+    "after_compact_proofing_bin": 673,
+    "after_compact_noprob": 673,
+    "identical": true
+  }
+}
