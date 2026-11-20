@@ -796,6 +796,9 @@ Delete the archive to reclaim the disk — nothing depends on it.
 
 ## Documentation
 
+- [MoGe-3 native geometry runtime plan](docs/moge3.md) — proposed FP32
+  ggml/Metal depth and sparse-refinement backend for CrispMesh; implementation
+  and model/device qualification are pending.
 - [Current state and next steps](docs/current-state-and-next-steps.md) and the latest
   [handoff](docs/handoff-2026-11-03.md); open work in [PLAN.md](PLAN.md), completed work in
   [HISTORY.md](HISTORY.md), numbers in [PERFORMANCE.md](PERFORMANCE.md).
