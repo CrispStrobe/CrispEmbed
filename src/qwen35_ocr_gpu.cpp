@@ -271,7 +271,8 @@ bool ggml_pipeline::init(const decoder_weights & dw, const vision_weights & vw, 
             const int64_t row = e.first->ne[0], rows = ggml_nelements(e.first) / row;
             for (int64_t r = 0; r < rows; ++r)
                 ggml_get_type_traits(e.first->type)
-                    ->to_float(static_cast<const char *>(e.first->data) + r * e.first->nb[1], wide.data() + r * row, row);
+                    ->to_float(static_cast<const char *>(e.first->data) + r * e.first->nb[1], wide.data() + r * row,
+                               row);
             ggml_backend_tensor_set(e.second, wide.data(), 0, wide.size() * sizeof(float));
         }
     }
