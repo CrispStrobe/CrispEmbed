@@ -1,4 +1,29 @@
-# CrispEmbed plan — open work (updated 18 November 2026)
+# CrispEmbed plan — open work (updated 20 November 2026)
+
+## MoGe-3 native geometry runtime — 20 November 2026
+
+The [MoGe-3 design and implementation plan](docs/moge3.md) adds the requested
+ViT-L ggml/Metal geometry lane for CrispMesh. Treat Apple execution as feasible
+and keep MoGe-3 an active candidate; the upstream macOS blocker is its
+FlexGEMM/Triton implementation dependency. Third-party Apple support does not
+establish native CrispEmbed parity or reconstruction quality.
+
+| Work item | State | Next action and acceptance |
+| --- | --- | --- |
+| MoGe-3 source/design addition (`docs/moge3-runtime-plan`) | Design and source review recorded; runtime implementation and model execution pending | M0: evaluate complete ViT-L inference and freeze source/checkpoint/input/camera manifests plus initial/one/three-step outputs. Measure actual Apple backend, memory/time and reconstruction behavior. |
+
+Follow the plan's M0–M5 sequence: complete-model evaluation; FP32 GGUF and dense
+ggml graph; CPU sparse refiner and camera recovery; measured Metal acceleration;
+standalone native C/Rust integration through external-depth replay; selective
+precision reduction only after full FP32 comparison. Preserve FP32 voxelization,
+exact active coordinates, ties-to-even rounding, occupied-only pooling and saved
+upsampling maps. Rebuild topology after geometry updates and validate focal/shift,
+mask and cropped-camera conventions alongside depth.
+
+The design records exact reviewed source revisions and the existing SAM library
+packaging pattern. All runtime milestones are pending. No native MoGe API,
+model alias, performance result, default, release or consumer pin is added by
+this documentation change.
 
 ## PCS mixed-precision 4-bit artifact (artifact owner) — 20 November 2026
 
