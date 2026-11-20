@@ -854,3 +854,38 @@ weight-free evidence. Builds, corpus/tokenizer/model/browser batches stay on
 hosted resources. Fetch only small reports locally, retain all large artifacts
 remotely, and keep machine/access information outside public Git. No new model
 alias, runtime tag or app0.17.12 pin change follows from these experiments.
+
+
+## PCS-only execution handoff — 18 November 2026
+
+**Resolved 20 November 2026:** root cause in [pcs-quality-root-cause.md](pcs-quality-root-cause.md)
+(4-bit artifact precision; q8_0 strict gate, recorded q4_k-imatrix loss). The text below is historical.
+
+[The independent stored-weight replay](../tests/results/pcs/original-graph-stored-weight-blocker-20261118.json)
+confirms a model/artifact-quality blocker: all214 immutable tensors replayed in
+the original ONNX graph and collector still produce66/67 casing and5/6 decoded.
+Original/diagnostic OFF/ON native neutrality is proven; native IDs/chunks and
+conditioning align. The original uncompressed source matches the reference;
+F32 materialization of the stored matrices is a retained rejected alternative.
+Production PCS and acceptance bytes remain unchanged, main failure remains open.
+
+The next dependency is an authorized artifact-owner repair, outside the dedicated
+PCS lane's exclusion of model/quantization work. Preserve original44272906599,
+actual AVX2 negative44273793050, rejected matrix control44274761438, initial
+singleton-axis failure44276100741, and corrected negative replay44276378964.
+Do not rebuild or replay those unchanged sources for a checkpoint. Public PLAN
+and the [source/actual audit](pcs-casing-source-audit.md) give exact margins,
+identities and gates. No source-only workaround, waiver or main closure is valid.
+
+
+## PCS final checkpoint
+
+Use [PCS final handoff](pcs-final-handoff.md) before any resumed PCS work.
+Canonical `135665fc5`/301-file evidence remains unchanged. Separate operator
+observer986037/44347337837 is qualified for the frozen CPU/AVX2 request; later
+0b54ef8ba is a scoped QK contribution, while decoded `oK`, ten QK negatives and
+unqualified full gates remain. Missing casing fc1/fc2 weight payloads block the
+newer held-fixed panel. Exact casing-causing tensor/conversion remain unknown.
+No new runs/builds/sweeps start from this final checkpoint; no repair, fullstop
+or main-green closure is claimed. The final handoff separates scopes and exact
+remaining steps without private machine/access details.

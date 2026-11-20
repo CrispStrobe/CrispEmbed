@@ -1,3 +1,35 @@
+## PCS `I'm oK` root cause: 4-bit artifact precision, gate re-pinned — 20 November 2026
+
+Closes the PLAN items "PCS main failure: confirmed stored-weight quality
+blocker" and "PCS matched-operator continuation" (18 November). Full record:
+[docs/pcs-quality-root-cause.md](docs/pcs-quality-root-cause.md).
+
+- **Root cause.** The q4_k-imatrix artifact (`faee4bf8…`) loses row37's `o`
+  casing decision in exact arithmetic: the pinned original ONNX graph with its
+  dequantized weights gives −0.2383 versus +1.0832 with the original weights.
+  New `tools/pcs_tensor_bisect.py` replaces one tensor group at a time; no group
+  flips the sign alone (enc.0 −0.435, head.tc −0.268, enc.3 −0.260, enc.2 −0.185,
+  enc.6–11 ≈0), so it is summed 4-bit rounding, not a defective tensor, converter
+  step or runtime operator. AVX2 native (−0.098) agrees in sign; the Intel 67/67
+  pass was rounding luck at a near-zero margin. q8_0 gives +0.9921
+  ([attribution](tests/results/pcs/tensor-group-attribution-20261120.json)).
+- **Ruled out as causal** (preserved, 18 Nov): the one-ULP embedding-sum
+  difference and the ten composed F32 QK budget exceedances (sub-1e−3 against a
+  1.3-logit weight-precision shift); the F32-matrix runtime alternative
+  (rejected, still 66/67).
+- **Gate.** `punct-parity` now gates q8_0 strictly (ground truth) and
+  q4_k-imatrix exactly except for one SHA-bound recorded loss
+  (`tests/pcs_parity.py --recorded-quant-loss`,
+  `tests/regression/pcs/q4_k-imatrix-recorded-loss.json`); any other difference
+  or file fails. Native [44682047609](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44682047609):
+  q8_0 strict 67/67 all heads, 6/6 decoded. No runtime source, default or
+  environment variable changed.
+- **Diagnostics folded in** from draft PR #243 (step-diff, gate capture, operand
+  analysis), with `tests/pcs_step_diff.cpp` routed through `core_util::clean_exit`
+  and formatted with clang-format 18.
+- Open, optional: a mixed-precision 4-bit artifact (enc.0 + truecase head at
+  Q8_0, what-if +0.65) — PLAN.
+
 ## OCR GPU benchmark: DeepSeek-OCR2 and Unlimited-OCR-2, fused decode step — 20 November 2026
 
 Kaggle `ocr-gpu-readiness` at 7f2d17de ran DeepSeek-OCR2 (Q4_K) and Unlimited-OCR-2 (F16, FAST decoder)
@@ -25,6 +57,7 @@ was requested; Kaggle served a T4 again.
   export on every CPU kernel. It now compares only tools present on the running image. With the seed
   refreshed once from the CPU probe, the warm rerun hit 293/293 objects (100%, 4.4 s), against 40/293
   (13.7%, 494 s) before (docs/kaggle-ccache.md).
+
 
 ## OvisOCR2 GPU drift bisect: F32 device-matrix gates — 20 November 2026
 
@@ -22607,3 +22640,29 @@ controls. The accepted native/model bytes are unchanged and the consumed
 eight-case native acceptance was not rerun. The manual provider API remains
 default off with no automatic Studio registration. W7 packaging, devices and
 distribution are next; no release, app pin or GitHub Actions query/wait/rerun.
+
+
+## 18 November 2026 — PCS compiled attribution, artifact blocker remains
+
+The preserved PCS capture branch was compiled/linked on hosted CI. Actual
+[44272906599](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44272906599)
+proves original/diagnostic OFF and OFF/ON byte neutrality and an Intel native
+67/67 all-head,6/6 decoded positive control. Actual AVX2
+[44273793050](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44273793050)
+reproduces66/67 casing and5/6 decoded with aligned native IDs/chunks and correct
+conditioning; row37 `o` is −0.0981582329. The original source is +1.083245516.
+
+[F32 materialization44274761438](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44274761438)
+is retained and rejected, still66/67 and5/6. The
+[all214-tensor original-graph replay44276378964](tests/results/pcs/original-graph-stored-weight-blocker-20261118.json)
+also produces `I'm oK`, `o` −0.2383120805, through the pinned original collector.
+That collector reconstructs frozen reference predictions6/6 exactly. Dense
+same-weight native stages match within7.63e−6 and all16 row37 logits within
+3.64e−6. Initial singleton-axis preflight failure44276100741 is retained;
+report-only quality reanalysis returns1 without repeating inference.
+
+The stored-weight quality blocker is supported; the exact offending tensor and
+conversion commit are not established. Production/reference/gate bytes remain
+unchanged. No fix commit, release, repaired PR/merge, fullstop/main-green claim
+or artifact regeneration follows. PLAN records the separately authorized
+artifact-owner dependency. All heavyweight work was hosted.

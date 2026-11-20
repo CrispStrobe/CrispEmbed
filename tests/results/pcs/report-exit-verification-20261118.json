@@ -1,0 +1,19 @@
+{
+  "script": "tools/pcs_weight_replay.py",
+  "script_sha256": "14b83cbba7c773ad6e2d9eeb76dd5d59e3406c2c96caaf512efa5a493b922241",
+  "checks": [
+    {
+      "report_sha256": "be200642586e6e3a08d107a49ff026a3b2f704d3dd74a0710a442840d0477b10",
+      "returncode": 1,
+      "stdout": "FAIL: retained stored-weight replay is quality-negative\n",
+      "stderr": ""
+    },
+    {
+      "report_sha256": "c554954c6290fbc675e47b3cba7a9195735aaaee066cf830111cee9dcd3afd5e",
+      "returncode": 1,
+      "stdout": "FAIL: retained stored-weight replay is quality-negative\n",
+      "stderr": ""
+    }
+  ],
+  "method": "Read-only report reanalysis; no model fetch, inference or output regeneration."
+}

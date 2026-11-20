@@ -17,6 +17,20 @@ need it, then run `python tools/list_env_vars.py --write`. See the
 
 ## Semantics
 
+The explicit PCS step diagnostic adds default-off `PCS_STEP_CAPTURE` and its
+fresh output directory `PCS_STEP_CAPTURE_PATH`. Default-off `PCS_STEP_REPLAY`
+requires capture and an explicit `PCS_STEP_REPLAY_REF` archive; it feeds
+independent reference values between observed operators for error attribution.
+These variables exist only in generated test builds, do not select production
+paths, and do not establish composed quality. See the
+[matched-operator contract](pcs-step-diff.md).
+
+The explicit test-only `punct-ab-capture` target uses default-off
+`PCS_GATE_CAPTURE` (`core_env::on`) and the output file path
+`PCS_GATE_CAPTURE_PATH`. These are unavailable in production builds. See the
+[PCS source audit](pcs-casing-source-audit.md) for its uncompiled status and
+future capture/neutrality requirements; no ordinary gate is changed.
+
 Document cleanup correctness and binary PDF storage are enabled by default.
 Ruled-photo perspective rectification is explicitly requested with cleanup
 `deskew_consensus=2`, or enabled for diagnostics with
@@ -1754,3 +1768,8 @@ operator candidate has no decoded-quality or release qualification.
 | `VIT_EMBED_FORCE_CPU` | value | unset | int | tuning / config | `src/vit_embed.cpp` | Load weights — prefer GPU backend when available |
 
 <!-- END GENERATED: tools/list_env_vars.py -->
+
+`PCS_GATE_F32_MATMUL` is a default-off, test-driver-only same-weight matrix
+attribution control in `punct-ab-matmul-control`. It materializes quantized PCS
+matrix operands as F32 before multiplication to isolate additional activation
+rounding; it does not modify the stored model or production PCS.

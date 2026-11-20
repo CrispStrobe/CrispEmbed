@@ -1,0 +1,480 @@
+{
+  "schema": "crispembed.pcs.frozen-native-control.v1",
+  "source_commit": "e6cfda21df2e0f4ab759ccbf954b4286cb62c82a",
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/44272906599",
+  "artifact": {
+    "id": 14413312520,
+    "sha256": "3e42ebcf6ca94f505500f0458a3b66478d985ff08e97ba2611407f44bc7e5d35",
+    "bytes": 145722
+  },
+  "model": {
+    "repository": "cstr/pcs-xlmr-base-GGUF",
+    "filename": "pcs-xlmr-base-q4_k-imatrix.gguf",
+    "revision": "27f17edbd7e33949f42a9a4fe4322b5af8172e6b",
+    "sha256": "faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da",
+    "bytes": 163098688
+  },
+  "compiler": {
+    "sha256": "fd8730a05275b1f8a149b7df3e38ef67cf7a21ec817a706206955cd2929b900b",
+    "version": "c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0\nCopyright (C) 2025 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
+  },
+  "cpu": "Intel Xeon 6975P-C",
+  "isa_macros": [
+    "AVX2",
+    "FMA",
+    "F16C",
+    "AVX512F",
+    "AVX512VNNI",
+    "AVXVNNI"
+  ],
+  "profile": "Release -O3 -DNDEBUG -march=native; original workflow profile; compile commands retained in artifact",
+  "neutrality": {
+    "all_four_head_dumps_and_decoded_bytes_equal": true,
+    "sha256": {
+      "original": {
+        "logits.txt": "e896b6334cca2dc63e092ffbeddc4d98e82c8723da8362ab6364d519b6aaa961",
+        "seg.txt": "a3a15ac40e318201dfaa708b178176a851ff310b1cd739bc06a3869872fd387c",
+        "pre.txt": "020e7bf3d9e520031b93351df62180345668eb6847728666c1640a244f1e40a3",
+        "cap.txt": "72938ab4a17a90c257f9c206f5b0f67b4673883cadafdc37944785861713bdd7"
+      },
+      "diagnostic-off": {
+        "logits.txt": "e896b6334cca2dc63e092ffbeddc4d98e82c8723da8362ab6364d519b6aaa961",
+        "seg.txt": "a3a15ac40e318201dfaa708b178176a851ff310b1cd739bc06a3869872fd387c",
+        "pre.txt": "020e7bf3d9e520031b93351df62180345668eb6847728666c1640a244f1e40a3",
+        "cap.txt": "72938ab4a17a90c257f9c206f5b0f67b4673883cadafdc37944785861713bdd7"
+      },
+      "diagnostic-on": {
+        "logits.txt": "e896b6334cca2dc63e092ffbeddc4d98e82c8723da8362ab6364d519b6aaa961",
+        "seg.txt": "a3a15ac40e318201dfaa708b178176a851ff310b1cd739bc06a3869872fd387c",
+        "pre.txt": "020e7bf3d9e520031b93351df62180345668eb6847728666c1640a244f1e40a3",
+        "cap.txt": "72938ab4a17a90c257f9c206f5b0f67b4673883cadafdc37944785861713bdd7"
+      }
+    }
+  },
+  "counts": {
+    "post": {
+      "agree": 67,
+      "total": 67
+    },
+    "pre": {
+      "agree": 67,
+      "total": 67
+    },
+    "seg": {
+      "agree": 67,
+      "total": 67
+    },
+    "cap": {
+      "agree": 67,
+      "total": 67
+    },
+    "decoded": {
+      "agree": 6,
+      "total": 6
+    }
+  },
+  "token_mapping_mismatches": [],
+  "row37_all16": [
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 0,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bdd28d14",
+      "finite": true,
+      "margin_to_zero": -0.1028081476688385,
+      "absolute_magnitude": 0.1028081476688385,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 1,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": true,
+      "logit_f32_bits": "3d1ff79e",
+      "finite": true,
+      "margin_to_zero": 0.0390545055270195,
+      "absolute_magnitude": 0.0390545055270195,
+      "actual_bit": 1,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 2,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": true,
+      "logit_f32_bits": "3ecc3c7d",
+      "finite": true,
+      "margin_to_zero": 0.39889898896217346,
+      "absolute_magnitude": 0.39889898896217346,
+      "actual_bit": 1,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 3,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bd54c857",
+      "finite": true,
+      "margin_to_zero": -0.051948871463537216,
+      "absolute_magnitude": 0.051948871463537216,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 4,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "be9cd9b7",
+      "finite": true,
+      "margin_to_zero": -0.3063485324382782,
+      "absolute_magnitude": 0.3063485324382782,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 5,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "be5948ea",
+      "finite": true,
+      "margin_to_zero": -0.21219220757484436,
+      "absolute_magnitude": 0.21219220757484436,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 6,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bef61020",
+      "finite": true,
+      "margin_to_zero": -0.4805917739868164,
+      "absolute_magnitude": 0.4805917739868164,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 7,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bef84d0b",
+      "finite": true,
+      "margin_to_zero": -0.4849627912044525,
+      "absolute_magnitude": 0.4849627912044525,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 8,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "befd7282",
+      "finite": true,
+      "margin_to_zero": -0.4950142502784729,
+      "absolute_magnitude": 0.4950142502784729,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 9,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "beeb9bbe",
+      "finite": true,
+      "margin_to_zero": -0.4601725935935974,
+      "absolute_magnitude": 0.4601725935935974,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 10,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "becea360",
+      "finite": true,
+      "margin_to_zero": -0.40359020233154297,
+      "absolute_magnitude": 0.40359020233154297,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 11,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bef2fdd9",
+      "finite": true,
+      "margin_to_zero": -0.4745929539203644,
+      "absolute_magnitude": 0.4745929539203644,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 12,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "be520522",
+      "finite": true,
+      "margin_to_zero": -0.20509770512580872,
+      "absolute_magnitude": 0.20509770512580872,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 13,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf3b0ab0",
+      "finite": true,
+      "margin_to_zero": -0.7306318283081055,
+      "absolute_magnitude": 0.7306318283081055,
+      "actual_bit": 0,
+      "reference_bit": 0,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 14,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "c009b521",
+      "finite": true,
+      "margin_to_zero": -2.1516802310943604,
+      "absolute_magnitude": 2.1516802310943604,
+      "actual_bit": 0,
+      "reference_bit": 0,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 15,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "c04d98d1",
+      "finite": true,
+      "margin_to_zero": -3.2124521732330322,
+      "absolute_magnitude": 3.2124521732330322,
+      "actual_bit": 0,
+      "reference_bit": 0,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405ecb00",
+        "c068c1c3"
+      ]
+    }
+  ],
+  "previous_sbd": {
+    "token": 2,
+    "logit_bits": [
+      "40ac801e",
+      "c0b9db94"
+    ],
+    "probability_bits": "3765b636",
+    "threshold": false,
+    "hard": false
+  },
+  "row37_chunk": {
+    "request": 3,
+    "offset": 0,
+    "count": 11
+  },
+  "original_gate_stdout": "post preds  : 67/67 tokens agree (100.00%)\npre         : 67/67 tokens agree (100.00%)\nseg         : 67/67 tokens agree (100.00%)\ncap         : 67/67 tokens agree (100.00%)\ndecoded text: 6/6 EXACT (gated \u2014 PCS truecases itself, so there is no deliberate case deviation to excuse)\nPASS\n",
+  "evidence_sha256": {
+    "diagnostic-on.stderr": "bde6734325127932bee257883f7966c81a11073837d636cdede47347bb33835c",
+    "diagnostic-on.stdout": "746ba510fc0a2ce7928fcd96b6d93463525b3dacfef7b4a0688bd54627064fc5",
+    "trace.tsv": "5f09af4c97308396ab0697cab74e2931f57cc448de68eb6aa8ac40394b8dc98e",
+    "build.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "original-gate.status.json": "b057d8ff739ca00af588896a1f559da9aabd413ab66f64f06bb96834c760e9e7",
+    "provenance.json": "6c51161afd63b8ef2328a0d79bc8c814eaa6065df631cd3cf42b1e122fb8f538",
+    "cpuinfo.txt": "495f62181856cbe84921b0001a55d4b2530f62fa176bd3f1c63ace492f674014",
+    "original-gate.stdout": "8299446251d79ae529e271a6fbfdb905f73375a5fd93c7f728b45eaa249102af",
+    "source.txt": "9228f06d05548bc1134ac931c3c245de6528f185d46037f4092f1e4e89cb3808",
+    "submodules.txt": "8171f5f73f867762fb5fb288dd0fb20e4f83eaa554f2a6e5e218ce0ee8982ae1",
+    "original.stderr": "bde6734325127932bee257883f7966c81a11073837d636cdede47347bb33835c",
+    "diagnostic-off.status.json": "28d08fc985df4598cc82a29c21caeac75efc5b640e134f484b7952d129fd2b0e",
+    "original.stdout": "746ba510fc0a2ce7928fcd96b6d93463525b3dacfef7b4a0688bd54627064fc5",
+    "diagnostic-off.stderr": "bde6734325127932bee257883f7966c81a11073837d636cdede47347bb33835c",
+    "original.status.json": "91ec6cff50d20624a3dbed2b9cd5eac909ec518f7d770aa48c6a0abecf8a7329",
+    "configure.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diagnostic-off.stdout": "746ba510fc0a2ce7928fcd96b6d93463525b3dacfef7b4a0688bd54627064fc5",
+    "neutrality.json": "8adc1d6091b1ced3a68c98daf57cb8af7ecf1450329e3092cdf28893b0913692",
+    "build.stdout": "591b5f44fbe91b435658ad676201fb852b0ece3848934c082f4bba67eaa568c6",
+    "original-gate.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configure.stdout": "178ea04de7db43fcdd8c66bb97490ffe73e960ce33a2a21912aea757ce04e723",
+    "corpus.txt": "3d701ba37a6f5b5f8d54b831075c6fdc2e9c20f7cfb20c983bf99f0c8c402825",
+    "diagnostic-on.status.json": "28d08fc985df4598cc82a29c21caeac75efc5b640e134f484b7952d129fd2b0e",
+    "compiler.txt": "e3bac80fa6d4e3a292f39091c2f4f2e33986cc7c91cbcb034c0de3cd27560881",
+    "analysis.json": "49161cd3a9716699b205ad5c90f05a448d40b9508f221db7d1663829361c0f9f"
+  },
+  "limits": [
+    "Positive Intel native control; does not reproduce the historical negative.",
+    "No production fix, baseline/tolerance adjustment, fullstop proof or main closure.",
+    "Historical failing binary/CPU and model hash were not retained.",
+    "AVX2 profile and original ONNX attribution are pending in separate run 44273793050."
+  ]
+}
