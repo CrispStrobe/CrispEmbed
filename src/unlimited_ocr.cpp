@@ -3043,7 +3043,9 @@ static bool run_llm_decoder_v2_fast(uocr_ctx & ctx, const float * prompt_embeds,
         auto * g = G.g;
         auto & ly = ctx.m.llm_layers[li];
         ggml_tensor * xn = ggml_mul(g, ggml_rms_norm(g, x, lhp.rms_eps), ensure_f32(g, ly.in_ln_w));
-        auto proj = [&](ggml_tensor * w, int heads) { return ggml_reshape_3d(g, ggml_mul_mat(g, w, xn), HDm, heads, T); };
+        auto proj = [&](ggml_tensor * w, int heads) {
+            return ggml_reshape_3d(g, ggml_mul_mat(g, w, xn), HDm, heads, T);
+        };
         ggml_tensor * Q = uocr2_fast::rope(g, proj(ly.q_w, NH), tc, ts);
         ggml_tensor * K = uocr2_fast::rope(g, proj(ly.k_w, NKV), tc, ts);
         ggml_tensor * Vv = proj(ly.v_w, NKV);
