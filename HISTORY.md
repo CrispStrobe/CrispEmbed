@@ -1,3 +1,10 @@
+## Main health: Arabic morph test routes through clean_exit — 20 November 2026
+
+`tests/test_arabic_morph.cpp` (from the Arabic morph PRs) had a bare `main()`,
+failing the `Static guards` clean-exit check on main. It now wraps
+`crispembed_test_main()` in `core_util::clean_exit`; the guard passes for all
+339 one-shot mains.
+
 ## spaCy English and French bundles published — 18 November 2026
 
 `cstr/crispembed-spacy-en-core-web-sm-3.8.0` (`eb659259`, MIT) and
