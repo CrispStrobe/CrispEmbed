@@ -1,3 +1,31 @@
+## OCR GPU benchmark: DeepSeek-OCR2 and Unlimited-OCR-2, fused decode step — 20 November 2026
+
+Kaggle `ocr-gpu-readiness` at 7f2d17de ran DeepSeek-OCR2 (Q4_K) and Unlimited-OCR-2 (F16, FAST decoder)
+on a T4 (CUDA and the same binary on the CPU backend) and on a Kaggle CPU, on the three realistic documents
+of the OvisOCR2 receipts. Unlimited-OCR-2 also ran the four trial pages with frozen original outputs
+([receipt](tests/results/ocr-gpu-readiness/deepseek-uocr2-20261120.json), PERFORMANCE 20 November). A P100
+was requested; Kaggle served a T4 again.
+
+- T4 versus Kaggle CPU: DeepSeek-OCR2 5.5 vs 55 s/page (146 vs 18 decode tok/s), Unlimited-OCR-2 12.1 vs
+  91.9 s/page (53 vs 9.7 tok/s). Unlimited-OCR-2 is ID/text-exact on every device and all 24 trial runs match
+  the original. DeepSeek-OCR2 diverges on two pages between devices and between CPU hosts, as on 12 November.
+- `CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP` (default off, 260 lines in `src/unlimited_ocr.cpp`) gives the same
+  IDs, text, EOS and bit-identical confidences as the unfused path in all 21 pairs, and every trial page is
+  original-exact. It speeds up CUDA decode 1.13-1.32x (12.1 → 10.1 s/page); on the CPU it is within noise
+  (0.85-1.21x). It is merged, still default off.
+- The unified `crispembed_ocr_model_confidences` now returns Unlimited-OCR's per-token confidences. The
+  orchestrator already exposed them; the unified API returned none.
+- Remaining CPU fallbacks on CUDA are 55 nodes for DeepSeek-OCR2 and 40 for Unlimited-OCR-2 (SAM/CLIP vision:
+  RMS_NORM/NORM/CONT/IM2COL/patch MUL_MAT), plus Unlimited-OCR-2's host DASH routing (123 CPU splits, 35
+  fused). PLAN holds the per-engine GPU port plan.
+- `minicpm-ocr-graph` failed to link: the qwen35 TUs call the LightOn4B physical helpers. `tests/minicpm-graph`
+  and `tests/josev-quant` now link those TUs (closed stubs without the SGEMM ABI define, as in the main
+  library). The frozen `tests/josev-packed` CMake is unchanged. `ccache-cpu-probe` builds and runs them.
+- CPU-kernel ccache: the seed toolchain check counted the CPU image's missing nvcc as a mismatch and forced an
+  export on every CPU kernel. It now compares only tools present on the running image. With the seed
+  refreshed once from the CPU probe, the warm rerun hit 293/293 objects (100%, 4.4 s), against 40/293
+  (13.7%, 494 s) before (docs/kaggle-ccache.md).
+
 ## OvisOCR2 GPU drift bisect: F32 device-matrix gates — 20 November 2026
 
 Two default-off gates for `CRISPEMBED_QWEN35_OCR_GPU`, `CRISPEMBED_QWEN35_OCR_GPU_F32_VISION` and

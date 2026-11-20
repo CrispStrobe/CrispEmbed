@@ -1533,13 +1533,31 @@ gated grouped-GDN standard-op component with original-module stage/cache replay
 on Kaggle before full decoder integration or decoded-quality claims. No inference
 or runtime release follows from this documentation review.
 
+## OCR engine GPU ports — 20 November 2026
+
+The T4/CPU benchmark is done (HISTORY and PERFORMANCE 20 November;
+[receipt](tests/results/ocr-gpu-readiness/deepseek-uocr2-20261120.json)). So are the fused Unlimited-OCR-2
+decode step (merged, default off), the `minicpm-ocr-graph` link fix and the CPU-kernel ccache fix. P100: a
+second request was served a T4 again, and CUDA 13.0 on the current image cannot target sm_60 anyway. Below,
+one port per engine that still falls back to the CPU on CUDA. Each port goes behind its own default-off
+gate. Acceptance for each: 0 CPU nodes in the `GGML_SCHED_DEBUG=2` probe (the
+`ocr-gpu-readiness` kernel), the same CUDA IDs/text as now on the three documents (and, for
+Unlimited-OCR-2, on the four original-exact trial pages), and measured s/page.
+
+| Engine | CPU fallbacks on CUDA (T4) | Port plan | Acceptance |
+|---|---|---|---|
+| DeepSeek-OCR2 (Q4_K) | 55 nodes / 30 splits: RMS_NORM 24, CONT 9, NORM 6, IM2COL 5, MUL_MAT 5 (`patch_out`), ADD 4, MUL 2 | 1) Log `supports_op` and buffer placement per CPU node: is the input host-resident or the op unsupported? 2) Place the SAM patch-embed conv weights (IM2COL + MUL_MAT) in the device buffer and keep their activations F32 and contiguous. 3) Upload the norm weights (RMS_NORM/NORM) and the `ensure_f32` copies to the device. 4) Make the reshaped CONT inputs contiguous before the split | 0 CPU nodes. Same CUDA IDs as now (the engine is not device-exact, so no CPU-exactness gate); vision 1.93 s/page or less |
+| Unlimited-OCR-2 (F16) | 40 nodes: the same SAM/CLIP vision ops (shared code with DeepSeek-OCR2); host DASH routing and masks per layer (123 CPU splits, 35 with `FUSED_STEP`) | 1) Reuse the DeepSeek-OCR2 vision fix. 2) Move the DASH block routing (router-key append, top-k block choice, mask build) into the graph (`ggml_top_k` + `get_rows`), behind its own gate, so a decode step is one device graph. 3) Then decide on `FUSED_STEP` by default on CUDA | 0 CPU nodes. Trial pages original-exact, IDs/text/EOS exact vs the CPU, confidence drift reported. Decode above 68 tok/s |
+| MiniCPM-OCR (F16) | No ggml graphs: the whole engine runs on the CPU, and CUDA is no faster (12 November) | Route its Qwen decoder through the standard-op `CRISPEMBED_QWEN35_OCR_GPU` graphs (as OvisOCR2), then the SigLIP vision | Graphs on CUDA0. Exact vs the frozen reference panel |
+| LightOn2/3-1B | 1 RMS_NORM (final norm) | Device-resident final-norm weight | 0 CPU nodes. LightOn3 CUDA confidence drift (up to 1.3e-2 at exact text) explained or reduced |
+
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
 Both CPU default flips and the standard-ggml-op GPU port are done (HISTORY 11 November).
 
 | Work | State | Acceptance |
 |---|---|---|
-| OvisOCR2 GPU default (proposal) | `CRISPEMBED_QWEN35_OCR_GPU` port done (HISTORY 11 November): no CPU fallbacks on CUDA, T4 3/3 documents exact, 89 tok/s decode | Owner decision. Proposal: default on when a GPU backend is present (`explicitly_off`, CPU unchanged), after a P100/second-arch run (the hosted eleven-case CPU arm is exact, 9.09e-5 drift). On the CPU backend the same graphs are exact and faster than the default on the hosted receipt (77.6 vs 125.7 s), which makes them a separate CPU-default candidate |
+| OvisOCR2 GPU default (proposal) | `CRISPEMBED_QWEN35_OCR_GPU` port done (HISTORY 11 November): no CPU fallbacks on CUDA, T4 3/3 documents exact, 89 tok/s decode | Owner decision. Proposal: default on when a GPU backend is present (`explicitly_off`, CPU unchanged), after a P100/second-arch run (requested again on 20 November and served a T4; the hosted eleven-case CPU arm is exact, 9.09e-5 drift). On the CPU backend the same graphs are exact and faster than the default on the hosted receipt (77.6 vs 125.7 s), which makes them a separate CPU-default candidate |
 | OvisOCR2 GPU follow-ups | GPU confidence drift up to 1.49e-3 (CPU paths ≤ 8.4e-6); selection on the host is ~14% of decode | Drift bisect done (HISTORY 20 November): F32 vision matrices change nothing, F32 decoder matrices cut it to 1.11e-3 (receipt 1.15e-3 → 1.25e-4) at ~25% slower; the rest is CUDA reduction/kernel order. Next: per-op attribution of the decoder residual (attention/softmax, RMS norm); argmax/softmax on device; Metal/Vulkan runs |
 
 ## PDF Craft adoption — 9 November 2026

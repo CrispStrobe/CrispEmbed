@@ -79,8 +79,23 @@ Two guards:
   differs and marks the seed stale, so the kernel exports a fresh one.
 
 CPU-only kernels run on Kaggle's CPU image, and kernels that build their own
-small CMake projects (`tests/<name>`) use other flags and layouts; both mostly
-miss the GPU-image seed. Their export adds their objects to the same tar.
+small CMake projects (`tests/<name>`) use other flags and layouts (clone in
+`/kaggle/temp/ce`, build trees beside it rather than `<clone>/build`); both
+miss the GPU-image seed. Their export adds their objects to the same tar, so
+such a kernel hits only after it has refreshed the seed once itself. Two things
+kept them at 0–16%:
+
+- The toolchain check compared `nvcc` too, and the CPU image has none, so every
+  CPU kernel saw a "different toolchain", marked the seed stale and wrote a cache
+  tar to its outputs. Only tools present on the running image are compared now.
+- Nobody versioned the dataset from a CPU kernel. Push a CPU build kernel once
+  with `--refresh-ccache` after its build layout or flags change.
+
+`tools/kaggle/ccache-cpu-probe` builds exactly the `minicpm-ocr-graph` trees
+(`tests/minicpm-graph`, the root CPU tree, `tests/josev-quant`). On 20 November
+the first run against the 12 November seed hit 40/293 (13.7%, 494 s of builds).
+After `--refresh-ccache` the warm rerun hit 293/293 (100%, 4.4 s) and exported
+nothing.
 
 Versioning the dataset happens on the pushing machine (no GitHub workflow):
 

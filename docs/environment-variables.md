@@ -146,6 +146,7 @@ bounded thresholds and output fields are in [the Marker guide](marker.md#optiona
 |---|---|---|
 | `CRISPEMBED_UNLIMITED_OCR2` | off | **Required.** A variant-2 GGUF refuses to decode without it (never falls back to v1 attention). |
 | `CRISPEMBED_UNLIMITED_OCR2_FAST` | off | Opt-in ggml decoder; the exact CPU/F32 reference decoder stays the default. |
+| `CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP` | off | FAST decoder only: fuses graph B of layer l with graph A of layer l+1 per decode token (half the graph launches, same ops in the same order). 20 November: IDs, text, EOS and confidences bit-identical to the unfused path on CPU and T4 CUDA, original-exact on the four trial pages; CUDA decode 1.13-1.32x, CPU within noise. |
 | `CRISPEMBED_UNLIMITED_OCR2_FORCE_IDS` | unset | Diagnostic teacher forcing for the fast decoder: a file of whitespace-separated token IDs fed instead of the argmax (docs/unlimited-ocr2-q4k-recipes.md). |
 | `CRISPEMBED_UNLIMITED_OCR2_LOGITS_OUT` | unset | Diagnostic: write each fast-decoder step's raw lm_head logits (F32) to this file. |
 | `CRISPEMBED_UNLIMITED_OCR2_TILES` | on | Follows the original >640 px tiling (images wider or taller than 640 px are tiled). `=0` forces the untiled path. |

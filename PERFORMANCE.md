@@ -165,6 +165,46 @@ contribute to peak memory. Workspace history scaling does not qualify PDF
 export scaling. Selection geometry remains estimated within OCR regions rather
 than recovered typography. See [the protocol](docs/ocr-reviewed-pdf.md).
 
+## OCR engines on GPU: DeepSeek-OCR2 and Unlimited-OCR-2 (20 November 2026, Kaggle T4 + CPU)
+
+Kaggle `ocr-gpu-readiness` at 7f2d17de, three reviewed realistic documents (inventory-table,
+two-column-page, historical-receipt; same PNGs as the OvisOCR2 receipts), cap 1024, 4 threads
+([deepseek-uocr2-20261120.json](tests/results/ocr-gpu-readiness/deepseek-uocr2-20261120.json)).
+Unlimited-OCR-2 (`uocr2`, F16, FAST decoder, tiles) also ran the four trial pages whose original model
+IDs and text are frozen in `tests/results/unlimited-ocr2/trial.json`. A P100 was requested and Kaggle
+served a Tesla T4 (sm_75) again. The `cpu` arm on the GPU host is the same CUDA binary with the CPU
+backend. LightOn2/3-1B and MiniCPM-OCR are from the 12 November run
+([readiness.json](tests/results/ocr-gpu-readiness/readiness.json)).
+
+| engine | device | s/page (3 docs) | vision s | prefill s | decode s | decode tok/s | IDs/text vs Kaggle CPU | max confidence drift |
+|---|---|---|---|---|---|---|---|---|
+| DeepSeek-OCR2 Q4_K | T4 CUDA | **5.5** | 1.93 | 0.11 | 2.70 | 146 | 1/3 exact (diverges at IDs 551, 25) | 0.18 (common prefix) |
+| DeepSeek-OCR2 Q4_K | T4 host CPU | 53.3 | 23.5 | 3.85 | 25.0 | 17.2 | 1/3 exact (229, 78) | 0.15 |
+| DeepSeek-OCR2 Q4_K | Kaggle CPU | 55.2 | 26.1 | 4.18 | 23.8 | 18.2 | reference | |
+| Unlimited-OCR-2 F16 | T4 CUDA | **12.1** | 1.57 | 0.23 | 9.80 | 53 | 3/3 exact | 3.0e-3 |
+| Unlimited-OCR-2 F16, `FUSED_STEP=1` | T4 CUDA | **10.1** | 1.60 | 0.24 | 7.81 | 68 | 3/3 exact | 3.0e-3 (bit-identical to unfused) |
+| Unlimited-OCR-2 F16 | T4 host CPU | 83.1 | 17.6 | 8.17 | 54.0 | 10.2 | 3/3 exact | 1.4e-3 |
+| Unlimited-OCR-2 F16 | Kaggle CPU | 91.9 | 21.2 | 9.27 | 57.4 | 9.7 | reference | |
+
+Unlimited-OCR-2 trial pages (tiled, 754 tokens over four pages): 12.6 s/page on T4 (12.2 fused) versus
+154-187 s/page on CPU. All 24 trial runs (CPU, T4 host CPU and T4 CUDA; fused and unfused) match the
+original IDs, text and EOS. The largest CUDA confidence drift is 9.5e-3 on the receipt page. For tiled
+pages the stage columns miss the tile vision, so use s/page.
+
+Ops left on the CPU on CUDA (`GGML_SCHED_DEBUG=2`, inventory-table, 8 tokens):
+
+| engine | CPU nodes / CUDA nodes | CPU splits | CPU ops |
+|---|---|---|---|
+| DeepSeek-OCR2 | 55 / 4,533 | 30 | RMS_NORM 24, CONT 9, NORM 6, IM2COL 5, MUL_MAT 5, ADD 4, MUL 2 (`patch_out`) |
+| Unlimited-OCR-2 | 40 / 7,891 | 123 (35 fused) | CONT 9, RMS_NORM 8, NORM 7, IM2COL 5, MUL_MAT 5, ADD 4, MUL 2 |
+| LightOn2/3-1B (12 Nov) | 1 / 6,306 | 1 | RMS_NORM 1 |
+| MiniCPM-OCR (12 Nov) | no ggml graphs | | the whole engine runs on the CPU; CUDA is not faster |
+
+DeepSeek-OCR2 Q4_K is not device-exact: the two longer pages diverge between CUDA and the host CPU at
+the same token positions as on 12 November, and also between two Kaggle CPU hosts. Its confidence
+differs by up to 0.18 at identical IDs. Unlimited-OCR-2 F16 is exact on every device. Builds:
+CUDA 111 s (288/333 ccache hits), CPU 95 s (146/191).
+
 ## OvisOCR2 on GPU — `CRISPEMBED_QWEN35_OCR_GPU` (11 November 2026, Kaggle T4)
 
 Kaggle `ovisocr2-gpu-bench` at f30a567f, Tesla T4 (sm_75), F16 GGUF, the three reviewed realistic
