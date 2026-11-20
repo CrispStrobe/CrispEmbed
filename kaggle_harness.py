@@ -396,7 +396,11 @@ def _read_seed_info(ccache_dir: Path) -> None:
     seed_tc = _seed_info.get("toolchain")
     if seed_tc:
         here = toolchain_fingerprint()
-        diff = {k: (seed_tc.get(k), here.get(k)) for k in set(seed_tc) | set(here) if seed_tc.get(k) != here.get(k)}
+        # Compare only tools present on this image: a CPU image has no nvcc, which says
+        # nothing about the C/C++ objects it shares with the GPU seed. Counting the absent
+        # nvcc as a mismatch marked the seed stale on every CPU kernel (forced export).
+        diff = {k: (seed_tc.get(k), here.get(k)) for k in set(seed_tc) | set(here)
+                if here.get(k) is not None and seed_tc.get(k) != here.get(k)}
         _seed_info["toolchain_mismatch"] = diff or None
         if diff:
             print(f"  ccache: WARNING seed toolchain differs from this image, expect misses: {json.dumps(diff)}",
