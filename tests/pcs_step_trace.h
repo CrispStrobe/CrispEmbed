@@ -52,13 +52,16 @@ struct pcs_step_trace {
         if (row < 0 || row >= rows || column < 0 || column >= width || width > 4096)
             throw std::runtime_error("PCS CPU capture coordinate invalid");
         auto & values = cpu_values[name];
-        if (values.empty()) { values.resize(rows * width); cpu_widths[name] = width; }
+        if (values.empty()) {
+            values.resize(rows * width);
+            cpu_widths[name] = width;
+        }
         if (cpu_widths[name] != width) throw std::runtime_error("PCS CPU capture width changed");
         values[row * width + column] = value;
         if (replay && reference.has(name)) {
             const auto shape = reference.shape(name);
             const auto source = reference.get_f32(name);
-            if (shape != std::vector<int64_t>{width, rows} || source.second != values.size())
+            if (shape != std::vector<int64_t>{ width, rows } || source.second != values.size())
                 throw std::runtime_error("PCS CPU replay axes differ");
             return source.first[row * width + column];
         }
@@ -113,14 +116,14 @@ struct pcs_step_trace {
             const int closed = fclose(output);
             if (!written || closed) throw std::runtime_error("PCS step output write failed");
             fprintf(manifest, "%s\t%s\t%lld\t%lld\t%lld\t%lld\n", item.first.c_str(),
-                    tensor->type == GGML_TYPE_I32 ? "i32" : "f32",
-                    (long long)tensor->ne[0], (long long)tensor->ne[1],
+                    tensor->type == GGML_TYPE_I32 ? "i32" : "f32", (long long)tensor->ne[0], (long long)tensor->ne[1],
                     (long long)tensor->ne[2], (long long)tensor->ne[3]);
         }
         for (const auto & item : cpu_values) {
             FILE * output = fopen((directory + "/" + item.first + ".bin").c_str(), "wx");
             if (!output) throw std::runtime_error("PCS CPU capture output exists");
-            const bool written = fwrite(item.second.data(), sizeof(float), item.second.size(), output) == item.second.size();
+            const bool written =
+                fwrite(item.second.data(), sizeof(float), item.second.size(), output) == item.second.size();
             const int closed = fclose(output);
             if (!written || closed) throw std::runtime_error("PCS CPU output write failed");
             fprintf(manifest, "%s\tf32\t%d\t%d\t1\t1\n", item.first.c_str(), cpu_widths.at(item.first), rows);
