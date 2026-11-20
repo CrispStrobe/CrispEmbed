@@ -21,7 +21,9 @@ blocker" and "PCS matched-operator continuation" (18 November). Full record:
   q4_k-imatrix exactly except for one SHA-bound recorded loss
   (`tests/pcs_parity.py --recorded-quant-loss`,
   `tests/regression/pcs/q4_k-imatrix-recorded-loss.json`); any other difference
-  or file fails. No runtime source, default or environment variable changed.
+  or file fails. Native [44682047609](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44682047609):
+  q8_0 strict 67/67 all heads, 6/6 decoded. No runtime source, default or
+  environment variable changed.
 - **Diagnostics folded in** from draft PR #243 (step-diff, gate capture, operand
   analysis), with `tests/pcs_step_diff.cpp` routed through `core_util::clean_exit`
   and formatted with clang-format 18.

@@ -61,6 +61,10 @@ sum and the ten F32 QK budget exceedances are sub-1e−3 effects against a
   its SHA-256 (`tests/regression/pcs/q4_k-imatrix-recorded-loss.json`, passed
   with `--recorded-quant-loss`): token 37 bits `01` and line 3 `I'm oK, …` may
   appear; any other difference, or a different file, fails.
+- Native confirmation, [run 44682047609](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44682047609)
+  (`punct-parity`): q8_0 strict 67/67 on all four heads and 6/6 decoded exact;
+  the q4_k-imatrix arm also landed 6/6 on that runner's CPU (the recorded loss
+  was not needed there).
 - No runtime source changed, so no environment gate applies. Changing native
   arithmetic to flip this one logit would hide a weight-precision loss.
 
