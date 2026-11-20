@@ -15,7 +15,7 @@ from pathlib import Path
 SHA = "__SHA__"
 SRC = Path("/kaggle/temp/ce")
 OUT = Path("/kaggle/working")
-summary = {"schema": "crispembed-ccache-cpu-probe-v1", "sha": SHA, "builds": [], "started": time.time()}
+summary = {"schema": "crispembed-ccache-cpu-probe-v1", "sha": SHA, "trees": [], "started": time.time()}
 
 
 def save():
@@ -61,7 +61,7 @@ try:
         rc2, s2 = sh(build) if rc1 == 0 else (None, 0)
         after = kh.ccache_counters()
         h, m = after["hits"] - before["hits"], after["misses"] - before["misses"]
-        summary["builds"].append({"tree": name, "configure_rc": rc1, "build_rc": rc2, "build_s": s2, "hits": h,
+        summary["trees"].append({"tree": name, "configure_rc": rc1, "build_rc": rc2, "build_s": s2, "hits": h,
                                   "misses": m, "hit_rate": round(h / max(1, h + m), 4)})
         save()
     rc, _ = sh(["/kaggle/temp/g/minicpm-graph-controls"])
