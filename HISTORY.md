@@ -1,3 +1,15 @@
+## OvisOCR2 GPU drift bisect: F32 device-matrix gates — 20 November 2026
+
+Two default-off gates for `CRISPEMBED_QWEN35_OCR_GPU`, `CRISPEMBED_QWEN35_OCR_GPU_F32_VISION` and
+`CRISPEMBED_QWEN35_OCR_GPU_F32_DECODER`, upload the vision or decoder matrices to the device widened to F32.
+The Kaggle bisect kernel `tools/kaggle/ovisocr2-gpu-precision` ran on 12 November (both the T4 and the P100
+request were served on a Tesla T4, sm_75); the results were not recorded until now
+(`tests/results/qwen35-ocr/ovisocr2-gpu-precision.json`). All arms are token- and text-exact on the three
+documents. Maximum confidence drift against the frozen CPU receipt: GPU default 1.49e-3, F32 vision
+1.49e-3 (identical), F32 decoder 1.11e-3 (historical receipt 1.15e-3 → 1.25e-4), both 1.11e-3, at about
+25% longer recognition. F16 rounding of decoder GEMM inputs is part of the drift, not all of it; the
+remainder comes from CUDA reduction order. Defaults are unchanged. P100 (sm_60) remains unmeasured because
+CUDA 13.0 on the current image cannot target it.
 ## Main health: Arabic morph test routes through clean_exit — 20 November 2026
 
 `tests/test_arabic_morph.cpp` (from the Arabic morph PRs) had a bare `main()`,
