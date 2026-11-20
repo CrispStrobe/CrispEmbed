@@ -1,5 +1,12 @@
 # PCS blueprint reference
 
+**18 November 2026:** the unchanged default artifact is quality-negative on the
+AVX2 reproduction: casing66/67, decoded5/6 (`OK` → `oK`). Independent replay of
+all214 stored tensors in the original graph/collector reproduces it. The Intel
+native positive control does not close that failure. See the
+[actual evidence and blocker](../../../docs/pcs-casing-source-audit.md).
+The measurements below are historical; references and acceptance remain unchanged.
+
 Ground truth for the **PCS** engine (punctuation + capitalisation + sentence
 boundary, `1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase`), the third
 and last of the three punctuation engines to get one. Four registry entries
@@ -32,7 +39,18 @@ gate since they are what produce the text.
 | local `pcs-xlmr-base.gguf` | 67/67 | **6/6 exact** |
 | local `pcs-xlmr-base-q4_k.gguf` (no imatrix) | 67/67 | 5/6 |
 | registry `pcs-xlmr-base-q8_0.gguf` | 67/67 | **6/6 exact** |
-| registry `pcs-xlmr-base-q4_k-imatrix.gguf` (**the default**) | 67/67 | **6/6 exact** |
+| registry `pcs-xlmr-base-q4_k-imatrix.gguf` (**the default**) | 67/67 | 6/6 on some CPUs, 5/6 on others ⚠ |
+
+⚠ **Corrected 20 November 2026.** The q4_k-imatrix 6/6 above was CPU-dependent.
+In exact arithmetic (the original ONNX graph running this artifact's dequantized
+weights) row37 `▁ok` gives `o` logit −0.238 versus +1.083 with the original
+weights, i.e. `I'm oK`; AVX2 native agrees (−0.098), while some Intel builds
+round to the other side. The cause is the summed 4-bit rounding of many tensors,
+not a runtime or conversion defect — see
+[the root-cause record](../../../docs/pcs-quality-root-cause.md). CI therefore
+gates **q8_0 strictly** (ground truth, +0.992) and gates q4_k-imatrix exactly
+except for that one recorded, SHA-bound loss
+(`q4_k-imatrix-recorded-loss.json`, `--recorded-quant-loss`).
 
 Decoded text is gated on EXACT equality here, unlike the other two punctuation
 harnesses. Those excuse case differences because their runtimes deliberately

@@ -889,6 +889,58 @@ add_executable(punct-ab tests/punct_ab.cpp)
 target_include_directories(punct-ab PRIVATE src)
 target_link_libraries(punct-ab PRIVATE crispembed)
 
+# Explicit future-gate observer, never part of normal builds or installation.
+# Keep byte-shared src/pcs.cpp intact; the adapter only inserts diagnostic calls.
+option(CRISPEMBED_BUILD_PCS_CAPTURE "Expose test-only PCS provenance/casing observer" OFF)
+if(CRISPEMBED_BUILD_PCS_CAPTURE)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    set(PCS_CAPTURE_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/pcs_gate_observed.cpp")
+    add_custom_command(OUTPUT "${PCS_CAPTURE_SOURCE}"
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/pcs_gate_capture.py"
+            prepare --source "${CMAKE_CURRENT_SOURCE_DIR}/src/pcs.cpp" --output "${PCS_CAPTURE_SOURCE}"
+        DEPENDS src/pcs.cpp tests/pcs_gate_trace.h tools/pcs_gate_capture.py
+        VERBATIM)
+    add_executable(punct-ab-capture EXCLUDE_FROM_ALL tests/punct_ab.cpp "${PCS_CAPTURE_SOURCE}")
+    target_include_directories(punct-ab-capture PRIVATE src tests)
+    target_link_libraries(punct-ab-capture PRIVATE crispembed)
+    crispembed_apply_arch_flags(punct-ab-capture)
+    set(PCS_CONTROL_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/pcs_matmul_control.cpp")
+    add_custom_command(OUTPUT "${PCS_CONTROL_SOURCE}"
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/pcs_matmul_control.py"
+            "${PCS_CAPTURE_SOURCE}" "${PCS_CONTROL_SOURCE}"
+        DEPENDS "${PCS_CAPTURE_SOURCE}" tools/pcs_matmul_control.py
+        VERBATIM)
+    add_executable(punct-ab-matmul-control EXCLUDE_FROM_ALL tests/punct_ab.cpp "${PCS_CONTROL_SOURCE}")
+    target_include_directories(punct-ab-matmul-control PRIVATE src tests)
+    target_link_libraries(punct-ab-matmul-control PRIVATE crispembed)
+    crispembed_apply_arch_flags(punct-ab-matmul-control)
+    set(PCS_STEP_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/pcs_step_observed.cpp")
+    add_custom_command(OUTPUT "${PCS_STEP_SOURCE}"
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/pcs_step_capture.py"
+            prepare "${PCS_CAPTURE_SOURCE}" "${PCS_STEP_SOURCE}"
+        DEPENDS "${PCS_CAPTURE_SOURCE}" tools/pcs_step_capture.py tools/pcs_steps.py tests/pcs_step_trace.h
+        VERBATIM)
+    set(PCS_STEP_MATMUL_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/pcs_step_matmul.cpp")
+    add_custom_command(OUTPUT "${PCS_STEP_MATMUL_SOURCE}"
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/pcs_matmul_control.py"
+            "${PCS_STEP_SOURCE}" "${PCS_STEP_MATMUL_SOURCE}"
+        DEPENDS "${PCS_STEP_SOURCE}" tools/pcs_matmul_control.py
+        VERBATIM)
+    foreach(step_target IN ITEMS punct-ab-step punct-ab-step-matmul)
+        if(step_target STREQUAL "punct-ab-step")
+            set(step_source "${PCS_STEP_SOURCE}")
+        else()
+            set(step_source "${PCS_STEP_MATMUL_SOURCE}")
+        endif()
+        add_executable(${step_target} EXCLUDE_FROM_ALL tests/punct_ab.cpp "${step_source}")
+        target_include_directories(${step_target} PRIVATE src tests)
+        target_link_libraries(${step_target} PRIVATE crispembed)
+        crispembed_apply_arch_flags(${step_target})
+    endforeach()
+    add_executable(crispembed-diff-pcs EXCLUDE_FROM_ALL tests/pcs_step_diff.cpp)
+    target_include_directories(crispembed-diff-pcs PRIVATE src)
+endif()
+
 # Live (needs a GGUF): dump the token ids the shipping runtime produces, for
 # ANY tokenizer family. SentencePiece/BPE parity cannot be checked from a
 # vocab file the way WordPiece can — merges, charsmap and pre-tokenizer

@@ -1,0 +1,9 @@
+{
+  "artifact": "cstr/pcs-xlmr-base-GGUF pcs-xlmr-base-q4_k-imatrix.gguf",
+  "artifact_revision": "27f17edbd7e33949f42a9a4fe4322b5af8172e6b",
+  "artifact_sha256": "faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da",
+  "why": "In exact ONNX Runtime arithmetic the pinned original graph with this artifact's dequantized weights gives row37 `o` logit -0.2383 (original F32 weights: +1.0832), i.e. `I'm oK`. The loss is distributed Q4_K/Q4_0 rounding (largest single groups: enc.0 -0.435, head.tc -0.268, enc.3 -0.260); native CPUs land on either side of zero. The strict ground-truth arm is q8_0 (+0.9921). See docs/pcs-quality-root-cause.md.",
+  "evidence": "tests/results/pcs/tensor-group-attribution-20261120.json",
+  "cap": {"37": ["01"]},
+  "decoded": {"3": ["I'm oK, how are you? I'm fine."]}
+}

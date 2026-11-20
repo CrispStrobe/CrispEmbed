@@ -1,0 +1,84 @@
+name: PCS matched operator diff
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  step-diff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze exact input artifacts
+        run: |
+          mkdir -p .pcs-models pcs-step-provenance
+          python -m pip install numpy onnx onnxruntime sentencepiece gguf huggingface_hub pyyaml
+          python -m pip freeze > pcs-step-provenance/python-packages.txt
+          env -u HF_TOKEN -u HUGGING_FACE_HUB_TOKEN python tools/pcs_gate_capture.py fetch-model \
+            --repo cstr/pcs-xlmr-base-GGUF --filename pcs-xlmr-base-q4_k-imatrix.gguf \
+            --revision 27f17edbd7e33949f42a9a4fe4322b5af8172e6b \
+            --expected-sha256 faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da \
+            --output .pcs-models/pcs-xlmr-base-q4_k-imatrix.gguf
+          env -u HF_TOKEN -u HUGGING_FACE_HUB_TOKEN python - <<'PY'
+          from huggingface_hub import snapshot_download
+          snapshot_download('1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase',
+              revision='d1769a597ce8dfaa070d436bc67d4ee761f58884',
+              allow_patterns=['model.onnx', 'sp.model', 'config.yaml'], local_dir='.pcs-original')
+          PY
+          git rev-parse HEAD > pcs-step-provenance/source.txt
+          git submodule status > pcs-step-provenance/submodules.txt
+          cat /proc/cpuinfo > pcs-step-provenance/cpuinfo.txt
+          c++ --version > pcs-step-provenance/compiler.txt
+      - name: Build explicit test targets with the frozen AVX2 profile
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_AVX2=ON -DGGML_FMA=ON \
+            -DGGML_F16C=ON -DGGML_AVX512=OFF -DGGML_AVX_VNNI=OFF -DGGML_AVX512_VNNI=OFF \
+            -DCRISPEMBED_BUILD_PCS_CAPTURE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            > pcs-step-provenance/configure.stdout 2> pcs-step-provenance/configure.stderr
+          cmake --build build --target punct-ab punct-ab-step punct-ab-step-matmul crispembed-diff-pcs -j2 \
+            > pcs-step-provenance/build.stdout 2> pcs-step-provenance/build.stderr
+      - name: New model-free observer and shared-reader controls
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+        run: |
+          mkdir pcs-step-control-fixtures
+          ln -s ../build/crispembed-diff-pcs pcs-step-control-fixtures/crispembed-diff-pcs
+          python tests/test_pcs_step_contract.py pcs-step-control-fixtures \
+            > pcs-step-provenance/source-controls.stdout 2> pcs-step-provenance/source-controls.stderr
+      - name: Original operators, same-weight composed arms, and reference-input replay
+        env:
+          OMP_NUM_THREADS: '2'
+          OPENBLAS_NUM_THREADS: '1'
+        run: python tools/pcs_step_run.py
+      - name: Retain source-bound reports and small intermediates, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pcs-matched-operator-diff
+          retention-days: 14
+          path: |
+            pcs-step-provenance/
+            pcs-step-evidence/*.json
+            pcs-step-evidence/*.stdout
+            pcs-step-evidence/*.stderr
+            pcs-step-evidence/*.txt
+            pcs-step-evidence/reference/*.json
+            pcs-step-evidence/reference/*.gguf
+            pcs-step-evidence/reference/*.npz
+            pcs-step-evidence/*/manifest.tsv
+            pcs-step-evidence/*/conditioning.tsv
+            pcs-step-evidence/*/capture.gguf
+            pcs-step-evidence/*/*.txt
+            build/CMakeCache.txt
+            build/compile_commands.json
+            build/pcs_step_observed.cpp
+            build/pcs_step_matmul.cpp
+            .pcs-models/*.json

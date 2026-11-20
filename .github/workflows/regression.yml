@@ -22,6 +22,32 @@ on:
   schedule:
     - cron: '0 4 * * *'   # 04:00 UTC nightly — Tier 2
   workflow_dispatch:
+    inputs:
+      pcs_capture:
+        description: 'Run only frozen PCS original/diagnostic neutrality and capture'
+        type: boolean
+        default: false
+      pcs_step_diff:
+        description: 'Only the matched PCS tools dumper/shared-diff operator diagnostic'
+        type: boolean
+        default: false
+      pcs_profile:
+        description: 'PCS diagnostic CPU profile (production gate is unchanged)'
+        type: choice
+        options: [native, avx2]
+        default: native
+      pcs_weight_replay:
+        description: 'Replay the immutable stored PCS weights in the original graph; no native rebuild'
+        type: boolean
+        default: false
+      pcs_matmul:
+        description: 'Test same stored weights with F32 matrix materialization (no production change)'
+        type: boolean
+        default: false
+      pcs_reference:
+        description: 'Also compare the pinned original ONNX classifier inputs'
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths:
@@ -118,6 +144,7 @@ jobs:
   # naming, special-token injection, temporal-patch concat, merge<->export
   # inverse; SmolVLM: q/k un-permute, fc1/fc2 inversion, patch flatten).
   mmproj-interop:
+    if: inputs.pcs_capture != true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -137,6 +164,7 @@ jobs:
 
   # Tier 0: schema + parser + guard unit tests. No binary, no network.
   smoke:
+    if: inputs.pcs_capture != true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -202,6 +230,7 @@ jobs:
 
   # Tier 1: HEAD-check every pinned HF artifact the manifest references.
   preflight:
+    if: inputs.pcs_capture != true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: smoke
@@ -220,7 +249,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     needs: preflight
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: inputs.pcs_capture != true && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     steps:
       - uses: actions/checkout@v4
         with: { submodules: recursive }
@@ -286,8 +315,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     if: >-
-      github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push'
+      inputs.pcs_capture != true && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push')
     steps:
       - uses: actions/checkout@v4
         with: { submodules: recursive }
@@ -312,13 +341,16 @@ jobs:
           # f16 for fireredpunc: the gate there is structural (cos >= 0.99), and
           # f16 is the arm that separates a graph bug from quantisation — a
           # k-quant alone cannot make that call.
-          # q4_k-imatrix for pcs: that IS the registry default, so CI checks what
-          # users actually download.
+          # pcs: q8_0 is the strict ground-truth arm (matches the original graph);
+          # q4_k-imatrix is the downloaded default, gated exactly except for its
+          # one recorded, artifact-bound quantization loss (I'm OK -> I'm oK, see
+          # docs/pcs-quality-root-cause.md).
           # q4_k for fullstop-punc: q8_0 is 600 MB and the structural break this
           # guards against is visible at either precision (with a looser floor).
           for repo, name in (
               ("cstr/fireredpunc-GGUF", "fireredpunc.gguf"),
               ("cstr/pcs-xlmr-base-GGUF", "pcs-xlmr-base-q4_k-imatrix.gguf"),
+              ("cstr/pcs-xlmr-base-GGUF", "pcs-xlmr-base-q8_0.gguf"),
               ("cstr/fullstop-punc-multilang-GGUF", "fullstop-punc-q4_k.gguf"),
           ):
               shutil.copy(hf_hub_download(repo_id=repo, filename=name), f".punct-models/{name}")
@@ -330,12 +362,19 @@ jobs:
           python tests/firered_punc_parity.py build \
             .punct-models/fireredpunc.gguf \
             tests/regression/fireredpunc/blueprint_ref.txt
-      - name: PCS — all four heads vs blueprint
+      - name: PCS q8_0 — all four heads vs blueprint (strict ground truth)
+        env: { LD_LIBRARY_PATH: build }
+        run: |
+          python tests/pcs_parity.py build \
+            .punct-models/pcs-xlmr-base-q8_0.gguf \
+            tests/regression/pcs/blueprint_ref.txt
+      - name: PCS q4_k-imatrix — all four heads vs blueprint (recorded quant loss only)
         env: { LD_LIBRARY_PATH: build }
         run: |
           python tests/pcs_parity.py build \
             .punct-models/pcs-xlmr-base-q4_k-imatrix.gguf \
-            tests/regression/pcs/blueprint_ref.txt
+            tests/regression/pcs/blueprint_ref.txt \
+            --recorded-quant-loss tests/regression/pcs/q4_k-imatrix-recorded-loss.json
       - name: fullstop-punc (XLM-R) vs blueprint
         env: { LD_LIBRARY_PATH: build }
         # 0.90 floor: this is the q4_k arm, and q4_k on a 24-layer model reaches
@@ -380,3 +419,77 @@ jobs:
             --image tests/regression/images/scan_page_pd.png \
             --bin build/crispembed \
             --no-unpaper --fail-on-harm
+
+  pcs-step-diff:
+    if: github.event_name == 'workflow_dispatch' && inputs.pcs_capture == true && inputs.pcs_step_diff == true
+    uses: ./.github/workflows/pcs-step-diff.yml
+
+  pcs-capture:
+    if: github.event_name == 'workflow_dispatch' && inputs.pcs_capture == true && inputs.pcs_step_diff != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Freeze model and build identity
+        run: |
+          mkdir -p .pcs-models pcs-evidence
+          python -m pip install huggingface_hub
+          env -u HF_TOKEN -u HUGGING_FACE_HUB_TOKEN python tools/pcs_gate_capture.py fetch-model \
+            --repo cstr/pcs-xlmr-base-GGUF --filename pcs-xlmr-base-q4_k-imatrix.gguf \
+            --revision 27f17edbd7e33949f42a9a4fe4322b5af8172e6b \
+            --expected-sha256 faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da \
+            --output .pcs-models/pcs-xlmr-base-q4_k-imatrix.gguf
+          cat /proc/cpuinfo > pcs-evidence/cpuinfo.txt
+          c++ --version > pcs-evidence/compiler.txt
+          git rev-parse HEAD > pcs-evidence/source.txt
+          git submodule status > pcs-evidence/submodules.txt
+      - name: Native Release compile and link both drivers
+        if: inputs.pcs_weight_replay != true
+        run: |
+          profile=()
+          if [ '${{ inputs.pcs_profile }}' = avx2 ]; then
+            profile=(-DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON -DGGML_AVX512=OFF -DGGML_AVX_VNNI=OFF -DGGML_AVX512_VNNI=OFF)
+          fi
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release "${profile[@]}" \
+            -DCRISPEMBED_BUILD_PCS_CAPTURE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            > pcs-evidence/configure.stdout 2> pcs-evidence/configure.stderr
+          targets=(punct-ab punct-ab-capture)
+          if [ '${{ inputs.pcs_matmul }}' = true ]; then targets+=(punct-ab-matmul-control); fi
+          cmake --build build --target "${targets[@]}" -j2 \
+            > pcs-evidence/build.stdout 2> pcs-evidence/build.stderr
+      - name: Original gate and required neutrality before capture analysis
+        if: inputs.pcs_weight_replay != true
+        run: python tools/pcs_capture_run.py
+      - name: Same-weight matrix attribution and layer captures
+        if: always() && inputs.pcs_matmul == true
+        run: python tools/pcs_matmul_run.py
+      - name: Immutable original PCS graph and same-input head attribution
+        if: always() && inputs.pcs_reference == true
+        run: |
+          python -m pip install numpy onnx onnxruntime sentencepiece gguf
+          env -u HF_TOKEN -u HUGGING_FACE_HUB_TOKEN python tools/pcs_reference_capture.py
+      - name: Original-graph same-weight replay
+        if: always() && inputs.pcs_weight_replay == true
+        run: |
+          python -m pip install numpy onnx onnxruntime sentencepiece gguf pyyaml
+          env -u HF_TOKEN -u HUGGING_FACE_HUB_TOKEN python tools/pcs_weight_replay.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pcs-frozen-capture
+          path: |
+            pcs-evidence/
+            build/compile_commands.json
+            build/CMakeCache.txt
+            build/pcs_gate_observed.cpp
+            .pcs-models/*.json
+            pcs-reference-evidence/*.json
+            pcs-reference-evidence/*.npz
+            pcs-reference-evidence/*.txt
+            pcs-weight-replay/*.json
+            pcs-weight-replay/*.npz
+            pcs-weight-replay/*.py
+          retention-days: 90

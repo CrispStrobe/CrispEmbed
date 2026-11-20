@@ -1,0 +1,431 @@
+{
+  "source": "d0d8923f4a85249c143b690c083ce043b035da45",
+  "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/44273793050",
+  "model": {
+    "repository": "cstr/pcs-xlmr-base-GGUF",
+    "filename": "pcs-xlmr-base-q4_k-imatrix.gguf",
+    "revision": "27f17edbd7e33949f42a9a4fe4322b5af8172e6b",
+    "sha256": "faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da",
+    "bytes": 163098688
+  },
+  "cpu": "Intel Xeon 6973P-C",
+  "compiler": {
+    "sha256": "fd8730a05275b1f8a149b7df3e38ef67cf7a21ec817a706206955cd2929b900b",
+    "version": "c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0\nCopyright (C) 2025 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
+  },
+  "profile": "Release AVX2/FMA/F16C, NATIVE/AVX512/AVX-VNNI disabled",
+  "original_gate_stdout": "post preds  : 67/67 tokens agree (100.00%)\npre         : 67/67 tokens agree (100.00%)\nseg         : 67/67 tokens agree (100.00%)\ncap         : 66/67 tokens agree (98.51%)\n  token 37: ref=11 ours=01\ndecoded text: 5/6 EXACT (gated \u2014 PCS truecases itself, so there is no deliberate case deviation to excuse)\n  line 3:\n    ref  I'm OK, how are you? I'm fine.\n    ours I'm oK, how are you? I'm fine.\nFAIL (2 gate(s))\n",
+  "neutrality": {
+    "all_four_head_dumps_and_decoded_bytes_equal": true,
+    "sha256": {
+      "original": {
+        "pre.txt": "020e7bf3d9e520031b93351df62180345668eb6847728666c1640a244f1e40a3",
+        "logits.txt": "7927e6a181d19df61beb57601f88dfdbaad5c4e11b7ac1475753360b8463e76e",
+        "seg.txt": "a3a15ac40e318201dfaa708b178176a851ff310b1cd739bc06a3869872fd387c",
+        "cap.txt": "baa2dd1d2a9b1dc3d1eaa6ad252bfedece4059bb661c75ba8388974111731ae6"
+      },
+      "diagnostic-off": {
+        "pre.txt": "020e7bf3d9e520031b93351df62180345668eb6847728666c1640a244f1e40a3",
+        "logits.txt": "7927e6a181d19df61beb57601f88dfdbaad5c4e11b7ac1475753360b8463e76e",
+        "seg.txt": "a3a15ac40e318201dfaa708b178176a851ff310b1cd739bc06a3869872fd387c",
+        "cap.txt": "baa2dd1d2a9b1dc3d1eaa6ad252bfedece4059bb661c75ba8388974111731ae6"
+      },
+      "diagnostic-on": {
+        "pre.txt": "020e7bf3d9e520031b93351df62180345668eb6847728666c1640a244f1e40a3",
+        "logits.txt": "7927e6a181d19df61beb57601f88dfdbaad5c4e11b7ac1475753360b8463e76e",
+        "seg.txt": "a3a15ac40e318201dfaa708b178176a851ff310b1cd739bc06a3869872fd387c",
+        "cap.txt": "baa2dd1d2a9b1dc3d1eaa6ad252bfedece4059bb661c75ba8388974111731ae6"
+      }
+    }
+  },
+  "row37_all16": [
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 0,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "be911786",
+      "finite": true,
+      "margin_to_zero": -0.2833825945854187,
+      "absolute_magnitude": 0.2833825945854187,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 1,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": true,
+      "logit_f32_bits": "bdc9072f",
+      "finite": true,
+      "margin_to_zero": -0.09815823286771774,
+      "absolute_magnitude": 0.09815823286771774,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 2,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": true,
+      "logit_f32_bits": "3e0a659d",
+      "finite": true,
+      "margin_to_zero": 0.13515324890613556,
+      "absolute_magnitude": 0.13515324890613556,
+      "actual_bit": 1,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 3,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "be72a51f",
+      "finite": true,
+      "margin_to_zero": -0.23695801198482513,
+      "absolute_magnitude": 0.23695801198482513,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 4,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf0504d5",
+      "finite": true,
+      "margin_to_zero": -0.5196049809455872,
+      "absolute_magnitude": 0.5196049809455872,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 5,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bece10c3",
+      "finite": true,
+      "margin_to_zero": -0.4024716317653656,
+      "absolute_magnitude": 0.4024716317653656,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 6,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf2a130c",
+      "finite": true,
+      "margin_to_zero": -0.6643531322479248,
+      "absolute_magnitude": 0.6643531322479248,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 7,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf2ad47a",
+      "finite": true,
+      "margin_to_zero": -0.6673046350479126,
+      "absolute_magnitude": 0.6673046350479126,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 8,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf2eaf10",
+      "finite": true,
+      "margin_to_zero": -0.6823587417602539,
+      "absolute_magnitude": 0.6823587417602539,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 9,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf26de3a",
+      "finite": true,
+      "margin_to_zero": -0.651828408241272,
+      "absolute_magnitude": 0.651828408241272,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 10,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf1d7b37",
+      "finite": true,
+      "margin_to_zero": -0.6151613593101501,
+      "absolute_magnitude": 0.6151613593101501,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 11,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf2f618a",
+      "finite": true,
+      "margin_to_zero": -0.6850820779800415,
+      "absolute_magnitude": 0.6850820779800415,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 12,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bedc70a0",
+      "finite": true,
+      "margin_to_zero": -0.43054676055908203,
+      "absolute_magnitude": 0.43054676055908203,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 13,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf672155",
+      "finite": true,
+      "margin_to_zero": -0.9028523564338684,
+      "absolute_magnitude": 0.9028523564338684,
+      "actual_bit": 0,
+      "reference_bit": 0,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 14,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "c01125c3",
+      "finite": true,
+      "margin_to_zero": -2.267929792404175,
+      "absolute_magnitude": 2.267929792404175,
+      "actual_bit": 0,
+      "reference_bit": 0,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 15,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "c05255bc",
+      "finite": true,
+      "margin_to_zero": -3.286482810974121,
+      "absolute_magnitude": 3.286482810974121,
+      "actual_bit": 0,
+      "reference_bit": 0,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405925ef",
+        "c06330cd"
+      ]
+    }
+  ],
+  "original_ONNX": {
+    "repo": {
+      "repo": "1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase",
+      "revision": "d1769a597ce8dfaa070d436bc67d4ee761f58884",
+      "sha256": {
+        "model.onnx": "c43ca686dabc237c3b06be834b9423c07580fef7e2b1a6c09976f7d60caa5d89",
+        "sp.model": "7f944d0be93b275f62e1913fd409f378ddbba108e57fe4a9cb47e8c047f6bef1"
+      }
+    },
+    "six_case_all_heads_exact": true,
+    "observer_predictions_exact": true,
+    "row37_logits": [
+      0.7870914936065674,
+      1.0832455158233643,
+      1.0006673336029053,
+      0.6046311259269714,
+      0.34506458044052124,
+      0.3119628131389618,
+      0.17056089639663696,
+      0.17286521196365356,
+      0.05044484883546829,
+      0.19169437885284424,
+      0.15865030884742737,
+      0.221134215593338,
+      0.406215637922287,
+      -0.09439636766910553,
+      -1.6862421035766602,
+      -2.7379064559936523
+    ]
+  },
+  "native_encoder_vs_original": {
+    "max_absolute": 0.9717645645141602,
+    "row37_max_absolute": 0.7623939514160156,
+    "rms": 0.08585479110479355
+  },
+  "limits": "Actual reproduction and head-input divergence; earliest operator/root cause remains pending. No production repair."
+}
