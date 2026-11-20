@@ -25,15 +25,6 @@ packaging pattern. All runtime milestones are pending. No native MoGe API,
 model alias, performance result, default, release or consumer pin is added by
 this documentation change.
 
-## PCS mixed-precision 4-bit artifact (artifact owner) — 20 November 2026
-
-The PCS `oK` failure is solved as a root cause (see
-[the record](docs/pcs-quality-root-cause.md), HISTORY 20 November 2026): the
-q4_k-imatrix weights lose the decision in exact arithmetic. Optional follow-up:
-publish a 4-bit artifact with enc.0 and the truecase head at Q8_0 (what-if
-+0.65), qualify it natively to 67/67 and 6/6 strict, then drop its recorded loss
-and update the CrispASR registry default. Not started.
-
 ## Free OCR model priorities from ParseBench 2 — 18 November 2026
 
 The [updated OCR expansion roadmap](docs/ocr-benchmark-expansion.md#parsebench-2-model-priorities--18-november-2026)

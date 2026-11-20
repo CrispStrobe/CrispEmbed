@@ -1,3 +1,49 @@
+## PCS default is now a mixed-precision 4-bit file — 20 November 2026
+
+Closes the PLAN item "PCS mixed-precision 4-bit artifact" (20 November). The
+registry alias `pcs` now resolves to `pcs-xlmr-base-q4_k-mixed.gguf`
+(`cstr/pcs-xlmr-base-GGUF@a685c2ea`, SHA-256 `341c26b8…2839`, 166,638,656 bytes),
+pinned by revision and hash. The previous default stays selectable as
+`pcs-q4k-imatrix`. Record: [selection](tests/results/pcs/mixed-q4-selection-20261120.json).
+
+- **Recipe.** The published q4_k-imatrix recipe (`crispembed-quantize … q4_k
+  --imatrix pcs-xlmr-base.imatrix`) plus the existing `--tensor-type` override:
+  `enc.0.*=q8_0` and `head.tc.*=q8_0` (6 encoder-layer-0 matrices and
+  `head.tc.fc2`; `head.tc.fc1` stays F32 as before). No quantizer change was
+  needed. Size +3.54 MB (+2.2 %) over q4_k-imatrix.
+- **Selection** (Kaggle CPU, `tools/kaggle/pcs-mixed-q4`). Each candidate was gated by
+  `tests/pcs_parity.py` with no allowance, and replayed in the pinned original
+  ONNX graph. The quantity is the row37 `o` logit; F32 gives +1.083 and q8_0 +0.992.
+
+  | Q8_0 groups | logit | size |
+  |---|--:|--:|
+  | none (published q4_k-imatrix) | −0.238 | 163.1 MB |
+  | enc.0 | +0.403 | 166.6 MB |
+  | head.tc | +0.121 | 163.1 MB |
+  | **enc.0 + head.tc** | **+0.688** | **166.6 MB** |
+  | + enc.3 | +0.952 | 170.2 MB |
+  | + enc.2, enc.3 | +1.135 | 173.7 MB |
+  | enc.0–5 + head.tc | +1.137 | 184.3 MB |
+
+  All six candidates and q8_0 pass natively: 67/67 on all four heads and 6/6
+  decoded. The original-graph replay with the original collector also decodes
+  6/6. enc.0 + head.tc is the smallest measured set with a margin of at least +0.5.
+  On this Intel runner the published q4_k-imatrix also passed natively, which is
+  the CPU-dependent luck the root-cause record describes. In the replay it still
+  decodes 5/6.
+- **Not byte-reproducible.** Re-running the published recipe with the current
+  quantizer gives the same per-tensor types but different bytes (`b0b4e54f…`).
+  Each file is gated on its own bytes.
+- **Gate.** `punct-parity` resolves `pcs` through `crispembed_resolve_model`
+  (download plus SHA-256 pin check) and gates it strictly. q8_0 stays strict.
+  The recorded-loss pin is unchanged and applies only to the old q4_k-imatrix
+  SHA.
+- **Licence.** Upstream is Apache-2.0, not MIT. The PCS registry entries and the
+  Hub card are corrected; the card also lists the SHA-256 of every file and the recipe.
+- **CrispASR.** `--punc-model pcs` now downloads the same file. Its plain-q4_k
+  default had the `I'm ok` regression; that file stays selectable as `pcs-q4k`.
+- `tools/pcs_weight_replay.py` accepts `--model PATH`.
+
 ## PCS `I'm oK` root cause: 4-bit artifact precision, gate re-pinned — 20 November 2026
 
 Closes the PLAN items "PCS main failure: confirmed stored-weight quality
