@@ -1,0 +1,68 @@
+{
+ "schema": "crispembed-ccache-host-isa-proof/v1",
+ "ccache": "ccache version 4.9.1",
+ "steps": [
+  {
+   "step": "old-seed",
+   "host": "avx512 (native)",
+   "isa_key": null,
+   "hit": 0,
+   "miss": 1,
+   "exit": 0,
+   "signal": null,
+   "stdout": "avx512 2016"
+  },
+  {
+   "step": "old-avx2",
+   "host": "avx2 (qemu Haswell)",
+   "isa_key": null,
+   "hit": 1,
+   "miss": 0,
+   "exit": -4,
+   "signal": "SIGILL",
+   "stdout": ""
+  },
+  {
+   "step": "old-avx2-warm",
+   "host": "avx2 (qemu Haswell)",
+   "isa_key": null,
+   "hit": 1,
+   "miss": 0,
+   "exit": -4,
+   "signal": "SIGILL",
+   "stdout": ""
+  },
+  {
+   "step": "new-seed",
+   "host": "avx512 (native)",
+   "isa_key": "83a712f8837b5c59",
+   "hit": 0,
+   "miss": 1,
+   "exit": 0,
+   "signal": null,
+   "stdout": "avx512 2016"
+  },
+  {
+   "step": "new-avx2",
+   "host": "avx2 (qemu Haswell)",
+   "isa_key": "e48ffdb0a2b56468",
+   "hit": 0,
+   "miss": 1,
+   "exit": 0,
+   "signal": null,
+   "stdout": "avx2 2016"
+  },
+  {
+   "step": "new-avx2-warm",
+   "host": "avx2 (qemu Haswell)",
+   "isa_key": "e48ffdb0a2b56468",
+   "hit": 1,
+   "miss": 0,
+   "exit": 0,
+   "signal": null,
+   "stdout": "avx2 2016"
+  }
+ ],
+ "old_behaviour_reuses_avx512_object_and_sigills": true,
+ "new_behaviour_misses_and_runs_avx2": true
+}
