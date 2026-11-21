@@ -23,7 +23,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from kpush import service_result
+from kpush import kaggle_cmd, service_result
 
 MIN_TAR_BYTES = 50 << 20
 DONE = ("complete", "error", "cancel_requested", "cancel_acknowledged")
@@ -65,7 +65,7 @@ def kaggle_env():
 
 
 def kaggle(*args):
-    return subprocess.run([sys.executable, "-m", "kaggle", *args], env=kaggle_env(), text=True, capture_output=True)
+    return subprocess.run([*kaggle_cmd(), *args], env=kaggle_env(), text=True, capture_output=True)
 
 
 def wait_for_kernel(kernel, poll=60, timeout=6 * 3600):

@@ -1,3 +1,14 @@
+## Kaggle ccache seed refreshed with host-ISA keys; refresh tools find a venv kaggle CLI — 21 November 2026
+
+`ccache_refresh.py --from-kernel crispembed-ccache-cpu-probe` failed with "output retrieval failed (service
+error)". Kaggle was fine: the tools ran `sys.executable -m kaggle`, and when the kaggle CLI is installed in its
+own virtualenv that is "No module named kaggle", which `service_result` reports as a service error.
+`kpush.kaggle_cmd()` now uses the interpreter's module when importable and otherwise the `kaggle` CLI on
+`PATH`; `kpush.py` and `ccache_refresh.py` share it. The upload then hit a second, host-local refusal: the
+CLI will not use a symlinked upload-state directory under the system temp dir. Pointing `TMPDIR` at a private
+directory avoids that. The seed dataset now has a new version from the CPU probe kernel (hit rate before 12.6%,
+181 MB tar) whose `crispembed-seed.json` records `host_isa`.
+
 ## Plain pytest lane back to zero; Kaggle ccache keyed on host ISA — 21 November 2026
 
 Kaggle `crispembed-pytest-plain` at 12c9ff6a (after #265 fixed collection) gave 35 failed / 21 errors on a full
