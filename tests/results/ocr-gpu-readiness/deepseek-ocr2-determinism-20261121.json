@@ -1,0 +1,2064 @@
+{
+ "schema": "crispembed-deepseek-ocr2-determinism-receipt-v1",
+ "source_commit": "c767387e457dc7be4f99d69c23ead7bf044df15f",
+ "model": {
+  "repo": "cstr/deepseek-ocr2-crispembed-GGUF",
+  "revision": "731d9377ea2a2f32b663267130ded422e8fe06f2"
+ },
+ "hosts": {
+  "cpu": {
+   "cpu": "CPU(s):                                  4\nModel name:                              Intel(R) Xeon(R) CPU @ 2.20GHz\n      4 avx2",
+   "arms": {
+    "portable": [
+     "portable",
+     "q4k",
+     4,
+     "cpu"
+    ],
+    "portable-rep": [
+     "portable",
+     "q4k",
+     4,
+     "cpu"
+    ],
+    "portable-t1": [
+     "portable",
+     "q4k",
+     1,
+     "cpu"
+    ],
+    "native": [
+     "native",
+     "q4k",
+     4,
+     "cpu"
+    ],
+    "portable-q8": [
+     "portable",
+     "q8",
+     4,
+     "cpu"
+    ],
+    "portable-f16": [
+     "portable",
+     "f16",
+     4,
+     "cpu"
+    ]
+   },
+   "models": {
+    "f16": {
+     "file": "deepseek-ocr2-f16-stacked.gguf",
+     "revision": "731d9377ea2a2f32b663267130ded422e8fe06f2",
+     "sha256": "145ea4e2c141aa22e94cef0e047de7d68ad34b8c1cd137eff169036a1ea90f59"
+    },
+    "q4k": {
+     "file": "deepseek-ocr2-q4_k-stacked.gguf",
+     "revision": "731d9377ea2a2f32b663267130ded422e8fe06f2",
+     "sha256": "d1363c88a90d43bc912a041e53534c36e55ebc0591079070e5560534631db911"
+    },
+    "q8": {
+     "file": "deepseek-ocr2-q8_0.gguf",
+     "revision": "731d9377ea2a2f32b663267130ded422e8fe06f2",
+     "sha256": "b8ab281309305f4ede6dfc7460ee1830176d0aa0cd1c9edabd7115ff798dbe8d"
+    }
+   },
+   "runs": [
+    {
+     "case": "two-column-page",
+     "arm": "portable",
+     "rc": 0,
+     "wall_s": 82.8,
+     "n_ids": 680,
+     "ids_sha256": "b843c29553e4146406d45c22cdb9f1d15604571765d1aea3b10bd2a30571f6e3"
+    },
+    {
+     "case": "two-column-page",
+     "arm": "portable-rep",
+     "rc": 0,
+     "wall_s": 82.4,
+     "n_ids": 680,
+     "ids_sha256": "b843c29553e4146406d45c22cdb9f1d15604571765d1aea3b10bd2a30571f6e3"
+    },
+    {
+     "case": "two-column-page",
+     "arm": "portable-t1",
+     "rc": 0,
+     "wall_s": 82.9,
+     "n_ids": 680,
+     "ids_sha256": "b843c29553e4146406d45c22cdb9f1d15604571765d1aea3b10bd2a30571f6e3"
+    },
+    {
+     "case": "two-column-page",
+     "arm": "native",
+     "rc": -4,
+     "wall_s": 31.9,
+     "n_ids": 0,
+     "ids_sha256": null
+    },
+    {
+     "case": "two-column-page",
+     "arm": "portable-q8",
+     "rc": 0,
+     "wall_s": 88.0,
+     "n_ids": 670,
+     "ids_sha256": "a533e0dd383b37431f6a9efda5652592122afff9c081598f94def605895deb8a"
+    },
+    {
+     "case": "two-column-page",
+     "arm": "portable-f16",
+     "rc": 0,
+     "wall_s": 175.1,
+     "n_ids": 749,
+     "ids_sha256": "2418deb36988396dc17f7fa00c962ec4cbffb58a558b59fe478ff973bff972ba"
+    },
+    {
+     "case": "historical-receipt",
+     "arm": "portable",
+     "rc": 0,
+     "wall_s": 72.0,
+     "n_ids": 450,
+     "ids_sha256": "2e4b95037e63264c01fc4d828cef18d42917b96497cd11c9c10f08eae8bf2d32"
+    },
+    {
+     "case": "historical-receipt",
+     "arm": "portable-rep",
+     "rc": 0,
+     "wall_s": 64.3,
+     "n_ids": 450,
+     "ids_sha256": "2e4b95037e63264c01fc4d828cef18d42917b96497cd11c9c10f08eae8bf2d32"
+    },
+    {
+     "case": "historical-receipt",
+     "arm": "portable-t1",
+     "rc": 0,
+     "wall_s": 64.1,
+     "n_ids": 450,
+     "ids_sha256": "2e4b95037e63264c01fc4d828cef18d42917b96497cd11c9c10f08eae8bf2d32"
+    },
+    {
+     "case": "historical-receipt",
+     "arm": "native",
+     "rc": -4,
+     "wall_s": 31.8,
+     "n_ids": 0,
+     "ids_sha256": null
+    },
+    {
+     "case": "historical-receipt",
+     "arm": "portable-q8",
+     "rc": 0,
+     "wall_s": 73.9,
+     "n_ids": 449,
+     "ids_sha256": "105ea77ba97d87d07ee203f0453100f37e15a90c357cbafea5e7f7c7ac4d0879"
+    },
+    {
+     "case": "historical-receipt",
+     "arm": "portable-f16",
+     "rc": 0,
+     "wall_s": 121.4,
+     "n_ids": 448,
+     "ids_sha256": "b34e5e40ff4522d73f7e8aa258330a16d7e5f6b74fa9c8b7a5a537fffae6b228"
+    },
+    {
+     "case": "inventory-table",
+     "arm": "portable",
+     "rc": 0,
+     "wall_s": 41.6,
+     "n_ids": 106,
+     "ids_sha256": "c9485a8e143e5c559d31d7abaa494e46b2f3bc9860716447907627d7aa474220"
+    },
+    {
+     "case": "inventory-table",
+     "arm": "portable-rep",
+     "rc": 0,
+     "wall_s": 50.6,
+     "n_ids": 106,
+     "ids_sha256": "c9485a8e143e5c559d31d7abaa494e46b2f3bc9860716447907627d7aa474220"
+    },
+    {
+     "case": "inventory-table",
+     "arm": "portable-t1",
+     "rc": 0,
+     "wall_s": 57.1,
+     "n_ids": 106,
+     "ids_sha256": "c9485a8e143e5c559d31d7abaa494e46b2f3bc9860716447907627d7aa474220"
+    },
+    {
+     "case": "inventory-table",
+     "arm": "native",
+     "rc": -4,
+     "wall_s": 33.4,
+     "n_ids": 0,
+     "ids_sha256": null
+    },
+    {
+     "case": "inventory-table",
+     "arm": "portable-q8",
+     "rc": 0,
+     "wall_s": 55.7,
+     "n_ids": 106,
+     "ids_sha256": "c9485a8e143e5c559d31d7abaa494e46b2f3bc9860716447907627d7aa474220"
+    },
+    {
+     "case": "inventory-table",
+     "arm": "portable-f16",
+     "rc": 0,
+     "wall_s": 98.3,
+     "n_ids": 106,
+     "ids_sha256": "c9485a8e143e5c559d31d7abaa494e46b2f3bc9860716447907627d7aa474220"
+    }
+   ],
+   "divergences": [
+    {
+     "case": "two-column-page",
+     "pair": [
+      "portable",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 27,
+     "n": [
+      680,
+      670
+     ],
+     "a": {
+      "top2": [
+       14,
+       28,
+       0.349798203
+      ],
+      "min_margin_before": 0.84286499,
+      "router_min_gap_upto": 4.657000000005129e-07
+     },
+     "b": {
+      "top2": [
+       28,
+       14,
+       1.71661186
+      ],
+      "min_margin_before": 0.0619449615,
+      "router_min_gap_upto": 6.251040000000013e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "portable",
+      "portable-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 19,
+     "n": [
+      680,
+      749
+     ],
+     "a": {
+      "top2": [
+       69292,
+       57664,
+       1.01882553
+      ],
+      "min_margin_before": 0.84286499,
+      "router_min_gap_upto": 4.657000000005129e-07
+     },
+     "b": {
+      "top2": [
+       57664,
+       69292,
+       0.161676407
+      ],
+      "min_margin_before": 1.64905548,
+      "router_min_gap_upto": 5.05596999999941e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "portable-rep",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 27,
+     "n": [
+      680,
+      670
+     ],
+     "a": {
+      "top2": [
+       14,
+       28,
+       0.349798203
+      ],
+      "min_margin_before": 0.84286499,
+      "router_min_gap_upto": 4.657000000005129e-07
+     },
+     "b": {
+      "top2": [
+       28,
+       14,
+       1.71661186
+      ],
+      "min_margin_before": 0.0619449615,
+      "router_min_gap_upto": 6.251040000000013e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "portable-rep",
+      "portable-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 19,
+     "n": [
+      680,
+      749
+     ],
+     "a": {
+      "top2": [
+       69292,
+       57664,
+       1.01882553
+      ],
+      "min_margin_before": 0.84286499,
+      "router_min_gap_upto": 4.657000000005129e-07
+     },
+     "b": {
+      "top2": [
+       57664,
+       69292,
+       0.161676407
+      ],
+      "min_margin_before": 1.64905548,
+      "router_min_gap_upto": 5.05596999999941e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "portable-t1",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 27,
+     "n": [
+      680,
+      670
+     ],
+     "a": {
+      "top2": [
+       14,
+       28,
+       0.349798203
+      ],
+      "min_margin_before": 0.84286499,
+      "router_min_gap_upto": 4.657000000005129e-07
+     },
+     "b": {
+      "top2": [
+       28,
+       14,
+       1.71661186
+      ],
+      "min_margin_before": 0.0619449615,
+      "router_min_gap_upto": 6.251040000000013e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "portable-t1",
+      "portable-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 19,
+     "n": [
+      680,
+      749
+     ],
+     "a": {
+      "top2": [
+       69292,
+       57664,
+       1.01882553
+      ],
+      "min_margin_before": 0.84286499,
+      "router_min_gap_upto": 4.657000000005129e-07
+     },
+     "b": {
+      "top2": [
+       57664,
+       69292,
+       0.161676407
+      ],
+      "min_margin_before": 1.64905548,
+      "router_min_gap_upto": 5.05596999999941e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "portable-q8",
+      "portable-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 19,
+     "n": [
+      670,
+      749
+     ],
+     "a": {
+      "top2": [
+       69292,
+       57664,
+       0.0619449615
+      ],
+      "min_margin_before": 1.36373138,
+      "router_min_gap_upto": 8.494779999999869e-05
+     },
+     "b": {
+      "top2": [
+       57664,
+       69292,
+       0.161676407
+      ],
+      "min_margin_before": 1.64905548,
+      "router_min_gap_upto": 5.05596999999941e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "portable",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      450,
+      449
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.77548027
+      ],
+      "min_margin_before": 2.99124908,
+      "router_min_gap_upto": 0.0003247299000000009
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.00488090515
+      ],
+      "min_margin_before": 2.29788399,
+      "router_min_gap_upto": 8.842540000000149e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "portable",
+      "portable-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      450,
+      448
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.77548027
+      ],
+      "min_margin_before": 2.99124908,
+      "router_min_gap_upto": 0.0003247299000000009
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.329828262
+      ],
+      "min_margin_before": 2.0938549,
+      "router_min_gap_upto": 5.724659999999798e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "portable-rep",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      450,
+      449
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.77548027
+      ],
+      "min_margin_before": 2.99124908,
+      "router_min_gap_upto": 0.0003247299000000009
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.00488090515
+      ],
+      "min_margin_before": 2.29788399,
+      "router_min_gap_upto": 8.842540000000149e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "portable-rep",
+      "portable-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      450,
+      448
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.77548027
+      ],
+      "min_margin_before": 2.99124908,
+      "router_min_gap_upto": 0.0003247299000000009
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.329828262
+      ],
+      "min_margin_before": 2.0938549,
+      "router_min_gap_upto": 5.724659999999798e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "portable-t1",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      450,
+      449
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.77548027
+      ],
+      "min_margin_before": 2.99124908,
+      "router_min_gap_upto": 0.0003247299000000009
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.00488090515
+      ],
+      "min_margin_before": 2.29788399,
+      "router_min_gap_upto": 8.842540000000149e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "portable-t1",
+      "portable-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      450,
+      448
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.77548027
+      ],
+      "min_margin_before": 2.99124908,
+      "router_min_gap_upto": 0.0003247299000000009
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.329828262
+      ],
+      "min_margin_before": 2.0938549,
+      "router_min_gap_upto": 5.724659999999798e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "portable-q8",
+      "portable-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 196,
+     "n": [
+      449,
+      448
+     ],
+     "a": {
+      "top2": [
+       6259,
+       38230,
+       0.270671844
+      ],
+      "min_margin_before": 0.00488090515,
+      "router_min_gap_upto": 2.2276999999994163e-06
+     },
+     "b": {
+      "top2": [
+       38230,
+       6259,
+       0.208070755
+      ],
+      "min_margin_before": 0.190038681,
+      "router_min_gap_upto": 1.2480000000092417e-07
+     }
+    }
+   ]
+  },
+  "gpu": {
+   "cpu": "CPU(s):                                  4\nModel name:                              Intel(R) Xeon(R) CPU @ 2.00GHz\n      4 avx2\n      4 avx512f",
+   "arms": {
+    "cuda": [
+     "cuda",
+     "q4k",
+     4,
+     "auto"
+    ],
+    "cuda-rep": [
+     "cuda",
+     "q4k",
+     4,
+     "auto"
+    ],
+    "cuda-hostcpu": [
+     "cuda",
+     "q4k",
+     4,
+     "cpu"
+    ],
+    "portable": [
+     "portable",
+     "q4k",
+     4,
+     "cpu"
+    ],
+    "native": [
+     "native",
+     "q4k",
+     4,
+     "cpu"
+    ],
+    "cuda-f16": [
+     "cuda",
+     "f16",
+     4,
+     "auto"
+    ],
+    "portable-q8": [
+     "portable",
+     "q8",
+     4,
+     "cpu"
+    ]
+   },
+   "models": {
+    "f16": {
+     "file": "deepseek-ocr2-f16-stacked.gguf",
+     "revision": "731d9377ea2a2f32b663267130ded422e8fe06f2",
+     "sha256": "145ea4e2c141aa22e94cef0e047de7d68ad34b8c1cd137eff169036a1ea90f59"
+    },
+    "q4k": {
+     "file": "deepseek-ocr2-q4_k-stacked.gguf",
+     "revision": "731d9377ea2a2f32b663267130ded422e8fe06f2",
+     "sha256": "d1363c88a90d43bc912a041e53534c36e55ebc0591079070e5560534631db911"
+    },
+    "q8": {
+     "file": "deepseek-ocr2-q8_0.gguf",
+     "revision": "731d9377ea2a2f32b663267130ded422e8fe06f2",
+     "sha256": "b8ab281309305f4ede6dfc7460ee1830176d0aa0cd1c9edabd7115ff798dbe8d"
+    }
+   },
+   "runs": [
+    {
+     "case": "two-column-page",
+     "arm": "cuda",
+     "rc": 0,
+     "wall_s": 11.6,
+     "n_ids": 638,
+     "ids_sha256": "87393ed49f4e50453aa7a1d60f813aea6ac043ad1a545617597bcd979e62df80"
+    },
+    {
+     "case": "two-column-page",
+     "arm": "cuda-rep",
+     "rc": 0,
+     "wall_s": 9.0,
+     "n_ids": 638,
+     "ids_sha256": "87393ed49f4e50453aa7a1d60f813aea6ac043ad1a545617597bcd979e62df80"
+    },
+    {
+     "case": "two-column-page",
+     "arm": "cuda-hostcpu",
+     "rc": 0,
+     "wall_s": 71.4,
+     "n_ids": 679,
+     "ids_sha256": "8faf2f3da4cf7aa4e46da2b7f1c376e085821b050ec972e04554abe276ac710c"
+    },
+    {
+     "case": "two-column-page",
+     "arm": "portable",
+     "rc": 0,
+     "wall_s": 68.2,
+     "n_ids": 680,
+     "ids_sha256": "b843c29553e4146406d45c22cdb9f1d15604571765d1aea3b10bd2a30571f6e3"
+    },
+    {
+     "case": "two-column-page",
+     "arm": "native",
+     "rc": 0,
+     "wall_s": 65.4,
+     "n_ids": 679,
+     "ids_sha256": "8faf2f3da4cf7aa4e46da2b7f1c376e085821b050ec972e04554abe276ac710c"
+    },
+    {
+     "case": "two-column-page",
+     "arm": "cuda-f16",
+     "rc": 0,
+     "wall_s": 24.7,
+     "n_ids": 794,
+     "ids_sha256": "041325e97b2b76c86acb6e6b3625371580e7519c705f32466edfc341e9c98506"
+    },
+    {
+     "case": "two-column-page",
+     "arm": "portable-q8",
+     "rc": 0,
+     "wall_s": 73.3,
+     "n_ids": 670,
+     "ids_sha256": "a533e0dd383b37431f6a9efda5652592122afff9c081598f94def605895deb8a"
+    },
+    {
+     "case": "historical-receipt",
+     "arm": "cuda",
+     "rc": 0,
+     "wall_s": 7.7,
+     "n_ids": 420,
+     "ids_sha256": "4b1bcf20d368a1eba8b8cc522ebb3fe4fbcd356feb994b54e76ada7d2a389967"
+    },
+    {
+     "case": "historical-receipt",
+     "arm": "cuda-rep",
+     "rc": 0,
+     "wall_s": 7.2,
+     "n_ids": 420,
+     "ids_sha256": "4b1bcf20d368a1eba8b8cc522ebb3fe4fbcd356feb994b54e76ada7d2a389967"
+    },
+    {
+     "case": "historical-receipt",
+     "arm": "cuda-hostcpu",
+     "rc": 0,
+     "wall_s": 54.3,
+     "n_ids": 444,
+     "ids_sha256": "ca7000610fd0d1e0fdf93908ded03b3276f7c5f86d6750b419d9ed780b6c078e"
+    },
+    {
+     "case": "historical-receipt",
+     "arm": "portable",
+     "rc": 0,
+     "wall_s": 53.1,
+     "n_ids": 450,
+     "ids_sha256": "2e4b95037e63264c01fc4d828cef18d42917b96497cd11c9c10f08eae8bf2d32"
+    },
+    {
+     "case": "historical-receipt",
+     "arm": "native",
+     "rc": 0,
+     "wall_s": 51.0,
+     "n_ids": 444,
+     "ids_sha256": "ca7000610fd0d1e0fdf93908ded03b3276f7c5f86d6750b419d9ed780b6c078e"
+    },
+    {
+     "case": "historical-receipt",
+     "arm": "cuda-f16",
+     "rc": 0,
+     "wall_s": 21.7,
+     "n_ids": 417,
+     "ids_sha256": "d704faacac9e5ae6e7dd8061de012dd050a76ba9e70413c0a3739d3857eab792"
+    },
+    {
+     "case": "historical-receipt",
+     "arm": "portable-q8",
+     "rc": 0,
+     "wall_s": 57.9,
+     "n_ids": 449,
+     "ids_sha256": "105ea77ba97d87d07ee203f0453100f37e15a90c357cbafea5e7f7c7ac4d0879"
+    },
+    {
+     "case": "inventory-table",
+     "arm": "cuda",
+     "rc": 0,
+     "wall_s": 12.4,
+     "n_ids": 106,
+     "ids_sha256": "c9485a8e143e5c559d31d7abaa494e46b2f3bc9860716447907627d7aa474220"
+    },
+    {
+     "case": "inventory-table",
+     "arm": "cuda-rep",
+     "rc": 0,
+     "wall_s": 5.0,
+     "n_ids": 106,
+     "ids_sha256": "c9485a8e143e5c559d31d7abaa494e46b2f3bc9860716447907627d7aa474220"
+    },
+    {
+     "case": "inventory-table",
+     "arm": "cuda-hostcpu",
+     "rc": 0,
+     "wall_s": 34.9,
+     "n_ids": 106,
+     "ids_sha256": "c9485a8e143e5c559d31d7abaa494e46b2f3bc9860716447907627d7aa474220"
+    },
+    {
+     "case": "inventory-table",
+     "arm": "portable",
+     "rc": 0,
+     "wall_s": 35.3,
+     "n_ids": 106,
+     "ids_sha256": "c9485a8e143e5c559d31d7abaa494e46b2f3bc9860716447907627d7aa474220"
+    },
+    {
+     "case": "inventory-table",
+     "arm": "native",
+     "rc": 0,
+     "wall_s": 33.8,
+     "n_ids": 106,
+     "ids_sha256": "c9485a8e143e5c559d31d7abaa494e46b2f3bc9860716447907627d7aa474220"
+    },
+    {
+     "case": "inventory-table",
+     "arm": "cuda-f16",
+     "rc": 0,
+     "wall_s": 7.7,
+     "n_ids": 106,
+     "ids_sha256": "c9485a8e143e5c559d31d7abaa494e46b2f3bc9860716447907627d7aa474220"
+    },
+    {
+     "case": "inventory-table",
+     "arm": "portable-q8",
+     "rc": 0,
+     "wall_s": 39.9,
+     "n_ids": 106,
+     "ids_sha256": "c9485a8e143e5c559d31d7abaa494e46b2f3bc9860716447907627d7aa474220"
+    }
+   ],
+   "divergences": [
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda",
+      "cuda-hostcpu"
+     ],
+     "ids_exact": false,
+     "first_div": 229,
+     "n": [
+      638,
+      679
+     ],
+     "a": {
+      "top2": [
+       5088,
+       42488,
+       0.335886955
+      ],
+      "min_margin_before": 0.104520798,
+      "router_min_gap_upto": 1.4528999999971481e-06
+     },
+     "b": {
+      "top2": [
+       42488,
+       89,
+       0.101053238
+      ],
+      "min_margin_before": 0.426647186,
+      "router_min_gap_upto": 9.126999999942154e-07
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda",
+      "portable"
+     ],
+     "ids_exact": false,
+     "first_div": 551,
+     "n": [
+      638,
+      680
+     ],
+     "a": {
+      "top2": [
+       47386,
+       23891,
+       0.452102661
+      ],
+      "min_margin_before": 0.104520798,
+      "router_min_gap_upto": 8.530999999964428e-07
+     },
+     "b": {
+      "top2": [
+       11469,
+       47386,
+       0.00113296509
+      ],
+      "min_margin_before": 0.0163431168,
+      "router_min_gap_upto": 4.657000000005129e-07
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda",
+      "native"
+     ],
+     "ids_exact": false,
+     "first_div": 229,
+     "n": [
+      638,
+      679
+     ],
+     "a": {
+      "top2": [
+       5088,
+       42488,
+       0.335886955
+      ],
+      "min_margin_before": 0.104520798,
+      "router_min_gap_upto": 1.4528999999971481e-06
+     },
+     "b": {
+      "top2": [
+       42488,
+       89,
+       0.101053238
+      ],
+      "min_margin_before": 0.426647186,
+      "router_min_gap_upto": 9.126999999942154e-07
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda",
+      "cuda-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 19,
+     "n": [
+      638,
+      794
+     ],
+     "a": {
+      "top2": [
+       69292,
+       57664,
+       0.89141655
+      ],
+      "min_margin_before": 0.733524323,
+      "router_min_gap_upto": 3.167990000000481e-05
+     },
+     "b": {
+      "top2": [
+       57664,
+       69292,
+       0.163606644
+      ],
+      "min_margin_before": 1.65230179,
+      "router_min_gap_upto": 2.9068499999999886e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 27,
+     "n": [
+      638,
+      670
+     ],
+     "a": {
+      "top2": [
+       14,
+       28,
+       0.104520798
+      ],
+      "min_margin_before": 0.733524323,
+      "router_min_gap_upto": 3.167990000000481e-05
+     },
+     "b": {
+      "top2": [
+       28,
+       14,
+       1.71661186
+      ],
+      "min_margin_before": 0.0619449615,
+      "router_min_gap_upto": 6.251040000000013e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda-rep",
+      "cuda-hostcpu"
+     ],
+     "ids_exact": false,
+     "first_div": 229,
+     "n": [
+      638,
+      679
+     ],
+     "a": {
+      "top2": [
+       5088,
+       42488,
+       0.335886955
+      ],
+      "min_margin_before": 0.104520798,
+      "router_min_gap_upto": 1.4528999999971481e-06
+     },
+     "b": {
+      "top2": [
+       42488,
+       89,
+       0.101053238
+      ],
+      "min_margin_before": 0.426647186,
+      "router_min_gap_upto": 9.126999999942154e-07
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda-rep",
+      "portable"
+     ],
+     "ids_exact": false,
+     "first_div": 551,
+     "n": [
+      638,
+      680
+     ],
+     "a": {
+      "top2": [
+       47386,
+       23891,
+       0.452102661
+      ],
+      "min_margin_before": 0.104520798,
+      "router_min_gap_upto": 8.530999999964428e-07
+     },
+     "b": {
+      "top2": [
+       11469,
+       47386,
+       0.00113296509
+      ],
+      "min_margin_before": 0.0163431168,
+      "router_min_gap_upto": 4.657000000005129e-07
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda-rep",
+      "native"
+     ],
+     "ids_exact": false,
+     "first_div": 229,
+     "n": [
+      638,
+      679
+     ],
+     "a": {
+      "top2": [
+       5088,
+       42488,
+       0.335886955
+      ],
+      "min_margin_before": 0.104520798,
+      "router_min_gap_upto": 1.4528999999971481e-06
+     },
+     "b": {
+      "top2": [
+       42488,
+       89,
+       0.101053238
+      ],
+      "min_margin_before": 0.426647186,
+      "router_min_gap_upto": 9.126999999942154e-07
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda-rep",
+      "cuda-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 19,
+     "n": [
+      638,
+      794
+     ],
+     "a": {
+      "top2": [
+       69292,
+       57664,
+       0.89141655
+      ],
+      "min_margin_before": 0.733524323,
+      "router_min_gap_upto": 3.167990000000481e-05
+     },
+     "b": {
+      "top2": [
+       57664,
+       69292,
+       0.163606644
+      ],
+      "min_margin_before": 1.65230179,
+      "router_min_gap_upto": 2.9068499999999886e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda-rep",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 27,
+     "n": [
+      638,
+      670
+     ],
+     "a": {
+      "top2": [
+       14,
+       28,
+       0.104520798
+      ],
+      "min_margin_before": 0.733524323,
+      "router_min_gap_upto": 3.167990000000481e-05
+     },
+     "b": {
+      "top2": [
+       28,
+       14,
+       1.71661186
+      ],
+      "min_margin_before": 0.0619449615,
+      "router_min_gap_upto": 6.251040000000013e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda-hostcpu",
+      "portable"
+     ],
+     "ids_exact": false,
+     "first_div": 229,
+     "n": [
+      679,
+      680
+     ],
+     "a": {
+      "top2": [
+       42488,
+       89,
+       0.101053238
+      ],
+      "min_margin_before": 0.426647186,
+      "router_min_gap_upto": 9.126999999942154e-07
+     },
+     "b": {
+      "top2": [
+       5088,
+       47865,
+       0.0163431168
+      ],
+      "min_margin_before": 0.324800491,
+      "router_min_gap_upto": 4.657000000005129e-07
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda-hostcpu",
+      "cuda-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 19,
+     "n": [
+      679,
+      794
+     ],
+     "a": {
+      "top2": [
+       69292,
+       57664,
+       0.426647186
+      ],
+      "min_margin_before": 0.712514877,
+      "router_min_gap_upto": 4.2101299999999786e-05
+     },
+     "b": {
+      "top2": [
+       57664,
+       69292,
+       0.163606644
+      ],
+      "min_margin_before": 1.65230179,
+      "router_min_gap_upto": 2.9068499999999886e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda-hostcpu",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 27,
+     "n": [
+      679,
+      670
+     ],
+     "a": {
+      "top2": [
+       14,
+       16,
+       0.495828629
+      ],
+      "min_margin_before": 0.426647186,
+      "router_min_gap_upto": 2.9949499999997603e-05
+     },
+     "b": {
+      "top2": [
+       28,
+       14,
+       1.71661186
+      ],
+      "min_margin_before": 0.0619449615,
+      "router_min_gap_upto": 6.251040000000013e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "portable",
+      "native"
+     ],
+     "ids_exact": false,
+     "first_div": 229,
+     "n": [
+      680,
+      679
+     ],
+     "a": {
+      "top2": [
+       5088,
+       47865,
+       0.0163431168
+      ],
+      "min_margin_before": 0.324800491,
+      "router_min_gap_upto": 4.657000000005129e-07
+     },
+     "b": {
+      "top2": [
+       42488,
+       89,
+       0.101053238
+      ],
+      "min_margin_before": 0.426647186,
+      "router_min_gap_upto": 9.126999999942154e-07
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "portable",
+      "cuda-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 19,
+     "n": [
+      680,
+      794
+     ],
+     "a": {
+      "top2": [
+       69292,
+       57664,
+       1.01882553
+      ],
+      "min_margin_before": 0.84286499,
+      "router_min_gap_upto": 4.657000000005129e-07
+     },
+     "b": {
+      "top2": [
+       57664,
+       69292,
+       0.163606644
+      ],
+      "min_margin_before": 1.65230179,
+      "router_min_gap_upto": 2.9068499999999886e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "portable",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 27,
+     "n": [
+      680,
+      670
+     ],
+     "a": {
+      "top2": [
+       14,
+       28,
+       0.349798203
+      ],
+      "min_margin_before": 0.84286499,
+      "router_min_gap_upto": 4.657000000005129e-07
+     },
+     "b": {
+      "top2": [
+       28,
+       14,
+       1.71661186
+      ],
+      "min_margin_before": 0.0619449615,
+      "router_min_gap_upto": 6.251040000000013e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "native",
+      "cuda-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 19,
+     "n": [
+      679,
+      794
+     ],
+     "a": {
+      "top2": [
+       69292,
+       57664,
+       0.426647186
+      ],
+      "min_margin_before": 0.712514877,
+      "router_min_gap_upto": 4.2101299999999786e-05
+     },
+     "b": {
+      "top2": [
+       57664,
+       69292,
+       0.163606644
+      ],
+      "min_margin_before": 1.65230179,
+      "router_min_gap_upto": 2.9068499999999886e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "native",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 27,
+     "n": [
+      679,
+      670
+     ],
+     "a": {
+      "top2": [
+       14,
+       16,
+       0.495828629
+      ],
+      "min_margin_before": 0.426647186,
+      "router_min_gap_upto": 2.9949499999997603e-05
+     },
+     "b": {
+      "top2": [
+       28,
+       14,
+       1.71661186
+      ],
+      "min_margin_before": 0.0619449615,
+      "router_min_gap_upto": 6.251040000000013e-05
+     }
+    },
+    {
+     "case": "two-column-page",
+     "pair": [
+      "cuda-f16",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 19,
+     "n": [
+      794,
+      670
+     ],
+     "a": {
+      "top2": [
+       57664,
+       69292,
+       0.163606644
+      ],
+      "min_margin_before": 1.65230179,
+      "router_min_gap_upto": 2.9068499999999886e-05
+     },
+     "b": {
+      "top2": [
+       69292,
+       57664,
+       0.0619449615
+      ],
+      "min_margin_before": 1.36373138,
+      "router_min_gap_upto": 8.494779999999869e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda",
+      "cuda-hostcpu"
+     ],
+     "ids_exact": false,
+     "first_div": 25,
+     "n": [
+      420,
+      444
+     ],
+     "a": {
+      "top2": [
+       6259,
+       223,
+       0.254817963
+      ],
+      "min_margin_before": 0.600385666,
+      "router_min_gap_upto": 8.556999999999315e-06
+     },
+     "b": {
+      "top2": [
+       223,
+       6259,
+       0.654375076
+      ],
+      "min_margin_before": 0.347686768,
+      "router_min_gap_upto": 4.2962000000000555e-06
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda",
+      "portable"
+     ],
+     "ids_exact": false,
+     "first_div": 25,
+     "n": [
+      420,
+      450
+     ],
+     "a": {
+      "top2": [
+       6259,
+       223,
+       0.254817963
+      ],
+      "min_margin_before": 0.600385666,
+      "router_min_gap_upto": 8.556999999999315e-06
+     },
+     "b": {
+      "top2": [
+       223,
+       6259,
+       1.00057983
+      ],
+      "min_margin_before": 0.212900162,
+      "router_min_gap_upto": 1.3914000000000287e-06
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda",
+      "native"
+     ],
+     "ids_exact": false,
+     "first_div": 25,
+     "n": [
+      420,
+      444
+     ],
+     "a": {
+      "top2": [
+       6259,
+       223,
+       0.254817963
+      ],
+      "min_margin_before": 0.600385666,
+      "router_min_gap_upto": 8.556999999999315e-06
+     },
+     "b": {
+      "top2": [
+       223,
+       6259,
+       0.654375076
+      ],
+      "min_margin_before": 0.347686768,
+      "router_min_gap_upto": 4.2962000000000555e-06
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda",
+      "cuda-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      420,
+      417
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.893482208
+      ],
+      "min_margin_before": 2.72609138,
+      "router_min_gap_upto": 0.00010169299999999992
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.344566345
+      ],
+      "min_margin_before": 2.08823776,
+      "router_min_gap_upto": 5.6268700000000615e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      420,
+      449
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.893482208
+      ],
+      "min_margin_before": 2.72609138,
+      "router_min_gap_upto": 0.00010169299999999992
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.00488090515
+      ],
+      "min_margin_before": 2.29788399,
+      "router_min_gap_upto": 8.842540000000149e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda-rep",
+      "cuda-hostcpu"
+     ],
+     "ids_exact": false,
+     "first_div": 25,
+     "n": [
+      420,
+      444
+     ],
+     "a": {
+      "top2": [
+       6259,
+       223,
+       0.254817963
+      ],
+      "min_margin_before": 0.600385666,
+      "router_min_gap_upto": 8.556999999999315e-06
+     },
+     "b": {
+      "top2": [
+       223,
+       6259,
+       0.654375076
+      ],
+      "min_margin_before": 0.347686768,
+      "router_min_gap_upto": 4.2962000000000555e-06
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda-rep",
+      "portable"
+     ],
+     "ids_exact": false,
+     "first_div": 25,
+     "n": [
+      420,
+      450
+     ],
+     "a": {
+      "top2": [
+       6259,
+       223,
+       0.254817963
+      ],
+      "min_margin_before": 0.600385666,
+      "router_min_gap_upto": 8.556999999999315e-06
+     },
+     "b": {
+      "top2": [
+       223,
+       6259,
+       1.00057983
+      ],
+      "min_margin_before": 0.212900162,
+      "router_min_gap_upto": 1.3914000000000287e-06
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda-rep",
+      "native"
+     ],
+     "ids_exact": false,
+     "first_div": 25,
+     "n": [
+      420,
+      444
+     ],
+     "a": {
+      "top2": [
+       6259,
+       223,
+       0.254817963
+      ],
+      "min_margin_before": 0.600385666,
+      "router_min_gap_upto": 8.556999999999315e-06
+     },
+     "b": {
+      "top2": [
+       223,
+       6259,
+       0.654375076
+      ],
+      "min_margin_before": 0.347686768,
+      "router_min_gap_upto": 4.2962000000000555e-06
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda-rep",
+      "cuda-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      420,
+      417
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.893482208
+      ],
+      "min_margin_before": 2.72609138,
+      "router_min_gap_upto": 0.00010169299999999992
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.344566345
+      ],
+      "min_margin_before": 2.08823776,
+      "router_min_gap_upto": 5.6268700000000615e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda-rep",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      420,
+      449
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.893482208
+      ],
+      "min_margin_before": 2.72609138,
+      "router_min_gap_upto": 0.00010169299999999992
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.00488090515
+      ],
+      "min_margin_before": 2.29788399,
+      "router_min_gap_upto": 8.842540000000149e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda-hostcpu",
+      "portable"
+     ],
+     "ids_exact": false,
+     "first_div": 78,
+     "n": [
+      444,
+      450
+     ],
+     "a": {
+      "top2": [
+       50568,
+       65,
+       0.0837879181
+      ],
+      "min_margin_before": 0.066701889,
+      "router_min_gap_upto": 4.2962000000000555e-06
+     },
+     "b": {
+      "top2": [
+       65,
+       50568,
+       0.534002304
+      ],
+      "min_margin_before": 0.188016891,
+      "router_min_gap_upto": 1.1455000000007431e-06
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda-hostcpu",
+      "cuda-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      444,
+      417
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.764699936
+      ],
+      "min_margin_before": 2.79299164,
+      "router_min_gap_upto": 5.278729999999565e-05
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.344566345
+      ],
+      "min_margin_before": 2.08823776,
+      "router_min_gap_upto": 5.6268700000000615e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda-hostcpu",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      444,
+      449
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.764699936
+      ],
+      "min_margin_before": 2.79299164,
+      "router_min_gap_upto": 5.278729999999565e-05
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.00488090515
+      ],
+      "min_margin_before": 2.29788399,
+      "router_min_gap_upto": 8.842540000000149e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "portable",
+      "native"
+     ],
+     "ids_exact": false,
+     "first_div": 78,
+     "n": [
+      450,
+      444
+     ],
+     "a": {
+      "top2": [
+       65,
+       50568,
+       0.534002304
+      ],
+      "min_margin_before": 0.188016891,
+      "router_min_gap_upto": 1.1455000000007431e-06
+     },
+     "b": {
+      "top2": [
+       50568,
+       65,
+       0.0837879181
+      ],
+      "min_margin_before": 0.066701889,
+      "router_min_gap_upto": 4.2962000000000555e-06
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "portable",
+      "cuda-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      450,
+      417
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.77548027
+      ],
+      "min_margin_before": 2.99124908,
+      "router_min_gap_upto": 0.0003247299000000009
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.344566345
+      ],
+      "min_margin_before": 2.08823776,
+      "router_min_gap_upto": 5.6268700000000615e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "portable",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      450,
+      449
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.77548027
+      ],
+      "min_margin_before": 2.99124908,
+      "router_min_gap_upto": 0.0003247299000000009
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.00488090515
+      ],
+      "min_margin_before": 2.29788399,
+      "router_min_gap_upto": 8.842540000000149e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "native",
+      "cuda-f16"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      444,
+      417
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.764699936
+      ],
+      "min_margin_before": 2.79299164,
+      "router_min_gap_upto": 5.278729999999565e-05
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.344566345
+      ],
+      "min_margin_before": 2.08823776,
+      "router_min_gap_upto": 5.6268700000000615e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "native",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 5,
+     "n": [
+      444,
+      449
+     ],
+     "a": {
+      "top2": [
+       98094,
+       437,
+       0.764699936
+      ],
+      "min_margin_before": 2.79299164,
+      "router_min_gap_upto": 5.278729999999565e-05
+     },
+     "b": {
+      "top2": [
+       122654,
+       437,
+       0.00488090515
+      ],
+      "min_margin_before": 2.29788399,
+      "router_min_gap_upto": 8.842540000000149e-05
+     }
+    },
+    {
+     "case": "historical-receipt",
+     "pair": [
+      "cuda-f16",
+      "portable-q8"
+     ],
+     "ids_exact": false,
+     "first_div": 26,
+     "n": [
+      417,
+      449
+     ],
+     "a": {
+      "top2": [
+       6259,
+       223,
+       0.0883846283
+      ],
+      "min_margin_before": 0.344566345,
+      "router_min_gap_upto": 5.6268700000000615e-05
+     },
+     "b": {
+      "top2": [
+       223,
+       6259,
+       0.0657577515
+      ],
+      "min_margin_before": 0.00488090515,
+      "router_min_gap_upto": 2.2733599999998078e-05
+     }
+    }
+   ]
+  }
+ }
+}
