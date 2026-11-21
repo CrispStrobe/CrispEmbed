@@ -461,7 +461,7 @@ jobs:
   build-linux-x86_64-cuda:
     if: github.event_name != 'workflow_dispatch' || !inputs.cpu_only
     name: Build linux-x86_64-cuda
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # CUDA 12.8 apt repo has no ubuntu2604 build; ubuntu-latest moved to 26.04
     env:
       CUDA_VERSION: "12.8.0"
     steps:
