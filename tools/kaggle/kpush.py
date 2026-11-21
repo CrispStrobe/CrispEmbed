@@ -36,6 +36,22 @@ from pathlib import Path
 PLACEHOLDER = "${KAGGLE_ACCOUNT}"
 
 
+def kaggle_cmd():
+    """Prefer this interpreter's kaggle module; else the kaggle CLI on PATH.
+
+    The CLI is often installed in its own virtualenv, so `python3 -m kaggle`
+    fails with "No module named kaggle" -- which service_result would then
+    misreport as a Kaggle service error.
+    """
+    import importlib.util
+    if importlib.util.find_spec("kaggle") is not None:
+        return [sys.executable, "-m", "kaggle"]
+    cli = shutil.which("kaggle")
+    if not cli:
+        sys.exit("kaggle CLI not found: install the kaggle package or put `kaggle` on PATH")
+    return [cli]
+
+
 def metadata_path(source: Path) -> Path:
     """An ignored local configuration overrides the immutable public example."""
     local = source / "kernel-metadata.json"
@@ -117,7 +133,7 @@ def main(argv):
         if leftover:
             sys.exit(f"kpush: unrendered placeholder in {leftover}")
         env = dict(os.environ, KAGGLE_API_TOKEN=token)
-        r = subprocess.run([sys.executable, "-m", "kaggle", "kernels", "push", "-p", str(dst)] + argv[2:],
+        r = subprocess.run(kaggle_cmd() + ["kernels", "push", "-p", str(dst)] + argv[2:],
                            env=env, text=True, capture_output=True)
         # The kaggle CLI exits 0 on a refused push ("Kernel push error: Maximum
         # batch GPU session count ..."); without this --refresh-ccache would wait
