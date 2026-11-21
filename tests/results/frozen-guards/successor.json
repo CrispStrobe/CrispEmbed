@@ -159,6 +159,168 @@
           "reason": "Test change made by the frozen-guard re-pin PR itself: test_carried_evidence_complete expects the carried count to equal every packaging receipt minus the exact recorded later additions (previously every receipt). Same exact equality; test-only, no runtime source."
         }
       ]
+    },
+    {
+      "guard": "successor-assets-v2",
+      "test": "tests/test_successor_assets_v2.py",
+      "kind": "git-object",
+      "path": "tests/test_successor_asset_manifest.py",
+      "frozen": "9864db1644b7e6693b0c9e451939d4be8bb0aa47",
+      "repins": [
+        {
+          "from": "9864db1644b7e6693b0c9e451939d4be8bb0aa47",
+          "to": "fc86a34458da2a1ae1647590527472380db1ca47",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 841179b8 adds an explicit opt-in desktop-candidate mode (--desktop-candidate with --runtime-source-commit/--runtime-source-root, scope='desktop' manifests, DESKTOP_REQUIRED) and its tests. The default full-scope producer/consumer path is unchanged: build(..., scope='full') returns the identical manifest (new control test_default_and_explicit_full_manifest_remain_identical); prepare() without the flag rejects desktop manifests and still requires the exact runtime closure, now also requiring a 40-hex producer commit (stricter, never looser). The MSVC consumer compile only gains /Fo so the object file stays next to the external executable. No archive, manifest, receipt or runtime source changes."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v2",
+      "test": "tests/test_successor_assets_v2.py",
+      "kind": "git-object",
+      "path": "tools/ci-heavy/successor_assets.py",
+      "frozen": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
+      "repins": [
+        {
+          "from": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
+          "to": "819f98b3ac7dfc3b0338a4812b82e661f7531799",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 841179b8 adds an explicit opt-in desktop-candidate mode (--desktop-candidate with --runtime-source-commit/--runtime-source-root, scope='desktop' manifests, DESKTOP_REQUIRED) and its tests. The default full-scope producer/consumer path is unchanged: build(..., scope='full') returns the identical manifest (new control test_default_and_explicit_full_manifest_remain_identical); prepare() without the flag rejects desktop manifests and still requires the exact runtime closure, now also requiring a 40-hex producer commit (stricter, never looser). The MSVC consumer compile only gains /Fo so the object file stays next to the external executable. No archive, manifest, receipt or runtime source changes."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v2",
+      "test": "tests/test_successor_assets_v2.py",
+      "kind": "git-object",
+      "path": "tools/successor_asset_manifest.py",
+      "frozen": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+      "repins": [
+        {
+          "from": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+          "to": "357593c67f17c8bf1bb48eb4671002b31d350740",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 841179b8 adds an explicit opt-in desktop-candidate mode (--desktop-candidate with --runtime-source-commit/--runtime-source-root, scope='desktop' manifests, DESKTOP_REQUIRED) and its tests. The default full-scope producer/consumer path is unchanged: build(..., scope='full') returns the identical manifest (new control test_default_and_explicit_full_manifest_remain_identical); prepare() without the flag rejects desktop manifests and still requires the exact runtime closure, now also requiring a 40-hex producer commit (stricter, never looser). The MSVC consumer compile only gains /Fo so the object file stays next to the external executable. No archive, manifest, receipt or runtime source changes."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v3",
+      "test": "tests/test_successor_assets_v3.py",
+      "kind": "git-object",
+      "path": "tests/test_successor_asset_manifest.py",
+      "frozen": "9864db1644b7e6693b0c9e451939d4be8bb0aa47",
+      "repins": [
+        {
+          "from": "9864db1644b7e6693b0c9e451939d4be8bb0aa47",
+          "to": "fc86a34458da2a1ae1647590527472380db1ca47",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 841179b8 adds an explicit opt-in desktop-candidate mode (--desktop-candidate with --runtime-source-commit/--runtime-source-root, scope='desktop' manifests, DESKTOP_REQUIRED) and its tests. The default full-scope producer/consumer path is unchanged: build(..., scope='full') returns the identical manifest (new control test_default_and_explicit_full_manifest_remain_identical); prepare() without the flag rejects desktop manifests and still requires the exact runtime closure, now also requiring a 40-hex producer commit (stricter, never looser). The MSVC consumer compile only gains /Fo so the object file stays next to the external executable. No archive, manifest, receipt or runtime source changes."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v3",
+      "test": "tests/test_successor_assets_v3.py",
+      "kind": "git-object",
+      "path": "tools/ci-heavy/successor_assets.py",
+      "frozen": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
+      "repins": [
+        {
+          "from": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
+          "to": "819f98b3ac7dfc3b0338a4812b82e661f7531799",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 841179b8 adds an explicit opt-in desktop-candidate mode (--desktop-candidate with --runtime-source-commit/--runtime-source-root, scope='desktop' manifests, DESKTOP_REQUIRED) and its tests. The default full-scope producer/consumer path is unchanged: build(..., scope='full') returns the identical manifest (new control test_default_and_explicit_full_manifest_remain_identical); prepare() without the flag rejects desktop manifests and still requires the exact runtime closure, now also requiring a 40-hex producer commit (stricter, never looser). The MSVC consumer compile only gains /Fo so the object file stays next to the external executable. No archive, manifest, receipt or runtime source changes."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v3",
+      "test": "tests/test_successor_assets_v3.py",
+      "kind": "git-object",
+      "path": "tools/successor_asset_manifest.py",
+      "frozen": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+      "repins": [
+        {
+          "from": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+          "to": "357593c67f17c8bf1bb48eb4671002b31d350740",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 841179b8 adds an explicit opt-in desktop-candidate mode (--desktop-candidate with --runtime-source-commit/--runtime-source-root, scope='desktop' manifests, DESKTOP_REQUIRED) and its tests. The default full-scope producer/consumer path is unchanged: build(..., scope='full') returns the identical manifest (new control test_default_and_explicit_full_manifest_remain_identical); prepare() without the flag rejects desktop manifests and still requires the exact runtime closure, now also requiring a 40-hex producer commit (stricter, never looser). The MSVC consumer compile only gains /Fo so the object file stays next to the external executable. No archive, manifest, receipt or runtime source changes."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v4",
+      "test": "tests/test_successor_assets_v4.py",
+      "kind": "git-object",
+      "path": "tests/test_successor_asset_manifest.py",
+      "frozen": "9864db1644b7e6693b0c9e451939d4be8bb0aa47",
+      "repins": [
+        {
+          "from": "9864db1644b7e6693b0c9e451939d4be8bb0aa47",
+          "to": "fc86a34458da2a1ae1647590527472380db1ca47",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 841179b8 adds an explicit opt-in desktop-candidate mode (--desktop-candidate with --runtime-source-commit/--runtime-source-root, scope='desktop' manifests, DESKTOP_REQUIRED) and its tests. The default full-scope producer/consumer path is unchanged: build(..., scope='full') returns the identical manifest (new control test_default_and_explicit_full_manifest_remain_identical); prepare() without the flag rejects desktop manifests and still requires the exact runtime closure, now also requiring a 40-hex producer commit (stricter, never looser). The MSVC consumer compile only gains /Fo so the object file stays next to the external executable. No archive, manifest, receipt or runtime source changes."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v4",
+      "test": "tests/test_successor_assets_v4.py",
+      "kind": "git-object",
+      "path": "tools/ci-heavy/successor_assets.py",
+      "frozen": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
+      "repins": [
+        {
+          "from": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
+          "to": "819f98b3ac7dfc3b0338a4812b82e661f7531799",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 841179b8 adds an explicit opt-in desktop-candidate mode (--desktop-candidate with --runtime-source-commit/--runtime-source-root, scope='desktop' manifests, DESKTOP_REQUIRED) and its tests. The default full-scope producer/consumer path is unchanged: build(..., scope='full') returns the identical manifest (new control test_default_and_explicit_full_manifest_remain_identical); prepare() without the flag rejects desktop manifests and still requires the exact runtime closure, now also requiring a 40-hex producer commit (stricter, never looser). The MSVC consumer compile only gains /Fo so the object file stays next to the external executable. No archive, manifest, receipt or runtime source changes."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v4",
+      "test": "tests/test_successor_assets_v4.py",
+      "kind": "git-object",
+      "path": "tools/successor_asset_manifest.py",
+      "frozen": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+      "repins": [
+        {
+          "from": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+          "to": "357593c67f17c8bf1bb48eb4671002b31d350740",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 841179b8 adds an explicit opt-in desktop-candidate mode (--desktop-candidate with --runtime-source-commit/--runtime-source-root, scope='desktop' manifests, DESKTOP_REQUIRED) and its tests. The default full-scope producer/consumer path is unchanged: build(..., scope='full') returns the identical manifest (new control test_default_and_explicit_full_manifest_remain_identical); prepare() without the flag rejects desktop manifests and still requires the exact runtime closure, now also requiring a 40-hex producer commit (stricter, never looser). The MSVC consumer compile only gains /Fo so the object file stays next to the external executable. No archive, manifest, receipt or runtime source changes."
+        }
+      ]
     }
   ],
   "later_additions": [

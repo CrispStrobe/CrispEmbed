@@ -123,7 +123,11 @@ class Layer3Tests(unittest.TestCase):
                   'tools/successor_wasm_trace_contract.py','tools/ci-heavy/successor_assets.py',
                   'tools/successor_asset_manifest.py'}
         self.assertEqual(set(spec['protected_sources']),required)
-        for name,value in spec['protected_sources'].items():self.assertEqual(digest((ROOT/name).read_bytes()),value)
+        # Exact match against the frozen digest, or its newest recorded re-pin
+        # (tests/results/frozen-guards/wasm-layer3-attribution.json, reviewed behaviour-neutral).
+        from frozen_guard_amendments import expected
+        for name,value in spec['protected_sources'].items():
+            self.assertEqual(digest((ROOT/name).read_bytes()),expected('wasm-layer3-attribution-v1',name,value,ROOT),name)
         workflow=(ROOT/'.github/workflows/wasm-layer3-attribution-v1.yml').read_text()
         self.assertIn('fetch-depth: 0',workflow)
         self.assertIn('timeout-minutes: 60',workflow)

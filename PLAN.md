@@ -1597,8 +1597,8 @@ Unlimited-OCR-2, on the four original-exact trial pages), and measured s/page.
 
 DeepSeek-OCR2 device exactness is closed (HISTORY 21 November): the portable CPU build is identical across
 hosts and thread counts; native, portable and CUDA differ only through MoE router near-ties (gap ≤ 8.6e-6).
-Open: (a) Kaggle ccache and `-march=native`: the AVX-512 seed's objects gave SIGILL on an AVX2 host. Either
-key the native builds by CPU flags or build only portable in kernels. (b) Optional: test whether a
+The Kaggle ccache SIGILL is fixed: cache keys include the resolved `-march=native` ISA (HISTORY 21 November,
+docs/kaggle-ccache.md). Open, optional: test whether a
 deterministic router tie margin (re-scoring near-tied experts in F64) makes native, portable and CUDA agree.
 Do this only behind a default-off gate, and judge it against decoded text.
 

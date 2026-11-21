@@ -79,6 +79,74 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
+        },
+        {
+          "from": "de7de39410bd539281b76309e52e9b9e2b5d9079",
+          "to": "a088b07387b3e73b810d008c8e762d6db17f5805",
+          "changed_by": [
+            "f1179d9b81d369e5ebd5c7021b6ccf99762e002f Gate gutter-aware DBNet crop grouping for Tesseract columns",
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "5226257de92554a743302a367d7227bacdc60e56 Distinguish unknown OCR outcomes when selecting fallbacks",
+            "7facb44f5ffed39462f77b69e18084cb9b1e2b2c fix: restore LightOn4B source-prefill runtime and cache hooks",
+            "b77b3bd50323c8169ff2f09a83984cdec4340ad4 Add default-off physical LightOn4B fused SwiGLU candidate [skip ci]",
+            "b290f4d1274bad89deefe9218b8ba4b540823336 Add default-off physical LightOn4B source IMROPE candidate",
+            "dfe456dd721a9f96bbfdcf66c690dafa2a1a6dca Contain physical RoPE failures and reject aliased output",
+            "084603994cda03461f425573ef6ba82e2aab47aa Reject overlapping RoPE position output storage before clearing",
+            "e42ed9ed37fff0f6d279140134978d1dace3da0f Gate source-aligned physical prefill row groups and bind cache identity [skip ci]",
+            "21a27f7fd8dae063a382d2429e20e279fe3e51ec feat: gate lossless whole-decoder physical Q6 profile",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "3f4c911d66405aa4235f0726f9c5fc8fd83ce19e Guard Rust table parser buffers and document native grid status",
+            "f233b3be52f3b884580329ca32c040b73e97776b Reject unsafe native table geometry before image processing",
+            "30583195e3fc1d98fa049b35d1acb669a5aa3bd5 fix(table): handle morphology allocation failures safely",
+            "fd18737316125a77345be68d94ed38452b3249eb fix(table): reject uniform pages and empty foreground",
+            "8a6a4639ec20229d612e0cfe27a6ef31a78f911c fix(morph): handle large-kernel scratch allocation failures",
+            "419a422802803bd24a4fceac30add49e1f95ea70 fix(dat): add opt-in tile boundary coverage correction",
+            "925c4a5c50bbd3a2f8bd2d34655c8e58a2a0c0dd fix: preserve worksheet rules and pack binary PDF rasters",
+            "23d032a04cd3bf8c43fa97aba9cb9b2b38f2b24c style: format worksheet cleanup changes",
+            "fe47a36915491fef2cd39844d23dca45ec10238b fix: normalize invalid whitening window sizes",
+            "0eca8e35d5d675d6fef106a6316db38355c6841a fix: rectify ruled photo perspective before binarization",
+            "3ae1939c79111a6c78f49d81edbf9d5d79382d59 feat(spacy): freeze authenticated F32 bundle and reference contract [skip ci]",
+            "7f387f094528b01ba153d7cc5858344db16dd077 feat(spacy): add gated native F32 scoring with full stage parity [skip ci]",
+            "b5add9c32d3ff4bea106d7181b9e2fe7567a5947 feat(spacy): checkpoint exact native German lexical processing [skip ci]",
+            "51c2ac328ef40b00f18eb9b03130fb67c3f11313 feat(spacy): compose owned raw-text analysis and native linguistic decoders [skip ci]",
+            "4540ddccf79aa229d212316668da964c04973223 fix: validate binary PDF fixtures at legal PDF/A page sizes",
+            "3fc8f7e93c5fe06bfea4c8e0faee5164b8f56c32 style: fix remaining inherited physical RoPE formatting",
+            "6dffe3029cad4f3a8c1d84f1baa11bf68857f3a9 Merge main into worksheet cleanup; preserve frozen spaCy evidence",
+            "a0c3ccc387083a251d5f1b174019aa5a89ac297b feat(spacy): default-off ggml engine, gated quantized GGUFs and crispembed-spacy-diff",
+            "6f1931cdba4e7e12c0938bb23537ca2290cd9dbd feat(spacy): ggml+SGEMM default engine, opt-in F16 upcast, Linux A/B lane",
+            "9965aa7675d0ac889a988b36d4b5b138f1bef328 feat(spacy): opt-in NER component from a separate ner.gguf",
+            "907c916cbf8f099baa5e3f45edadea12512fb5b9 style(spacy): clang-format 18",
+            "a86785b4a2b60b28f6bc34af79865ab4c3bc179d feat(spacy): Linux (old glibc), Linux arm64 and Windows capsule lanes; process-wide enable API",
+            "4ede848e18cbc19d8cfb05bef6c562725853f6ba feat(spacy): v2 pipeline profile with English (en_core_web_sm) exact against original spaCy",
+            "3bdcfedc3f20bf21c757879f0bfa5eaff9846c6e feat(spacy): French (fr_core_news_sm) on the v2 profile, exact against original spaCy",
+            "53e8a38599289223485f7a3111d2322f72749071 feat(spacy): transformer pipelines (fr_dep_news_trf) exact against original spaCy",
+            "c3aced20e985566d795520df75074691337c67c0 perf(spacy): opt-in BLAS backend for transformer encoders; O(1) model finite checks",
+            "938d1e886c87fa6835139f2952851b5075061afd perf(spacy): opt-in fused transformer graph (batched spans, Q/K/V weight views, flash attention) + hosted bench",
+            "0fe68332062227608812b2b9c3f733aa431a36e2 fix(spacy): keep v2 admission helpers outside extern \"C\"; CNN bundles byte-identical again",
+            "a7358065f5548afe71c04d7b24379fc0db94fce8 build(spacy): SentencePiece v0.2.1 (v0.2.0 fails with GCC 15: missing <cstdint>)",
+            "6032216d041e9a293e2fea30ea67c577303513d3 perf(spacy): fused transformer graph by default after hosted A/B; SentencePiece v0.2.1; receipts",
+            "9bfed0527dcd9c05844bd3499b4f93344d3a0612 feat(spacy): English transformer pipeline (en_core_web_trf) exact against original spaCy",
+            "2a5feb10a710274f1eb999ea668c43b73b9b7c0a feat(spacy): German transformer pipeline (de_dep_news_trf) exact against original spaCy",
+            "e3a467a36417515f092c65e4ae61ad294fa7ed7e feat(arabic): native Camel Morph MSA analyzer (camel_tools port) and DB bundle converter",
+            "e3417792d44100eb1eda6cd0ac73ed864dc19a67 docs(arabic): Camel Morph validation receipts (exactness, ranking, HF readback, performance)",
+            "4801b95314ea2d856e1dd72e9014490d17c5f956 style: clang-format arabic_morph_tables.h",
+            "741dac88b69e54a0f5e4e8f7c867c5c2b2910702 feat(arabic-morph): memory-mapped binary proofing database and compact ABI",
+            "e18ff11062642e45cf49fd1b6c47574afc2e1cac qwen35_ocr_gpu: F32 device-matrix precision gates (default off) + T4 drift bisect receipt",
+            "9014e300285b0f18bc1ef18663bd3c913f6e67e1 clang-format qwen35_ocr_gpu.cpp",
+            "c25f983943d043f3c271ea0e5f2a6df52af44a67 unlimited_ocr2: CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP (default off) fuses B(l)+A(l+1) in FAST decode",
+            "7f2d17de8c31acd86a384c86e2110951f1cfeae7 OCR GPU bench: uocr2 trial-page originals, unified uocr confidences; minicpm-graph link fix; CPU ccache probe",
+            "62b58d681884c7c0cb0e7ac89702597c16d84533 feat(arabic-morph): context disambiguator (bigram HMM over Camel Morph analyses, ABI 3)",
+            "ba0d3bbde753736eba761d10b9f8fcaff519df8d Merge origin/main",
+            "41fc0d747ca8335d62aab958b0f16947f59e4cc3 Merge origin/main",
+            "271d0c6e4969875d6d931d27423babed47fe8e9c unlimited_ocr: clang-format the fused-step lambda (no code change)",
+            "f82d7f01d1589e8d222a9ea33895a1f4515347ae core: pretokenize optional out_space_before, mirrored from CrispASR",
+            "044c6a27de7f91d10ccc4902c99b1c98e7490976 Merge branch 'main' into gpu-ocr-bench-1120",
+            "b728b5890e09d3660c3686b161014124cb960707 Unlimited-OCR-2: fused decode step on by default (=0 opt-out)",
+            "c767387e457dc7be4f99d69c23ead7bf044df15f DeepSeek-OCR2: top-2/router-margin trace and determinism bisect kernel"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: new spaCy and Arabic morphology engines, gated LightOn4B physical candidates, default-off qwen35_ocr_gpu F32 device-matrix gates, Unlimited-OCR-2 fused step, DeepSeek-OCR2 env-gated trace, OCR API/pipeline fixes, DAT opt-in blend, bert_pretok optional output."
         }
       ]
     },
@@ -161,6 +229,23 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
+        },
+        {
+          "from": "cdbd83f7bdcf28dce913663994a7b4a589fc8d9b",
+          "to": "28690cce96d3f7e3dde13c7cf5e1ae988d005ae3",
+          "changed_by": [
+            "7facb44f5ffed39462f77b69e18084cb9b1e2b2c fix: restore LightOn4B source-prefill runtime and cache hooks",
+            "b77b3bd50323c8169ff2f09a83984cdec4340ad4 Add default-off physical LightOn4B fused SwiGLU candidate [skip ci]",
+            "b290f4d1274bad89deefe9218b8ba4b540823336 Add default-off physical LightOn4B source IMROPE candidate",
+            "6fa52aa1a525939e44d33b6dd29a3e17c4ef7b98 Guard physical LightOn4B validation targets on iOS",
+            "21a27f7fd8dae063a382d2429e20e279fe3e51ec feat: gate lossless whole-decoder physical Q6 profile",
+            "dfb5d157fb01eeebd1e1c5e075fe62f510ad702a Merge remote-tracking branch 'origin/main' into feat/lighton4b-physical-full-q6-20261113",
+            "7d9a952fef505f709dbf34ad7cfda175c06820a9 diag(pcs): prepare isolated provenance and casing capture [skip ci]",
+            "cfdcce888a349f00c8ecdad89066fd1fc36b1029 diag(pcs): isolate same-weight matmul loss and encoder stage divergence",
+            "24b8456f1e2c7ed2f121f8e63f9781c2e8e42909 Compare PCS matched operators with original graph and shared diff harness"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: CRISPEMBED_BUILD_PCS_CAPTURE (default OFF) targets and EXCLUDE_FROM_ALL LightOn4B test/probe executables."
         }
       ]
     },
@@ -190,6 +275,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "530ec3d024054b0385ef0dd25a0df1d87da91813",
+          "to": "245036e86190154d4993f7cd25fb169e0df0a00c",
+          "changed_by": [
+            "925c4a5c50bbd3a2f8bd2d34655c8e58a2a0c0dd fix: preserve worksheet rules and pack binary PDF rasters"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: version number 0.17.20 preparation (925c4a5c)."
         }
       ]
     },
@@ -219,6 +313,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "587fafad614a656273aa7a602acc7f6ec19277e2",
+          "to": "842bd9f3cf1ac95db3a868554d358e1624c8d2d8",
+          "changed_by": [
+            "6d2c913eaa813640588992bbf51a393899ac4532 Release prep v0.17.20: version bumps, release notes"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release preparation only (6d2c913e, PR #267): Cargo.lock records the crispembed/crispembed-sys 0.17.20 package versions. No dependency changes."
         }
       ]
     },
@@ -239,6 +342,20 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to examples",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "from": "d068a10e5fb1c2efb23c904e3df9834e05a173f3",
+          "to": "170c506c9c03bbf9f0373204a201723b29cb5f2e",
+          "changed_by": [
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "9d2c876d0bf694c95174cb9e87950c3362399ed6 Propagate reported OCR pipeline failures through HTTP endpoints",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "92739ac47c9edeed1b485b139945e2444a9684b6 PCS: mixed-precision q4_k default (enc.0 + truecase head Q8_0), strict registry-resolved gate",
+            "a61f770f2a3285eaed89e5b439e2555417ffa06a style: clang-format the PCS registry entry"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: OCR pipeline failure propagation (CLI/server), render/CC free functions, PCS mixed-precision registry entry."
         }
       ]
     },
@@ -268,6 +385,30 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "b9c2accf811e06dc7a0363f43584006693aad92b",
+          "to": "70d96b82070e7c85cc824fe59ea5c31d4b40fb8e",
+          "changed_by": [
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "5c7ae1a5f627a242d462998bedc8edecd38856ca Match the Python OCR result stride to the complete native record",
+            "24c4dc7fad362048d89038cd08a8b1ebc9e91502 fix(python): synchronize exported package version during releases",
+            "c380f7a77b86b050e1dcc1f23eeaba489e5d6e69 Fix Python SwinIR and SCUNet restoration wrappers",
+            "45fa452ec13551a27618b51615189cbef2f9dc65 fix(python): isolate SAFMN dispatch and protect SR buffer ownership",
+            "fb2177558a1df84f6b23778db8a6cc8764648bb5 Fix NumPy grayscale view handling in Python preprocessing",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "a16d1cfbcdf222211e42fc2b2b6740a2a9042369 Validate Pix2Struct raw RGB buffers before native access",
+            "bba18cc30c4bb479e208db47f43dede547f195f3 Validate Python scan cleanup images and release failed outputs",
+            "bed5ed99428fcb4827c9305cab679a4f3388cd0d Validate Python table parser inputs and always release HTML results",
+            "fdb6815475182657bea92f8b397d57d8a896ad1d fix(python): validate Granite and LightOn raw image buffers",
+            "553461332f4271550112c0989829c643c995b473 fix(python): guard Restormer and AdaIR RGB image lifetimes",
+            "e0de0885df6c0176b00edb046fadecf1be5251d4 fix(python): validate and release InstructIR image buffers",
+            "a4996aebec26f3359ad0113ce79207b99604d73f fix(python): validate DAT buffers and release returned images",
+            "925c4a5c50bbd3a2f8bd2d34655c8e58a2a0c0dd fix: preserve worksheet rules and pack binary PDF rasters"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: version number and OCR/image buffer validation/release in the Python binding."
         }
       ]
     },
@@ -297,6 +438,28 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "d2392bab1fe8c7937744ee8834dfb3a13ad6e7cf",
+          "to": "2ec542235ce64114c39ac0b2f91bbb5554da6670",
+          "changed_by": [
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "dd85f19e061ffa316e351b6e800f82bd76d7fab6 Use the complete native OCR record for Dart reads and rendering",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "925c4a5c50bbd3a2f8bd2d34655c8e58a2a0c0dd fix: preserve worksheet rules and pack binary PDF rasters"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: version number, complete native OCR record reads and OCR free/last-error functions in the Dart binding."
+        },
+        {
+          "from": "2ec542235ce64114c39ac0b2f91bbb5554da6670",
+          "to": "de4e93c1d6b694b68e2681c594267043d8b2d76f",
+          "changed_by": [
+            "6d2c913eaa813640588992bbf51a393899ac4532 Release prep v0.17.20: version bumps, release notes"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release preparation only (6d2c913e, PR #267): flutter/crispembed/CHANGELOG.md gains the 0.17.20 notes. No code changes."
         }
       ]
     },
@@ -326,6 +489,24 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "d6136553e2b6e808b50b622644b745387a9f492f",
+          "to": "5dcf4e0c2801eecac58ca26bf712069441a105a5",
+          "changed_by": [
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "4f610a0b4a7e53c63a083220f2bc436cd4f28ee9 Validate Rust grayscale slices before native image reads",
+            "f3de375577f465e21dfd3c1a6183dae943260037 Add explicit RGBA input and safe RGB bounds for Rust Pix2Struct",
+            "e1ced558caf6841a1bcb90972d1ff372064b16a4 Validate Rust scan cleanup inputs and retain image ownership on errors",
+            "3f4c911d66405aa4235f0726f9c5fc8fd83ce19e Guard Rust table parser buffers and document native grid status",
+            "5309789f0e4688baa3a734cbc9d30d2674464f62 fix(rust): validate Granite and LightOn image slices",
+            "b34a132c6c204b71f5c58ba8bc1705b8769edb9b fix(rust): check DAT RGB buffers and own native output",
+            "925c4a5c50bbd3a2f8bd2d34655c8e58a2a0c0dd fix: preserve worksheet rules and pack binary PDF rasters"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: version number and OCR/image input validation and output ownership in the Rust binding."
         }
       ]
     },
@@ -355,6 +536,18 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "295c5c82c4e146beae4565162ce413910cb82c34",
+          "to": "d7c276681591f3a61e337972dbd6a3e269d29790",
+          "changed_by": [
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "925c4a5c50bbd3a2f8bd2d34655c8e58a2a0c0dd fix: preserve worksheet rules and pack binary PDF rasters"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: version number and declarations of the OCR free/last-error functions."
         }
       ]
     },
@@ -455,6 +648,15 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to .github/workflows/release.yml",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "from": "1c15f98a5a7f1940a72c6647023139b5a5ed3097",
+          "to": "fbcd6b3b17701d22d92805f0c960bf88564249dd",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: 841179b8 opt-in desktop-candidate jobs in the release workflow (unpublished, dispatch-only)."
         }
       ]
     },
@@ -475,6 +677,17 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to tests/regression",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "from": "5856ecfe96e07a14d29e754cee713ec58a0cd8a8",
+          "to": "ffb54115528226af0c5d5b57dc2e8acaa6b290fc",
+          "changed_by": [
+            "135665fc50137507c2a51ba853da84ba1eb4c605 docs(pcs): record independently reproduced artifact blocker and fail negative replay reports",
+            "7cbc4b3c19b6695f86443e7377123f711c02aea7 PCS: root-cause the I'm oK failure to 4-bit artifact precision; strict q8_0 ground-truth gate",
+            "92739ac47c9edeed1b485b139945e2444a9684b6 PCS: mixed-precision q4_k default (enc.0 + truecase head Q8_0), strict registry-resolved gate"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: PCS fixtures (README, q4_k imatrix recorded-loss receipt; 7cbc4b3c, 92739ac4). No OvisOCR2 fixture changed."
         }
       ]
     },
@@ -535,6 +748,15 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to README.md",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "from": "dbe68eb36474d8821e9910bc2b7196a5c52ad742",
+          "to": "f7248b3043ff12f38f5ba7bfb2f368a5ed916e3f",
+          "changed_by": [
+            "a1e32636c10c569720e4ef99f844590980086eff docs: plan native MoGe-3 geometry runtime for CrispMesh"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: documentation (a1e32636 MoGe-3 plan note)."
         }
       ]
     },
@@ -555,6 +777,18 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to src/crispembed.cpp",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "from": "44371ef32a036e00a28dbd5781d2a2f836f646e4155f720942dc8606aa9f7107",
+          "to": "a02a6dfe547c60faa2de0ca1f24d15a82497b73ad2e96a4bba2b46fae840d3e8",
+          "changed_by": [
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "7f2d17de8c31acd86a384c86e2110951f1cfeae7 OCR GPU bench: uocr2 trial-page originals, unified uocr confidences; minicpm-graph link fix; CPU ccache probe"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1, hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets, gate0 bit-exact (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: OCR C API only (last-error functions, pipeline clears its previous result and returns NULL on a reported failure, CC/render free functions, Unlimited-OCR per-token confidences)."
         }
       ]
     },
@@ -629,6 +863,74 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
+        },
+        {
+          "from": "de7de39410bd539281b76309e52e9b9e2b5d9079",
+          "to": "a088b07387b3e73b810d008c8e762d6db17f5805",
+          "changed_by": [
+            "f1179d9b81d369e5ebd5c7021b6ccf99762e002f Gate gutter-aware DBNet crop grouping for Tesseract columns",
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "5226257de92554a743302a367d7227bacdc60e56 Distinguish unknown OCR outcomes when selecting fallbacks",
+            "7facb44f5ffed39462f77b69e18084cb9b1e2b2c fix: restore LightOn4B source-prefill runtime and cache hooks",
+            "b77b3bd50323c8169ff2f09a83984cdec4340ad4 Add default-off physical LightOn4B fused SwiGLU candidate [skip ci]",
+            "b290f4d1274bad89deefe9218b8ba4b540823336 Add default-off physical LightOn4B source IMROPE candidate",
+            "dfe456dd721a9f96bbfdcf66c690dafa2a1a6dca Contain physical RoPE failures and reject aliased output",
+            "084603994cda03461f425573ef6ba82e2aab47aa Reject overlapping RoPE position output storage before clearing",
+            "e42ed9ed37fff0f6d279140134978d1dace3da0f Gate source-aligned physical prefill row groups and bind cache identity [skip ci]",
+            "21a27f7fd8dae063a382d2429e20e279fe3e51ec feat: gate lossless whole-decoder physical Q6 profile",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "3f4c911d66405aa4235f0726f9c5fc8fd83ce19e Guard Rust table parser buffers and document native grid status",
+            "f233b3be52f3b884580329ca32c040b73e97776b Reject unsafe native table geometry before image processing",
+            "30583195e3fc1d98fa049b35d1acb669a5aa3bd5 fix(table): handle morphology allocation failures safely",
+            "fd18737316125a77345be68d94ed38452b3249eb fix(table): reject uniform pages and empty foreground",
+            "8a6a4639ec20229d612e0cfe27a6ef31a78f911c fix(morph): handle large-kernel scratch allocation failures",
+            "419a422802803bd24a4fceac30add49e1f95ea70 fix(dat): add opt-in tile boundary coverage correction",
+            "925c4a5c50bbd3a2f8bd2d34655c8e58a2a0c0dd fix: preserve worksheet rules and pack binary PDF rasters",
+            "23d032a04cd3bf8c43fa97aba9cb9b2b38f2b24c style: format worksheet cleanup changes",
+            "fe47a36915491fef2cd39844d23dca45ec10238b fix: normalize invalid whitening window sizes",
+            "0eca8e35d5d675d6fef106a6316db38355c6841a fix: rectify ruled photo perspective before binarization",
+            "3ae1939c79111a6c78f49d81edbf9d5d79382d59 feat(spacy): freeze authenticated F32 bundle and reference contract [skip ci]",
+            "7f387f094528b01ba153d7cc5858344db16dd077 feat(spacy): add gated native F32 scoring with full stage parity [skip ci]",
+            "b5add9c32d3ff4bea106d7181b9e2fe7567a5947 feat(spacy): checkpoint exact native German lexical processing [skip ci]",
+            "51c2ac328ef40b00f18eb9b03130fb67c3f11313 feat(spacy): compose owned raw-text analysis and native linguistic decoders [skip ci]",
+            "4540ddccf79aa229d212316668da964c04973223 fix: validate binary PDF fixtures at legal PDF/A page sizes",
+            "3fc8f7e93c5fe06bfea4c8e0faee5164b8f56c32 style: fix remaining inherited physical RoPE formatting",
+            "6dffe3029cad4f3a8c1d84f1baa11bf68857f3a9 Merge main into worksheet cleanup; preserve frozen spaCy evidence",
+            "a0c3ccc387083a251d5f1b174019aa5a89ac297b feat(spacy): default-off ggml engine, gated quantized GGUFs and crispembed-spacy-diff",
+            "6f1931cdba4e7e12c0938bb23537ca2290cd9dbd feat(spacy): ggml+SGEMM default engine, opt-in F16 upcast, Linux A/B lane",
+            "9965aa7675d0ac889a988b36d4b5b138f1bef328 feat(spacy): opt-in NER component from a separate ner.gguf",
+            "907c916cbf8f099baa5e3f45edadea12512fb5b9 style(spacy): clang-format 18",
+            "a86785b4a2b60b28f6bc34af79865ab4c3bc179d feat(spacy): Linux (old glibc), Linux arm64 and Windows capsule lanes; process-wide enable API",
+            "4ede848e18cbc19d8cfb05bef6c562725853f6ba feat(spacy): v2 pipeline profile with English (en_core_web_sm) exact against original spaCy",
+            "3bdcfedc3f20bf21c757879f0bfa5eaff9846c6e feat(spacy): French (fr_core_news_sm) on the v2 profile, exact against original spaCy",
+            "53e8a38599289223485f7a3111d2322f72749071 feat(spacy): transformer pipelines (fr_dep_news_trf) exact against original spaCy",
+            "c3aced20e985566d795520df75074691337c67c0 perf(spacy): opt-in BLAS backend for transformer encoders; O(1) model finite checks",
+            "938d1e886c87fa6835139f2952851b5075061afd perf(spacy): opt-in fused transformer graph (batched spans, Q/K/V weight views, flash attention) + hosted bench",
+            "0fe68332062227608812b2b9c3f733aa431a36e2 fix(spacy): keep v2 admission helpers outside extern \"C\"; CNN bundles byte-identical again",
+            "a7358065f5548afe71c04d7b24379fc0db94fce8 build(spacy): SentencePiece v0.2.1 (v0.2.0 fails with GCC 15: missing <cstdint>)",
+            "6032216d041e9a293e2fea30ea67c577303513d3 perf(spacy): fused transformer graph by default after hosted A/B; SentencePiece v0.2.1; receipts",
+            "9bfed0527dcd9c05844bd3499b4f93344d3a0612 feat(spacy): English transformer pipeline (en_core_web_trf) exact against original spaCy",
+            "2a5feb10a710274f1eb999ea668c43b73b9b7c0a feat(spacy): German transformer pipeline (de_dep_news_trf) exact against original spaCy",
+            "e3a467a36417515f092c65e4ae61ad294fa7ed7e feat(arabic): native Camel Morph MSA analyzer (camel_tools port) and DB bundle converter",
+            "e3417792d44100eb1eda6cd0ac73ed864dc19a67 docs(arabic): Camel Morph validation receipts (exactness, ranking, HF readback, performance)",
+            "4801b95314ea2d856e1dd72e9014490d17c5f956 style: clang-format arabic_morph_tables.h",
+            "741dac88b69e54a0f5e4e8f7c867c5c2b2910702 feat(arabic-morph): memory-mapped binary proofing database and compact ABI",
+            "e18ff11062642e45cf49fd1b6c47574afc2e1cac qwen35_ocr_gpu: F32 device-matrix precision gates (default off) + T4 drift bisect receipt",
+            "9014e300285b0f18bc1ef18663bd3c913f6e67e1 clang-format qwen35_ocr_gpu.cpp",
+            "c25f983943d043f3c271ea0e5f2a6df52af44a67 unlimited_ocr2: CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP (default off) fuses B(l)+A(l+1) in FAST decode",
+            "7f2d17de8c31acd86a384c86e2110951f1cfeae7 OCR GPU bench: uocr2 trial-page originals, unified uocr confidences; minicpm-graph link fix; CPU ccache probe",
+            "62b58d681884c7c0cb0e7ac89702597c16d84533 feat(arabic-morph): context disambiguator (bigram HMM over Camel Morph analyses, ABI 3)",
+            "ba0d3bbde753736eba761d10b9f8fcaff519df8d Merge origin/main",
+            "41fc0d747ca8335d62aab958b0f16947f59e4cc3 Merge origin/main",
+            "271d0c6e4969875d6d931d27423babed47fe8e9c unlimited_ocr: clang-format the fused-step lambda (no code change)",
+            "f82d7f01d1589e8d222a9ea33895a1f4515347ae core: pretokenize optional out_space_before, mirrored from CrispASR",
+            "044c6a27de7f91d10ccc4902c99b1c98e7490976 Merge branch 'main' into gpu-ocr-bench-1120",
+            "b728b5890e09d3660c3686b161014124cb960707 Unlimited-OCR-2: fused decode step on by default (=0 opt-out)",
+            "c767387e457dc7be4f99d69c23ead7bf044df15f DeepSeek-OCR2: top-2/router-margin trace and determinism bisect kernel"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: new spaCy and Arabic morphology engines, gated LightOn4B physical candidates, default-off qwen35_ocr_gpu F32 device-matrix gates, Unlimited-OCR-2 fused step, DeepSeek-OCR2 env-gated trace, OCR API/pipeline fixes, DAT opt-in blend, bert_pretok optional output."
         }
       ]
     },
@@ -711,6 +1013,23 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
+        },
+        {
+          "from": "cdbd83f7bdcf28dce913663994a7b4a589fc8d9b",
+          "to": "28690cce96d3f7e3dde13c7cf5e1ae988d005ae3",
+          "changed_by": [
+            "7facb44f5ffed39462f77b69e18084cb9b1e2b2c fix: restore LightOn4B source-prefill runtime and cache hooks",
+            "b77b3bd50323c8169ff2f09a83984cdec4340ad4 Add default-off physical LightOn4B fused SwiGLU candidate [skip ci]",
+            "b290f4d1274bad89deefe9218b8ba4b540823336 Add default-off physical LightOn4B source IMROPE candidate",
+            "6fa52aa1a525939e44d33b6dd29a3e17c4ef7b98 Guard physical LightOn4B validation targets on iOS",
+            "21a27f7fd8dae063a382d2429e20e279fe3e51ec feat: gate lossless whole-decoder physical Q6 profile",
+            "dfb5d157fb01eeebd1e1c5e075fe62f510ad702a Merge remote-tracking branch 'origin/main' into feat/lighton4b-physical-full-q6-20261113",
+            "7d9a952fef505f709dbf34ad7cfda175c06820a9 diag(pcs): prepare isolated provenance and casing capture [skip ci]",
+            "cfdcce888a349f00c8ecdad89066fd1fc36b1029 diag(pcs): isolate same-weight matmul loss and encoder stage divergence",
+            "24b8456f1e2c7ed2f121f8e63f9781c2e8e42909 Compare PCS matched operators with original graph and shared diff harness"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: CRISPEMBED_BUILD_PCS_CAPTURE (default OFF) targets and EXCLUDE_FROM_ALL LightOn4B test/probe executables."
         }
       ]
     },
@@ -740,6 +1059,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "530ec3d024054b0385ef0dd25a0df1d87da91813",
+          "to": "245036e86190154d4993f7cd25fb169e0df0a00c",
+          "changed_by": [
+            "925c4a5c50bbd3a2f8bd2d34655c8e58a2a0c0dd fix: preserve worksheet rules and pack binary PDF rasters"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: version number 0.17.20 preparation (925c4a5c)."
         }
       ]
     },
@@ -769,6 +1097,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "587fafad614a656273aa7a602acc7f6ec19277e2",
+          "to": "842bd9f3cf1ac95db3a868554d358e1624c8d2d8",
+          "changed_by": [
+            "6d2c913eaa813640588992bbf51a393899ac4532 Release prep v0.17.20: version bumps, release notes"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release preparation only (6d2c913e, PR #267): Cargo.lock records the crispembed/crispembed-sys 0.17.20 package versions. No dependency changes."
         }
       ]
     },
@@ -789,6 +1126,20 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to examples",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "from": "d068a10e5fb1c2efb23c904e3df9834e05a173f3",
+          "to": "170c506c9c03bbf9f0373204a201723b29cb5f2e",
+          "changed_by": [
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "9d2c876d0bf694c95174cb9e87950c3362399ed6 Propagate reported OCR pipeline failures through HTTP endpoints",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "92739ac47c9edeed1b485b139945e2444a9684b6 PCS: mixed-precision q4_k default (enc.0 + truecase head Q8_0), strict registry-resolved gate",
+            "a61f770f2a3285eaed89e5b439e2555417ffa06a style: clang-format the PCS registry entry"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: OCR pipeline failure propagation (CLI/server), render/CC free functions, PCS mixed-precision registry entry."
         }
       ]
     },
@@ -818,6 +1169,30 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "b9c2accf811e06dc7a0363f43584006693aad92b",
+          "to": "70d96b82070e7c85cc824fe59ea5c31d4b40fb8e",
+          "changed_by": [
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "5c7ae1a5f627a242d462998bedc8edecd38856ca Match the Python OCR result stride to the complete native record",
+            "24c4dc7fad362048d89038cd08a8b1ebc9e91502 fix(python): synchronize exported package version during releases",
+            "c380f7a77b86b050e1dcc1f23eeaba489e5d6e69 Fix Python SwinIR and SCUNet restoration wrappers",
+            "45fa452ec13551a27618b51615189cbef2f9dc65 fix(python): isolate SAFMN dispatch and protect SR buffer ownership",
+            "fb2177558a1df84f6b23778db8a6cc8764648bb5 Fix NumPy grayscale view handling in Python preprocessing",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "a16d1cfbcdf222211e42fc2b2b6740a2a9042369 Validate Pix2Struct raw RGB buffers before native access",
+            "bba18cc30c4bb479e208db47f43dede547f195f3 Validate Python scan cleanup images and release failed outputs",
+            "bed5ed99428fcb4827c9305cab679a4f3388cd0d Validate Python table parser inputs and always release HTML results",
+            "fdb6815475182657bea92f8b397d57d8a896ad1d fix(python): validate Granite and LightOn raw image buffers",
+            "553461332f4271550112c0989829c643c995b473 fix(python): guard Restormer and AdaIR RGB image lifetimes",
+            "e0de0885df6c0176b00edb046fadecf1be5251d4 fix(python): validate and release InstructIR image buffers",
+            "a4996aebec26f3359ad0113ce79207b99604d73f fix(python): validate DAT buffers and release returned images",
+            "925c4a5c50bbd3a2f8bd2d34655c8e58a2a0c0dd fix: preserve worksheet rules and pack binary PDF rasters"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: version number and OCR/image buffer validation/release in the Python binding."
         }
       ]
     },
@@ -847,6 +1222,28 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "d2392bab1fe8c7937744ee8834dfb3a13ad6e7cf",
+          "to": "2ec542235ce64114c39ac0b2f91bbb5554da6670",
+          "changed_by": [
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "dd85f19e061ffa316e351b6e800f82bd76d7fab6 Use the complete native OCR record for Dart reads and rendering",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "925c4a5c50bbd3a2f8bd2d34655c8e58a2a0c0dd fix: preserve worksheet rules and pack binary PDF rasters"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: version number, complete native OCR record reads and OCR free/last-error functions in the Dart binding."
+        },
+        {
+          "from": "2ec542235ce64114c39ac0b2f91bbb5554da6670",
+          "to": "de4e93c1d6b694b68e2681c594267043d8b2d76f",
+          "changed_by": [
+            "6d2c913eaa813640588992bbf51a393899ac4532 Release prep v0.17.20: version bumps, release notes"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release preparation only (6d2c913e, PR #267): flutter/crispembed/CHANGELOG.md gains the 0.17.20 notes. No code changes."
         }
       ]
     },
@@ -876,6 +1273,24 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "d6136553e2b6e808b50b622644b745387a9f492f",
+          "to": "5dcf4e0c2801eecac58ca26bf712069441a105a5",
+          "changed_by": [
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "4f610a0b4a7e53c63a083220f2bc436cd4f28ee9 Validate Rust grayscale slices before native image reads",
+            "f3de375577f465e21dfd3c1a6183dae943260037 Add explicit RGBA input and safe RGB bounds for Rust Pix2Struct",
+            "e1ced558caf6841a1bcb90972d1ff372064b16a4 Validate Rust scan cleanup inputs and retain image ownership on errors",
+            "3f4c911d66405aa4235f0726f9c5fc8fd83ce19e Guard Rust table parser buffers and document native grid status",
+            "5309789f0e4688baa3a734cbc9d30d2674464f62 fix(rust): validate Granite and LightOn image slices",
+            "b34a132c6c204b71f5c58ba8bc1705b8769edb9b fix(rust): check DAT RGB buffers and own native output",
+            "925c4a5c50bbd3a2f8bd2d34655c8e58a2a0c0dd fix: preserve worksheet rules and pack binary PDF rasters"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: version number and OCR/image input validation and output ownership in the Rust binding."
         }
       ]
     },
@@ -905,6 +1320,18 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "295c5c82c4e146beae4565162ce413910cb82c34",
+          "to": "d7c276681591f3a61e337972dbd6a3e269d29790",
+          "changed_by": [
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "925c4a5c50bbd3a2f8bd2d34655c8e58a2a0c0dd fix: preserve worksheet rules and pack binary PDF rasters"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: version number and declarations of the OCR free/last-error functions."
         }
       ]
     },
@@ -1005,6 +1432,15 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to .github/workflows/release.yml",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "from": "1c15f98a5a7f1940a72c6647023139b5a5ed3097",
+          "to": "fbcd6b3b17701d22d92805f0c960bf88564249dd",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: 841179b8 opt-in desktop-candidate jobs in the release workflow (unpublished, dispatch-only)."
         }
       ]
     },
@@ -1025,6 +1461,17 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to tests/regression",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "from": "5856ecfe96e07a14d29e754cee713ec58a0cd8a8",
+          "to": "ffb54115528226af0c5d5b57dc2e8acaa6b290fc",
+          "changed_by": [
+            "135665fc50137507c2a51ba853da84ba1eb4c605 docs(pcs): record independently reproduced artifact blocker and fail negative replay reports",
+            "7cbc4b3c19b6695f86443e7377123f711c02aea7 PCS: root-cause the I'm oK failure to 4-bit artifact precision; strict q8_0 ground-truth gate",
+            "92739ac47c9edeed1b485b139945e2444a9684b6 PCS: mixed-precision q4_k default (enc.0 + truecase head Q8_0), strict registry-resolved gate"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: PCS fixtures (README, q4_k imatrix recorded-loss receipt; 7cbc4b3c, 92739ac4). No OvisOCR2 fixture changed."
         }
       ]
     },
@@ -1085,6 +1532,15 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to README.md",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "from": "dbe68eb36474d8821e9910bc2b7196a5c52ad742",
+          "to": "f7248b3043ff12f38f5ba7bfb2f368a5ed916e3f",
+          "changed_by": [
+            "a1e32636c10c569720e4ef99f844590980086eff docs: plan native MoGe-3 geometry runtime for CrispMesh"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: documentation (a1e32636 MoGe-3 plan note)."
         }
       ]
     },
@@ -1105,6 +1561,18 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to src/crispembed.cpp",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "from": "44371ef32a036e00a28dbd5781d2a2f836f646e4155f720942dc8606aa9f7107",
+          "to": "a02a6dfe547c60faa2de0ca1f24d15a82497b73ad2e96a4bba2b46fae840d3e8",
+          "changed_by": [
+            "497301606f2913c266f39ba8157f2d4769bb27e5 Preserve reported OCR recognition failures across the pipeline API",
+            "19dd173c73452a9a5f23003c296c8882ececdd63 Keep CC detector result ownership inside the native library",
+            "6d45a6725ec5b5ec3b23faf7f0612a17fe850d0a Keep one-shot OCR renderer output in its allocating library",
+            "7f2d17de8c31acd86a384c86e2110951f1cfeae7 OCR GPU bench: uocr2 trial-page originals, unified uocr confidences; minicpm-graph link fix; CPU ccache probe"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1, hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets, gate0 bit-exact (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: OCR C API only (last-error functions, pipeline clears its previous result and returns NULL on a reported failure, CC/render free functions, Unlimited-OCR per-token confidences)."
         }
       ]
     },
@@ -1145,6 +1613,17 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). later regression fixtures: 14 added, 0 changed, 0 removed (historical Ovis/Josev fixtures unchanged: True)",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "from": "cc2b3190fd55c4f6f992763329862d2c9c4c2187a21761a536879c5698c35a23",
+          "to": "6ef5f4bf1ab0833f4c3ea7935b029eb8b05cefb9e8d7b2bc93f9909509f74183",
+          "changed_by": [
+            "135665fc50137507c2a51ba853da84ba1eb4c605 docs(pcs): record independently reproduced artifact blocker and fail negative replay reports",
+            "7cbc4b3c19b6695f86443e7377123f711c02aea7 PCS: root-cause the I'm oK failure to 4-bit artifact precision; strict q8_0 ground-truth gate",
+            "92739ac47c9edeed1b485b139945e2444a9684b6 PCS: mixed-precision q4_k default (enc.0 + truecase head Q8_0), strict registry-resolved gate"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Listing of tests/regression leaves: tests/regression/pcs/README.md updated and tests/regression/pcs/q4_k-imatrix-recorded-loss.json added by the PCS work. The OvisOCR2 fixtures and the declared Josev addition are byte-identical."
         }
       ]
     },
@@ -1315,6 +1794,60 @@
         }
       ],
       "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout"
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py",
+      "kind": "git-object",
+      "path": "tools/ci-heavy/successor_assets.py",
+      "frozen": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
+      "repins": [
+        {
+          "from": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
+          "to": "819f98b3ac7dfc3b0338a4812b82e661f7531799",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 841179b8 adds an explicit opt-in desktop-candidate mode (--desktop-candidate with --runtime-source-commit/--runtime-source-root, scope='desktop' manifests, DESKTOP_REQUIRED) and its tests. The default full-scope producer/consumer path is unchanged: build(..., scope='full') returns the identical manifest (new control test_default_and_explicit_full_manifest_remain_identical); prepare() without the flag rejects desktop manifests and still requires the exact runtime closure, now also requiring a 40-hex producer commit (stricter, never looser). The MSVC consumer compile only gains /Fo so the object file stays next to the external executable. No archive, manifest, receipt or runtime source changes. Successor tooling is outside the OvisOCR2 runtime/scorer closure."
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py",
+      "kind": "git-object",
+      "path": "tools/successor_asset_manifest.py",
+      "frozen": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+      "repins": [
+        {
+          "from": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+          "to": "357593c67f17c8bf1bb48eb4671002b31d350740",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: 841179b8 opt-in desktop scope; the default full manifest is identical."
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py",
+      "kind": "git-object",
+      "path": "tools/successor_asset_manifest.py",
+      "frozen": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+      "repins": [
+        {
+          "from": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+          "to": "357593c67f17c8bf1bb48eb4671002b31d350740",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: 841179b8 opt-in desktop scope; the default full manifest is identical."
+        }
+      ]
     }
   ]
 }

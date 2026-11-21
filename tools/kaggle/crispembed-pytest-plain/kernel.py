@@ -13,6 +13,8 @@ SHA = "__SHA__"
 REPO = "https://github.com/CrispStrobe/CrispEmbed.git"
 WORK = Path("/kaggle/working")
 TMP = Path("/kaggle/temp"); TMP.mkdir(parents=True, exist_ok=True)
+# The suite has ~2,600 tests; far fewer means collection broke, not that tests passed.
+MIN_TESTS = 1000
 
 
 def sh(cmd, **kw):
@@ -79,8 +81,31 @@ for mode in ("full", "shallow"):
                         res["errors"].append(f"{tid} | {(child.get('message') or '')[:160]}")
             res["counts"][kind] += 1
     res["skip_reasons"] = dict(res["skip_reasons"].most_common())
+    # Lane health, separate from test failures: pytest exit 2 (interrupted, e.g. a
+    # collection error), 3 (INTERNALERROR), 4 (usage) or 5 (no tests collected), an
+    # INTERNALERROR line, a missing junit file or a near-empty session mean the suite
+    # did not run, which must never read as "0 failed".
+    collected = sum(res["counts"].values())
+    broken = []
+    if r.returncode not in (0, 1):
+        broken.append(f"pytest exit {r.returncode}")
+    if "INTERNALERROR" in r.stdout or "INTERNALERROR" in r.stderr:
+        broken.append("INTERNALERROR")
+    if not xml.exists():
+        broken.append("no junit xml")
+    if collected < MIN_TESTS:
+        broken.append(f"{collected} tests < {MIN_TESTS}")
+    if re.search(r"^ERROR collecting ", r.stdout, re.M) or re.search(r"\d+ errors? during collection", r.stdout):
+        broken.append("collection errors")
+    res["collected"] = collected
+    res["lane_broken"] = broken
     summary[mode] = res
     print(mode, res["line"], flush=True)
 
 (WORK / "summary.json").write_text(json.dumps(summary, indent=1))
 print(json.dumps({m: summary[m]["line"] for m in ("full", "shallow")}))
+broken = {m: summary[m]["lane_broken"] for m in ("full", "shallow") if summary[m]["lane_broken"]}
+if broken:
+    # Fail the kernel itself (status "error"), so a broken collection cannot pass as a run.
+    print("LANE BROKEN", json.dumps(broken), flush=True)
+    sys.exit(1)

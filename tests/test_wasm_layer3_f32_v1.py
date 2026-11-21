@@ -45,5 +45,6 @@ class Controls(unittest.TestCase):
  def test_frozen_source_bodies_unchanged(self):
   cfg=json.loads(P.PATH.read_text())
   for name in cfg['protected_sha256']:
-   self.assertEqual((ROOT/name).read_bytes(),subprocess.check_output(['git','show',P.BASE+':'+name],cwd=ROOT))
+   # Anchored to the declaration commit (HEAD bytes are checked through the amended hash in P.source()).
+   self.assertEqual(subprocess.check_output(['git','show',P.DECLARATION+':'+name],cwd=ROOT),subprocess.check_output(['git','show',P.BASE+':'+name],cwd=ROOT))
 if __name__=='__main__':unittest.main()

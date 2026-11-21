@@ -18,6 +18,7 @@ scan; `crispembed-ccache` is probed first). It sets:
 | `CCACHE_NOHASHDIR` | `1` | the build directory path is not hashed |
 | `CCACHE_COMPILERCHECK` | `content` | Kaggle image refreshes touch compiler mtimes; `mtime` (the default) would miss every object |
 | `CCACHE_SLOPPINESS` | `include_file_mtime,include_file_ctime,time_macros` | a fresh clone gives all headers a new mtime |
+| `CCACHE_EXTRAFILES` | `<scratch>/ce-ccache-host-isa-<digest>.txt` | the resolved `-march=native` ISA is part of every key (see below) |
 
 Hits need the same relative layout (`<clone>/<build-dir>`, any names at the same
 depth), the same compiler flags and the same CUDA arch (`detect_cuda_arch()`).
@@ -37,6 +38,33 @@ export described below. Each build kernel's metadata attaches
 mechanism print `ce-ccache: bootstrap skipped` and build as before. The frozen
 guard replay kernels are excluded, because their sources are hash-pinned.
 `crispembed-ccache-seed` imports the harness directly.
+
+## Host ISA (the SIGILL seed)
+
+ggml builds with `GGML_NATIVE=ON` unless a kernel says otherwise, so most
+objects are compiled with `-march=native`. ccache keys an object on the
+command-line text, and `-march=native` is the same text on every host. A seed
+compiled on an AVX-512 Kaggle host therefore handed AVX-512 objects to an
+AVX2-only host, whose binary died with SIGILL.
+
+`install_build_toolchain()` now writes what `-march=native` resolves to on the
+running host (`gcc -march=native -Q --help=target`: the `-march=`/`-mtune=`
+values and every enabled `-m` flag; `/proc/cpuinfo` flags when no gcc driver is
+present) to a small file and appends it to `CCACHE_EXTRAFILES`. Every object is
+keyed on that text, so a host with another ISA misses and compiles for itself;
+hosts with the same ISA still share the cache. The digest is printed at
+warm-up, stored as `host_isa` in `crispembed-seed.json`, and a warm-up on a
+different ISA says that native objects will miss. Portable builds
+(`GGML_NATIVE=OFF`) are keyed on it too; across host types that only costs
+misses, never wrong code. The first run after this change misses every object
+of the older, unkeyed seed and refreshes it as usual.
+
+Proof without a second Kaggle host: `tools/kaggle/ccache_isa_proof.py` seeds
+on an AVX-512 machine and consumes as an AVX2 host (the gcc driver and the
+binary run under `qemu-x86_64 -cpu Haswell`). Receipt
+`tests/results/kaggle-ccache-host-isa.json`: without the key the AVX2 host
+hits the AVX-512 object and gets SIGILL; with it the AVX2 host misses, builds
+AVX2 code that runs, and hits on its own second build.
 
 ## Automatic refresh
 

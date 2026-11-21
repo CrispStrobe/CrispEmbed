@@ -1,3 +1,55 @@
+## Plain pytest lane back to zero; Kaggle ccache keyed on host ISA — 21 November 2026
+
+Kaggle `crispembed-pytest-plain` at 12c9ff6a (after #265 fixed collection) gave 35 failed / 21 errors on a full
+clone and 16 failed / 21 errors with `--depth 1`. Every failure is classified; no budget, gate, reference or
+default changed.
+
+- **Missing prerequisites, now clean skips (c).** `test_spacy_text_api.py` is a standalone real-model script
+  (`--library/--bundle/--report`); conftest lists it with the other standalone scripts (21 setup errors).
+  `test_pcs_step_contract.py` read `sys.argv[1]` while it was imported, so under pytest its reader root was
+  `tests/` and it wrote numbered folders there. It now reads argv only as a script. Under pytest, conftest
+  gives it a temporary directory and skips the 7 reader cases without a built `crispembed-diff-pcs`
+  (`CRISPEMBED_PCS_DIFF_BIN`). The pcs-step-diff workflow call is unchanged.
+- **Collection hygiene.** `tests/test_collection_hygiene.py` fails if a collected test file reads CLI arguments
+  at import (`parse_args()` or `sys.argv[i]` outside `__main__`/functions). The pytest-plain kernel now fails
+  itself on pytest exit 2-5, `INTERNALERROR`, collection errors or fewer than 1,000 tests.
+- **Behaviour-neutral drift, recorded re-pins (a).** Commits, classification and reason are in
+  `tests/results/frozen-guards/*.json`. Affected guards: MoEdern public root/text/family, Q8 controls,
+  text-composed and Unigram; successor assets v2-v4; the OvisOCR2 final-v2 successor-tooling source; WASM layer3
+  F32/attribution and Q8_K cross. The changes are additive default-off gates and `EXCLUDE_FROM_ALL` targets
+  (PCS capture, LightOn4B physical controls), the opt-in successor desktop-candidate mode (841179b8; the default
+  full manifest is identical), OCR API ownership and error reporting, binding input validation, the 0.17.20
+  version number, a CI concurrency rule and the new spaCy/Arabic engines (outside the MoEdern closure).
+  New families: `wasm-layer3-attribution.json` and `wasm-q8k-cross.json`. These two tests now read their hashes
+  through the amendment chain.
+- **Guards anchored to their declaration commit.** WASM layer3 F32 required its protected dependencies to stay
+  byte-equal to BASE on HEAD, and the Q8 rounding source guard diffed `src`/`wasm` from its base to the working tree.
+  Both failed on every later unrelated commit. They now check BASE..declaration (`e3df7cfd`, `2283626f`).
+  HEAD stays exact through the amended hashes (layer3) and through the candidate block, which must be
+  byte-identical on HEAD (Q8 rounding).
+- **Default-path change, fresh replay first (b).** The OvisOCR2 final-integrated `src` tree (and its CMake,
+  bindings, release workflow, regression fixtures and `crispembed.cpp`) changed through 60 commits. Replays ran on
+  2ae58b3e with `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0`. Kaggle frozen 14-arm: gates 0/1 pass 14/14, gate0
+  retained ordinary vectors bit-exact, owning OCR cases exact. Hosted eleven-case first-F16 quality
+  ([44876199768](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44876199768)): all 1,841 IDs, text and EOS
+  exact; gate0 confidences 11/11 exact; gate1 drift 2.4796e-5, the same as originally. Receipt:
+  `tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json`. Diffs against the frozen
+  evidence: none.
+- **Real bugs (d).** Only the pcs argv read above.
+
+**ccache SIGILL.** The seed held `-march=native` objects from an AVX-512 host. ccache keys on the flag text, so an
+AVX2 host reused them and died with SIGILL. `kaggle_harness.install_build_toolchain()` now writes what
+`-march=native` resolves to (`gcc -Q --help=target`; `/proc/cpuinfo` flags without gcc) and adds it to
+`CCACHE_EXTRAFILES`. The seed records `host_isa`. Proof: `tools/kaggle/ccache_isa_proof.py` seeds on an AVX-512
+host and consumes as an AVX2 host (`qemu-x86_64 -cpu Haswell`). Receipt: `tests/results/kaggle-ccache-host-isa.json`.
+Without the key the AVX2 host hits the AVX-512 object and gets SIGILL. With the key it misses, builds AVX2
+code that runs, and hits on its own second build. On Kaggle, `ccache-cpu-probe` at this branch built all three
+trees and ran `minicpm-graph-controls` (rc 0). The old, unkeyed seed hit only within-run duplicates (12.6%) and
+is due for a refresh. Docs: [docs/kaggle-ccache.md](docs/kaggle-ccache.md).
+
+Kaggle `crispembed-pytest-plain` at c2a6396b (this branch merged with main): full clone 0 failed / 0 errors /
+2424 passed / 269 skipped; `--depth 1` 0 failed / 0 errors / 2350 passed / 343 skipped (PR #269).
+
 ## DeepSeek-OCR2 device divergence: build ISA plus MoE router near-ties — 21 November 2026
 
 The Kaggle kernel `tools/kaggle/deepseek-ocr2-determinism` ran the 20 November documents on both Kaggle images,

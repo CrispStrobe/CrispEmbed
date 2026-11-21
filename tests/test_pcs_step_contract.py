@@ -51,7 +51,10 @@ class CaptureContract(unittest.TestCase):
 
 
 class ReaderContract(unittest.TestCase):
-    root = Path(sys.argv[1]).resolve()
+    # Script mode (pcs-step-diff.yml): argv[1] is a fixture directory holding the built
+    # crispembed-diff-pcs. Under pytest, tests/conftest.py supplies a temporary directory
+    # and skips the reader cases when no built binary is found.
+    root = Path(sys.argv[1]).resolve() if __name__ == '__main__' else None
     counter = 0
 
     def compare(self, ref, actual, names=('stage',), budget='0.0001'):

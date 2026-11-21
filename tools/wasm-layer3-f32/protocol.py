@@ -52,5 +52,7 @@ def source():
   for name,expected in cfg[group].items():
    expected=amended(name,expected)
    raw=(ROOT/name).read_bytes();require(sha(raw)==expected and git('show','HEAD:'+name)==raw,'Dirty or changed source: '+name)
-   if group=='protected_sha256':require(git('show',BASE+':'+name)==raw,'Frozen dependency changed: '+name)
+   # Anchored like the delta check: the dependency was unchanged from BASE when the
+   # protocol was declared; later bytes on HEAD are held to the amended hash above.
+   if group=='protected_sha256':require(git('show',BASE+':'+name)==git('show',DECLARATION+':'+name),'Frozen dependency changed: '+name)
  return cfg
