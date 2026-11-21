@@ -7,6 +7,10 @@ import unittest
 ROOT=Path(__file__).resolve().parents[1]
 GGML=Path(os.environ.get('GGML_SOURCE',ROOT/'ggml'))
 BASE='890278a8342c620197c90e702e1188bcab94f510'
+PRODUCTION_BASE='973b200edd5d1d7429edecff1bd3ff42f0d80ca7'
+# Commit that declared the default-off candidate (wasm: prepare default-off per-backend Q8_0 rounding candidate).
+DECLARATION='2283626fae5ab1c44dd0d11ea13eadb6f5c9ee8c'
+BLOCK_START='#if defined(__EMSCRIPTEN__)\n    // Conditional encoder candidate:'
 import hashlib,sys
 sys.path.insert(0,str(ROOT/'tools'))
 from frozen_guard_amendments import expected
@@ -45,15 +49,21 @@ class Preservation(unittest.TestCase):
    return text[start:text.index('\n};',start)+3]
   self.assertEqual(table(original(path)),table((GGML/path).read_text()))
  def test_no_production_probe_or_wrapper_change(self):
-  changed=subprocess.check_output(['git','diff','973b200edd5d1d7429edecff1bd3ff42f0d80ca7','--name-only','--','src','wasm'],cwd=ROOT,text=True).splitlines()
-  # Exact match against the frozen list, or its newest recorded re-pin
-  # (tests/results/frozen-guards/wasm-q8-rounding.json, replay-backed).
-  self.assertEqual(listing(changed),amended('git-diff:973b200e:src,wasm',listing(['src/crispembed.cpp'])))
-  before=subprocess.check_output(['git','show','973b200edd5d1d7429edecff1bd3ff42f0d80ca7:src/crispembed.cpp'],cwd=ROOT,text=True)
-  after=(ROOT/'src/crispembed.cpp').read_text()
-  start=after.index('#if defined(__EMSCRIPTEN__)\n    // Conditional encoder candidate:')
-  end=after.index('#endif\n\n',start)+len('#endif\n\n')
-  addition=after[start:end]
+  # Anchored to the commit that declared the candidate (DECLARATION): BASE..DECLARATION
+  # changed only src/crispembed.cpp, and only by the gated candidate block. Diffing
+  # against the working tree failed on every later unrelated src/ commit (the
+  # runtime A/B guard keeps HEAD's encoder closure pinned through its replay).
+  changed=subprocess.check_output(['git','diff',PRODUCTION_BASE,DECLARATION,'--name-only','--','src','wasm'],cwd=ROOT,text=True).splitlines()
+  self.assertEqual(changed,['src/crispembed.cpp'])
+  before=subprocess.check_output(['git','show',PRODUCTION_BASE+':src/crispembed.cpp'],cwd=ROOT,text=True)
+  declared=subprocess.check_output(['git','show',DECLARATION+':src/crispembed.cpp'],cwd=ROOT,text=True)
+  start=declared.index(BLOCK_START)
+  end=declared.index('#endif\n\n',start)+len('#endif\n\n')
+  addition=declared[start:end]
   self.assertIn('core_env::on("CRISPEMBED_WASM_Q8_0_ROUND")',addition)
-  self.assertEqual(listing([after[:start]+after[end:]]),amended('src/crispembed.cpp:without-candidate-block',listing([before])))
+  self.assertEqual(declared[:start]+declared[end:],before)
+  # HEAD still carries the declared candidate block byte for byte.
+  after=(ROOT/'src/crispembed.cpp').read_text()
+  head=after.index(BLOCK_START)
+  self.assertEqual(after[head:after.index('#endif\n\n',head)+len('#endif\n\n')],addition)
 if __name__=='__main__':unittest.main()

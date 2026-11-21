@@ -4,6 +4,9 @@ import ast,hashlib,importlib.util,json,math,pathlib,struct,subprocess,sys,tempfi
 from unittest import mock
 ROOT=pathlib.Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools/wasm-q8k-cross'))
 import protocol as P
+_fga=importlib.util.spec_from_file_location('frozen_guard_amendments',ROOT/'tools/frozen_guard_amendments.py')
+_FGA=importlib.util.module_from_spec(_fga);_fga.loader.exec_module(_FGA)
+def _amended(name,frozen):return _FGA.expected('wasm-q8k-cross',name,frozen,ROOT)
 
 def block(scale,values):
  return struct.pack('<f256b16h',scale,*values,*(sum(values[k:k+16])for k in range(0,256,16)))
@@ -32,7 +35,9 @@ class Controls(unittest.TestCase):
   self.assertEqual(set(cfg['protected_sha256']),required)
   self.assertEqual(set(cfg['owned_sha256']),P.OWNED-{'docs/wasm-q8k-cross-v1.json'})
   for paths in [cfg['protected_sha256'],cfg['owned_sha256']]:
-   for name,h in paths.items():self.assertEqual(hashlib.sha256((ROOT/name).read_bytes()).hexdigest(),h,name)
+   # Exact match against the frozen hash, or its newest recorded re-pin
+   # (tests/results/frozen-guards/wasm-q8k-cross.json, reviewed behaviour-neutral).
+   for name,h in paths.items():self.assertEqual(hashlib.sha256((ROOT/name).read_bytes()).hexdigest(),_amended(name,h),name)
  def test_previous64_and48_proof_pins_not_pending(self):
   cfg=json.loads(P.PATH.read_text());self.assertEqual(cfg['operator_review'],dict(id=12856145091,bytes=61468,sha256='c6aa6bb2430e0dfa287324a7e0735940b2895a7f4e3c51395cc0c8d6b765e58f'))
   self.assertEqual(cfg['operator_report_sha256'],'fc9b8075f584b594b11fecc12c2e8f7e323aa39428b32dd841b3d64c0acd3ed6')

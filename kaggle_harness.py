@@ -33,6 +33,7 @@ Design rules (so a kernel never dies *because of* the harness):
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import os
 import re
@@ -385,6 +386,56 @@ def toolchain_fingerprint() -> dict:
     return fp
 
 
+def host_isa_fingerprint(march: str | None = None) -> str:
+    """What `-march=native` resolves to on this host, as stable text.
+
+    ccache keys an object on the command-line text, and `-march=native` is the same
+    text on every host. ggml builds with GGML_NATIVE=ON by default, so a seed compiled
+    on an AVX-512 Kaggle host handed AVX-512 objects to an AVX2-only host, which died
+    with SIGILL. install_build_toolchain() writes this text to a file and points
+    CCACHE_EXTRAFILES at it, so every object is keyed on the resolved ISA too.
+    `march` (default: CE_CCACHE_ISA_MARCH or "native") is a test seam: resolving an
+    explicit arch such as x86-64-v3 shows what another host would key on."""
+    march = march or os.environ.get("CE_CCACHE_ISA_MARCH") or "native"
+    cc = os.environ.get("CC") or shutil.which("gcc") or shutil.which("cc") or "cc"
+    lines = []
+    try:
+        out = subprocess.run([cc, f"-march={march}", "-Q", "--help=target"], capture_output=True,
+                             text=True, timeout=60).stdout
+        for line in out.splitlines():
+            parts = line.split()
+            if len(parts) >= 2 and (parts[0] in ("-march=", "-mtune=") or parts[-1] == "[enabled]"):
+                lines.append(" ".join(parts))
+    except Exception:
+        pass
+    if not lines:
+        # No GCC driver: fall back to the kernel's CPU feature flags (ISA, not model name).
+        try:
+            for line in Path("/proc/cpuinfo").read_text().splitlines():
+                if line.startswith(("flags", "Features")):
+                    lines = ["cpuinfo " + " ".join(sorted(line.split(":", 1)[1].split()))]
+                    break
+        except Exception:
+            lines = ["unknown-isa"]
+    return "\n".join(sorted(set(lines))) + "\n"
+
+
+def _key_cache_on_host_isa(scratch: Path) -> str:
+    """Hash the resolved host ISA into every ccache key (CCACHE_EXTRAFILES). Returns the
+    short digest recorded in the seed info. Portable builds (GGML_NATIVE=OFF) are keyed
+    on it too; that only costs misses across host types, never wrong code."""
+    text = host_isa_fingerprint()
+    digest = hashlib.sha256(text.encode()).hexdigest()[:16]
+    f = scratch / f"ce-ccache-host-isa-{digest}.txt"
+    f.write_text(text)
+    prev = os.environ.get("CCACHE_EXTRAFILES")
+    if not prev or str(f) not in prev.split(os.pathsep):
+        os.environ["CCACHE_EXTRAFILES"] = os.pathsep.join(x for x in (prev, str(f)) if x)
+    os.environ["CE_CCACHE_HOST_ISA"] = digest
+    print(f"  ccache: keyed on host ISA {digest} (CCACHE_EXTRAFILES)", flush=True)
+    return digest
+
+
 def _read_seed_info(ccache_dir: Path) -> None:
     global _seed_info
     try:
@@ -393,6 +444,11 @@ def _read_seed_info(ccache_dir: Path) -> None:
         _seed_info = {}
     _seed_info["files_at_warm"] = sum(1 for p in ccache_dir.rglob("*") if p.is_file())
     print(f"  ccache: seed info {json.dumps(_seed_info)}", flush=True)
+    seed_isa, here_isa = _seed_info.get("host_isa"), os.environ.get("CE_CCACHE_HOST_ISA")
+    if seed_isa and here_isa and seed_isa != here_isa:
+        # Not stale by itself: the objects are keyed apart, so they simply miss (no SIGILL).
+        print(f"  ccache: seed built on host ISA {seed_isa}, this host is {here_isa}: "
+              "native objects will miss", flush=True)
     seed_tc = _seed_info.get("toolchain")
     if seed_tc:
         here = toolchain_fingerprint()
@@ -490,6 +546,7 @@ def maybe_export_ccache(hits: int | None = None, misses: int | None = None,
                 "hit_rate_before": d["hit_rate"], "reasons": d["reasons"],
                 "cuda_arch": os.environ.get("CE_CCACHE_CUDA_ARCH") or None,
                 "toolchain": toolchain_fingerprint(),
+                "host_isa": os.environ.get("CE_CCACHE_HOST_ISA") or None,
                 "max_size": _ccache_max_size()}
         try:
             (cdir / SEED_INFO).write_text(json.dumps(info, indent=1))
@@ -595,6 +652,7 @@ def install_build_toolchain() -> dict:
         os.environ.setdefault("CCACHE_SLOPPINESS", "include_file_mtime,include_file_ctime,time_macros")
         # Warm ccache from attached dataset (${KAGGLE_ACCOUNT}/crispasr-ccache or
         # ${KAGGLE_ACCOUNT}/crispasr-ccache). Shaves ~15 min off incremental builds.
+        _key_cache_on_host_isa(_scratch)
         _warm_ccache_from_dataset(ccache_dir)
         _read_seed_info(ccache_dir)
         if _HAS_CCACHE:

@@ -281,6 +281,8 @@ STANDALONE_SCRIPTS = {
                                 "(python tests/test_all_parity.py --binary ...)",
     "tests/test_bgem3.py": "standalone CLI script: needs the built crispembed shared library and a BGE-M3 GGUF "
                            "(python tests/test_bgem3.py --binary ...)",
+    "tests/test_spacy_text_api.py": "standalone real-model C ABI script: needs the built spaCy text API library and "
+                                    "a bundle (python tests/test_spacy_text_api.py --library ... --bundle ... --report ...)",
     "tests/test_siglip_converter.py": "standalone CLI script: needs a converted SigLIP GGUF and the HF model "
                                       "(python tests/test_siglip_converter.py ...)",
 }
@@ -323,6 +325,21 @@ def _cli_supplied_binaries(request):
             mp = pytest.MonkeyPatch()
             mp.setattr(mod.InpaintCliTests, "run_cli", run_cli)
             request.addfinalizer(mp.undo)
+    if name == "test_pcs_step_contract" and request.cls is not None and request.cls.__name__ == "ReaderContract" \
+            and request.cls.root is None:
+        cls = request.cls
+        root = request.getfixturevalue("tmp_path_factory").mktemp("pcs-step-contract")
+        binary = os.environ.get("CRISPEMBED_PCS_DIFF_BIN", "").strip() or _find_binary("crispembed-diff-pcs")
+        mp = pytest.MonkeyPatch()
+        mp.setattr(cls, "root", root)
+        if binary:
+            (root / "crispembed-diff-pcs").symlink_to(Path(binary).resolve())
+        else:
+            def compare(self, *a, **kw):
+                pytest.skip("requires built native binary: crispembed-diff-pcs "
+                            "(CRISPEMBED_PCS_DIFF_BIN, built by pcs-step-diff CI)")
+            mp.setattr(cls, "compare", compare)
+        request.addfinalizer(mp.undo)
     if name == "test_rust_prebuilt_config" and not os.environ.get("CRISPEMBED_BUILD_SCRIPT_TEST_BIN"):
         pytest.skip("requires built native binary: Cargo build-script test executable "
                     "(CRISPEMBED_BUILD_SCRIPT_TEST_BIN, built by rust-prebuilt-contract CI)")
