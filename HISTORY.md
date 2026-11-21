@@ -1,3 +1,26 @@
+## 21 November 2026 — v0.17.20 released; CrispSorter pinned
+
+- **Release.** PR #267 added `RELEASE_NOTES_v0.17.20.md` and bumped the remaining version strings
+  (VERSION, the Cargo.toml files, pyproject and pubspec were already 0.17.20). Tag `v0.17.20` is on
+  merge commit `d8420654`. The release covers #219-#266, including the PCS mixed-precision default
+  with the Apache-2.0 licence correction (#266) and the Unlimited-OCR-2 fused step default (#265,
+  `=0` opts out). ggml is unchanged (`3a27b6c6`). Unmerged DeepSeek-OCR2 work is not included.
+- **CUDA leg.** `Build linux-x86_64-cuda` failed on both attempts. `ubuntu-latest` now resolves to
+  Ubuntu 26.04, and NVIDIA has no CUDA 12.8 apt repo for `ubuntu2604`. #270 pins that job to
+  `ubuntu-24.04`. The two Linux CUDA archives were built from that branch with `workflow_dispatch
+  desktop_only=true runtime_source_commit=d8420654`. The job's identity step confirmed source
+  `d8420654` and ggml `3a27b6c6`. The archives were uploaded to the release, which now has all 16
+  assets. The tag did not move.
+- **CrispSorter pin** (CrispSorter #95). Every live v0.17.19 pin now points at v0.17.20. That
+  includes the bench vendor pins, whose vendored files are byte-identical. All seven locked archives
+  were re-downloaded and match the release digests and sizes. The runtime lock and the OCR-bench
+  CUDA digests are updated.
+- **Consumer kernel** `tools/kaggle/crispsorter-pin-01720-consumer` is retargeted from the 0.17.19
+  kernel. The app's `licence_consent` now uses its std-only `model_cache` module, so the probe
+  carries it. Formula OCR no longer downloads implicitly (`auto_download=Some(false)`), so the probe
+  first installs the consented model through the app's licence-gated resolver. Kaggle CPU run:
+  21/21 checks pass, posformer formula OCR CER 0.00 and parseq text OCR CER 0.00.
+
 ## Kaggle ccache seed refreshed with host-ISA keys; refresh tools find a venv kaggle CLI — 21 November 2026
 
 `ccache_refresh.py --from-kernel crispembed-ccache-cpu-probe` failed with "output retrieval failed (service
