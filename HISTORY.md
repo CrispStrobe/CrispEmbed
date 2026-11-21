@@ -1,3 +1,30 @@
+## DeepSeek-OCR2 device divergence: build ISA plus MoE router near-ties — 21 November 2026
+
+The Kaggle kernel `tools/kaggle/deepseek-ocr2-determinism` ran the 20 November documents on both Kaggle images,
+varying one factor at a time. A new diagnostic variable, `CRISPEMBED_DEEPSEEK_OCR2_TRACE_OUT`, records every
+step's top-2 logit margin and every MoE layer's router K/K+1 probability gap
+([receipt](tests/results/ocr-gpu-readiness/deepseek-ocr2-determinism-20261121.json)).
+
+- **The "CPU vs CPU across hosts" divergence was a build difference.** The 20 November GPU image ran a native
+  build (`-march=native`, AVX-512 Xeon), the CPU image a portable one (`GGML_NATIVE=OFF`, AVX2 Xeon). The
+  portable build gives identical IDs on both hosts (AVX2-only and AVX-512) for all three documents. It also
+  matches across 4 and 1 threads and on a repeat run. The native build on the AVX-512 host reproduces the old
+  "T4 host CPU" IDs exactly. CUDA is identical across repeats. Each path is deterministic. They differ from
+  each other because each uses different kernels.
+- **Mechanism.** The paths stay ID-identical until a small rounding difference changes which experts the MoE
+  router picks: before every first divergence the smallest router K/K+1 gap is 4.7e-7 to 8.6e-6. That
+  changes the hidden state, and a few steps later the argmax flips with a top-2 margin of 0.016 to 1.0 logits
+  (portable vs native: step 229 on the two-column page, step 78 on the receipt; CUDA vs CPU: steps 25 and 229
+  or 551). Router top-k ties are broken the same way in every path. This is genuine near-tie sensitivity,
+  not a defect in any one kernel.
+- **The weights' precision matters more than the device.** Q8_0 and F16 differ from Q4_K at steps 5, 19 and 27,
+  and from each other at steps 19 and 26 to 196 (Q8_0 margin 0.005 to 0.06). No precision gives one token-level
+  ground truth to pin, so no device default changes and no fix gate is added. Comparisons across devices must
+  judge decoded text, not IDs. CPU receipts must name the build (portable or native).
+- Side finding: the native build on the AVX2-only host died with SIGILL. The likely cause is that the ccache
+  seed holds `-march=native` objects compiled on an AVX-512 host: ccache hashes the flag, not the CPU it
+  resolves to (PLAN).
+
 ## Unlimited-OCR-2 fused decode step on by default — 21 November 2026
 
 `CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP` now defaults on (`core_env::explicitly_off`; `=0`/`false`/`off`/`no`

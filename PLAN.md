@@ -1595,6 +1595,13 @@ Unlimited-OCR-2, on the four original-exact trial pages), and measured s/page.
 | MiniCPM-OCR (F16) | No ggml graphs: the whole engine runs on the CPU, and CUDA is no faster (12 November) | Route its Qwen decoder through the standard-op `CRISPEMBED_QWEN35_OCR_GPU` graphs (as OvisOCR2), then the SigLIP vision | Graphs on CUDA0. Exact vs the frozen reference panel |
 | LightOn2/3-1B | 1 RMS_NORM (final norm) | Device-resident final-norm weight | 0 CPU nodes. LightOn3 CUDA confidence drift (up to 1.3e-2 at exact text) explained or reduced |
 
+DeepSeek-OCR2 device exactness is closed (HISTORY 21 November): the portable CPU build is identical across
+hosts and thread counts; native, portable and CUDA differ only through MoE router near-ties (gap ≤ 8.6e-6).
+Open: (a) Kaggle ccache and `-march=native`: the AVX-512 seed's objects gave SIGILL on an AVX2 host. Either
+key the native builds by CPU flags or build only portable in kernels. (b) Optional: test whether a
+deterministic router tie margin (re-scoring near-tied experts in F64) makes native, portable and CUDA agree.
+Do this only behind a default-off gate, and judge it against decoded text.
+
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
 Both CPU default flips and the standard-ggml-op GPU port are done (HISTORY 11 November).
