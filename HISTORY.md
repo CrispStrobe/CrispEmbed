@@ -47,6 +47,9 @@ code that runs, and hits on its own second build. On Kaggle, `ccache-cpu-probe` 
 trees and ran `minicpm-graph-controls` (rc 0). The old, unkeyed seed hit only within-run duplicates (12.6%) and
 is due for a refresh. Docs: [docs/kaggle-ccache.md](docs/kaggle-ccache.md).
 
+Kaggle `crispembed-pytest-plain` at c2a6396b (this branch merged with main): full clone 0 failed / 0 errors /
+2424 passed / 269 skipped; `--depth 1` 0 failed / 0 errors / 2350 passed / 343 skipped (PR #269).
+
 ## DeepSeek-OCR2 device divergence: build ISA plus MoE router near-ties — 21 November 2026
 
 The Kaggle kernel `tools/kaggle/deepseek-ocr2-determinism` ran the 20 November documents on both Kaggle images,
