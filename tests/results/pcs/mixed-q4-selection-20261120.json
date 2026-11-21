@@ -1,0 +1,604 @@
+{
+ "schema": "pcs-mixed-q4-v1",
+ "sha": "ee5726f863adb3574f5ef41a9f4b956579c6f0df",
+ "source": {
+  "repository": "cstr/pcs-xlmr-base-GGUF",
+  "revision": "27f17edbd7e33949f42a9a4fe4322b5af8172e6b"
+ },
+ "files": {
+  "published-q8_0": {
+   "sha256": "5656dca3883fe391ddf53926cd4af89a1b5b474a5a50eb5884389fed737ca2db",
+   "bytes": 301964352,
+   "types": {
+    "F32": {
+     "emb.ln": 2,
+     "emb.type_emb": 1,
+     "enc.0": 10,
+     "enc.1": 10,
+     "enc.10": 10,
+     "enc.11": 10,
+     "enc.2": 10,
+     "enc.3": 10,
+     "enc.4": 10,
+     "enc.5": 10,
+     "enc.6": 10,
+     "enc.7": 10,
+     "enc.8": 10,
+     "enc.9": 10,
+     "head.post": 2,
+     "head.post_emb": 1,
+     "head.pre": 2,
+     "head.sbd": 3,
+     "head.tc": 3
+    },
+    "Q8_0": {
+     "emb.pos_emb": 1,
+     "emb.tok_emb": 1,
+     "enc.0": 6,
+     "enc.1": 6,
+     "enc.10": 6,
+     "enc.11": 6,
+     "enc.2": 6,
+     "enc.3": 6,
+     "enc.4": 6,
+     "enc.5": 6,
+     "enc.6": 6,
+     "enc.7": 6,
+     "enc.8": 6,
+     "enc.9": 6,
+     "head.post": 2,
+     "head.pre": 2,
+     "head.sbd": 1,
+     "head.tc": 1
+    }
+   },
+   "native_strict": {
+    "rc": 0,
+    "stdout": "post preds  : 67/67 tokens agree (100.00%)\npre         : 67/67 tokens agree (100.00%)\nseg         : 67/67 tokens agree (100.00%)\ncap         : 67/67 tokens agree (100.00%)\ndecoded text: 6/6 EXACT (gated \u2014 PCS truecases itself, so there is no deliberate case deviation to excuse)\nPASS\n",
+    "pass": true
+   },
+   "replay_row37_o_logit": 0.992126703,
+   "replay_decoded_exact": 6,
+   "replay_cases": 6,
+   "replay_decoded": [
+    "Hello world, this is a test.",
+    "Ask not what your country can do for you, ask what you can do for your country.",
+    "Das ist ein Test auf Deutsch. Wie geht es dir?",
+    "I'm OK, how are you? I'm fine.",
+    "The quick brown fox jumps over the lazy dog.",
+    "Je voudrais un caf\u00e9, s'il vous pla\u00eet."
+   ],
+   "replay_rc": 0
+  },
+  "published-q4_k-imatrix": {
+   "sha256": "faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da",
+   "bytes": 163098688,
+   "types": {
+    "F32": {
+     "emb.ln": 2,
+     "emb.type_emb": 1,
+     "enc.0": 10,
+     "enc.1": 10,
+     "enc.10": 10,
+     "enc.11": 10,
+     "enc.2": 10,
+     "enc.3": 10,
+     "enc.4": 10,
+     "enc.5": 10,
+     "enc.6": 10,
+     "enc.7": 10,
+     "enc.8": 10,
+     "enc.9": 10,
+     "head.post": 2,
+     "head.post_emb": 1,
+     "head.pre": 2,
+     "head.sbd": 3,
+     "head.tc": 3
+    },
+    "Q4_K": {
+     "emb.pos_emb": 1,
+     "emb.tok_emb": 1,
+     "enc.0": 6,
+     "enc.1": 6,
+     "enc.10": 6,
+     "enc.11": 6,
+     "enc.2": 6,
+     "enc.3": 6,
+     "enc.4": 6,
+     "enc.5": 6,
+     "enc.6": 6,
+     "enc.7": 6,
+     "enc.8": 6,
+     "enc.9": 6,
+     "head.post": 2,
+     "head.pre": 2
+    },
+    "Q4_0": {
+     "head.sbd": 1,
+     "head.tc": 1
+    }
+   },
+   "native_strict": {
+    "rc": 0,
+    "stdout": "post preds  : 67/67 tokens agree (100.00%)\npre         : 67/67 tokens agree (100.00%)\nseg         : 67/67 tokens agree (100.00%)\ncap         : 67/67 tokens agree (100.00%)\ndecoded text: 6/6 EXACT (gated \u2014 PCS truecases itself, so there is no deliberate case deviation to excuse)\nPASS\n",
+    "pass": true
+   },
+   "replay_row37_o_logit": -0.238312081,
+   "replay_decoded_exact": 5,
+   "replay_cases": 6,
+   "replay_decoded": [
+    "Hello world, this is a test.",
+    "Ask not what your country can do for you, ask what you can do for your country.",
+    "Das ist ein Test auf Deutsch. Wie geht es dir?",
+    "I'm oK, how are you? I'm fine.",
+    "The quick brown fox jumps over the lazy dog.",
+    "Je voudrais un caf\u00e9, s'il vous pla\u00eet."
+   ],
+   "replay_rc": 1
+  },
+  "enc0": {
+   "q8_0_globs": [
+    "enc.0.*"
+   ],
+   "quantize_rc": 0,
+   "sha256": "78746f7ed932b4fdca5f70d3d1c83fdd53503d1db4271346a247bbf915fcce76",
+   "bytes": 166637632,
+   "types": {
+    "F32": {
+     "emb.ln": 2,
+     "emb.type_emb": 1,
+     "enc.0": 10,
+     "enc.1": 10,
+     "enc.10": 10,
+     "enc.11": 10,
+     "enc.2": 10,
+     "enc.3": 10,
+     "enc.4": 10,
+     "enc.5": 10,
+     "enc.6": 10,
+     "enc.7": 10,
+     "enc.8": 10,
+     "enc.9": 10,
+     "head.post": 2,
+     "head.post_emb": 1,
+     "head.pre": 2,
+     "head.sbd": 3,
+     "head.tc": 3
+    },
+    "Q4_K": {
+     "emb.pos_emb": 1,
+     "emb.tok_emb": 1,
+     "enc.1": 6,
+     "enc.10": 6,
+     "enc.11": 6,
+     "enc.2": 6,
+     "enc.3": 6,
+     "enc.4": 6,
+     "enc.5": 6,
+     "enc.6": 6,
+     "enc.7": 6,
+     "enc.8": 6,
+     "enc.9": 6,
+     "head.post": 2,
+     "head.pre": 2
+    },
+    "Q8_0": {
+     "enc.0": 6
+    },
+    "Q4_0": {
+     "head.sbd": 1,
+     "head.tc": 1
+    }
+   },
+   "native_strict": {
+    "rc": 0,
+    "stdout": "post preds  : 67/67 tokens agree (100.00%)\npre         : 67/67 tokens agree (100.00%)\nseg         : 67/67 tokens agree (100.00%)\ncap         : 67/67 tokens agree (100.00%)\ndecoded text: 6/6 EXACT (gated \u2014 PCS truecases itself, so there is no deliberate case deviation to excuse)\nPASS\n",
+    "pass": true
+   },
+   "replay_row37_o_logit": 0.40346837,
+   "replay_decoded_exact": 6,
+   "replay_cases": 6,
+   "replay_decoded": [
+    "Hello world, this is a test.",
+    "Ask not what your country can do for you, ask what you can do for your country.",
+    "Das ist ein Test auf Deutsch. Wie geht es dir?",
+    "I'm OK, how are you? I'm fine.",
+    "The quick brown fox jumps over the lazy dog.",
+    "Je voudrais un caf\u00e9, s'il vous pla\u00eet."
+   ],
+   "replay_rc": 0
+  },
+  "tc": {
+   "q8_0_globs": [
+    "head.tc.*"
+   ],
+   "quantize_rc": 0,
+   "sha256": "ec026cff49ee15566bcc026b2d60b9b1c7b5784fc005b277024c0cc0c568b928",
+   "bytes": 163099712,
+   "types": {
+    "F32": {
+     "emb.ln": 2,
+     "emb.type_emb": 1,
+     "enc.0": 10,
+     "enc.1": 10,
+     "enc.10": 10,
+     "enc.11": 10,
+     "enc.2": 10,
+     "enc.3": 10,
+     "enc.4": 10,
+     "enc.5": 10,
+     "enc.6": 10,
+     "enc.7": 10,
+     "enc.8": 10,
+     "enc.9": 10,
+     "head.post": 2,
+     "head.post_emb": 1,
+     "head.pre": 2,
+     "head.sbd": 3,
+     "head.tc": 3
+    },
+    "Q4_K": {
+     "emb.pos_emb": 1,
+     "emb.tok_emb": 1,
+     "enc.0": 6,
+     "enc.1": 6,
+     "enc.10": 6,
+     "enc.11": 6,
+     "enc.2": 6,
+     "enc.3": 6,
+     "enc.4": 6,
+     "enc.5": 6,
+     "enc.6": 6,
+     "enc.7": 6,
+     "enc.8": 6,
+     "enc.9": 6,
+     "head.post": 2,
+     "head.pre": 2
+    },
+    "Q4_0": {
+     "head.sbd": 1
+    },
+    "Q8_0": {
+     "head.tc": 1
+    }
+   },
+   "native_strict": {
+    "rc": 0,
+    "stdout": "post preds  : 67/67 tokens agree (100.00%)\npre         : 67/67 tokens agree (100.00%)\nseg         : 67/67 tokens agree (100.00%)\ncap         : 67/67 tokens agree (100.00%)\ndecoded text: 6/6 EXACT (gated \u2014 PCS truecases itself, so there is no deliberate case deviation to excuse)\nPASS\n",
+    "pass": true
+   },
+   "replay_row37_o_logit": 0.120694324,
+   "replay_decoded_exact": 6,
+   "replay_cases": 6,
+   "replay_decoded": [
+    "Hello world, this is a test.",
+    "Ask not what your country can do for you, ask what you can do for your country.",
+    "Das ist ein Test auf Deutsch. Wie geht es dir?",
+    "I'm OK, how are you? I'm fine.",
+    "The quick brown fox jumps over the lazy dog.",
+    "Je voudrais un caf\u00e9, s'il vous pla\u00eet."
+   ],
+   "replay_rc": 0
+  },
+  "enc0-tc": {
+   "q8_0_globs": [
+    "enc.0.*",
+    "head.tc.*"
+   ],
+   "quantize_rc": 0,
+   "sha256": "341c26b8309a398a2ed597020876abe40a98236a09baab67b314797f657c2839",
+   "bytes": 166638656,
+   "types": {
+    "F32": {
+     "emb.ln": 2,
+     "emb.type_emb": 1,
+     "enc.0": 10,
+     "enc.1": 10,
+     "enc.10": 10,
+     "enc.11": 10,
+     "enc.2": 10,
+     "enc.3": 10,
+     "enc.4": 10,
+     "enc.5": 10,
+     "enc.6": 10,
+     "enc.7": 10,
+     "enc.8": 10,
+     "enc.9": 10,
+     "head.post": 2,
+     "head.post_emb": 1,
+     "head.pre": 2,
+     "head.sbd": 3,
+     "head.tc": 3
+    },
+    "Q4_K": {
+     "emb.pos_emb": 1,
+     "emb.tok_emb": 1,
+     "enc.1": 6,
+     "enc.10": 6,
+     "enc.11": 6,
+     "enc.2": 6,
+     "enc.3": 6,
+     "enc.4": 6,
+     "enc.5": 6,
+     "enc.6": 6,
+     "enc.7": 6,
+     "enc.8": 6,
+     "enc.9": 6,
+     "head.post": 2,
+     "head.pre": 2
+    },
+    "Q8_0": {
+     "enc.0": 6,
+     "head.tc": 1
+    },
+    "Q4_0": {
+     "head.sbd": 1
+    }
+   },
+   "native_strict": {
+    "rc": 0,
+    "stdout": "post preds  : 67/67 tokens agree (100.00%)\npre         : 67/67 tokens agree (100.00%)\nseg         : 67/67 tokens agree (100.00%)\ncap         : 67/67 tokens agree (100.00%)\ndecoded text: 6/6 EXACT (gated \u2014 PCS truecases itself, so there is no deliberate case deviation to excuse)\nPASS\n",
+    "pass": true
+   },
+   "replay_row37_o_logit": 0.688340247,
+   "replay_decoded_exact": 6,
+   "replay_cases": 6,
+   "replay_decoded": [
+    "Hello world, this is a test.",
+    "Ask not what your country can do for you, ask what you can do for your country.",
+    "Das ist ein Test auf Deutsch. Wie geht es dir?",
+    "I'm OK, how are you? I'm fine.",
+    "The quick brown fox jumps over the lazy dog.",
+    "Je voudrais un caf\u00e9, s'il vous pla\u00eet."
+   ],
+   "replay_rc": 0
+  },
+  "enc0-tc-enc3": {
+   "q8_0_globs": [
+    "enc.0.*",
+    "head.tc.*",
+    "enc.3.*"
+   ],
+   "quantize_rc": 0,
+   "sha256": "ef90e4421c2ed8136c93eaac7a9c70c852310d30a255f7a42613bffe22ccb215",
+   "bytes": 170177600,
+   "types": {
+    "F32": {
+     "emb.ln": 2,
+     "emb.type_emb": 1,
+     "enc.0": 10,
+     "enc.1": 10,
+     "enc.10": 10,
+     "enc.11": 10,
+     "enc.2": 10,
+     "enc.3": 10,
+     "enc.4": 10,
+     "enc.5": 10,
+     "enc.6": 10,
+     "enc.7": 10,
+     "enc.8": 10,
+     "enc.9": 10,
+     "head.post": 2,
+     "head.post_emb": 1,
+     "head.pre": 2,
+     "head.sbd": 3,
+     "head.tc": 3
+    },
+    "Q4_K": {
+     "emb.pos_emb": 1,
+     "emb.tok_emb": 1,
+     "enc.1": 6,
+     "enc.10": 6,
+     "enc.11": 6,
+     "enc.2": 6,
+     "enc.4": 6,
+     "enc.5": 6,
+     "enc.6": 6,
+     "enc.7": 6,
+     "enc.8": 6,
+     "enc.9": 6,
+     "head.post": 2,
+     "head.pre": 2
+    },
+    "Q8_0": {
+     "enc.0": 6,
+     "enc.3": 6,
+     "head.tc": 1
+    },
+    "Q4_0": {
+     "head.sbd": 1
+    }
+   },
+   "native_strict": {
+    "rc": 0,
+    "stdout": "post preds  : 67/67 tokens agree (100.00%)\npre         : 67/67 tokens agree (100.00%)\nseg         : 67/67 tokens agree (100.00%)\ncap         : 67/67 tokens agree (100.00%)\ndecoded text: 6/6 EXACT (gated \u2014 PCS truecases itself, so there is no deliberate case deviation to excuse)\nPASS\n",
+    "pass": true
+   },
+   "replay_row37_o_logit": 0.951755762,
+   "replay_decoded_exact": 6,
+   "replay_cases": 6,
+   "replay_decoded": [
+    "Hello world, this is a test.",
+    "Ask not what your country can do for you, ask what you can do for your country.",
+    "Das ist ein Test auf Deutsch. Wie geht es dir?",
+    "I'm OK, how are you? I'm fine.",
+    "The quick brown fox jumps over the lazy dog.",
+    "Je voudrais un caf\u00e9, s'il vous pla\u00eet."
+   ],
+   "replay_rc": 0
+  },
+  "enc0-tc-enc2-enc3": {
+   "q8_0_globs": [
+    "enc.0.*",
+    "head.tc.*",
+    "enc.2.*",
+    "enc.3.*"
+   ],
+   "quantize_rc": 0,
+   "sha256": "8f4e7169f59207c04feeda538996f31f138139fc318fa0be1169601e6a27da83",
+   "bytes": 173716544,
+   "types": {
+    "F32": {
+     "emb.ln": 2,
+     "emb.type_emb": 1,
+     "enc.0": 10,
+     "enc.1": 10,
+     "enc.10": 10,
+     "enc.11": 10,
+     "enc.2": 10,
+     "enc.3": 10,
+     "enc.4": 10,
+     "enc.5": 10,
+     "enc.6": 10,
+     "enc.7": 10,
+     "enc.8": 10,
+     "enc.9": 10,
+     "head.post": 2,
+     "head.post_emb": 1,
+     "head.pre": 2,
+     "head.sbd": 3,
+     "head.tc": 3
+    },
+    "Q4_K": {
+     "emb.pos_emb": 1,
+     "emb.tok_emb": 1,
+     "enc.1": 6,
+     "enc.10": 6,
+     "enc.11": 6,
+     "enc.4": 6,
+     "enc.5": 6,
+     "enc.6": 6,
+     "enc.7": 6,
+     "enc.8": 6,
+     "enc.9": 6,
+     "head.post": 2,
+     "head.pre": 2
+    },
+    "Q8_0": {
+     "enc.0": 6,
+     "enc.2": 6,
+     "enc.3": 6,
+     "head.tc": 1
+    },
+    "Q4_0": {
+     "head.sbd": 1
+    }
+   },
+   "native_strict": {
+    "rc": 0,
+    "stdout": "post preds  : 67/67 tokens agree (100.00%)\npre         : 67/67 tokens agree (100.00%)\nseg         : 67/67 tokens agree (100.00%)\ncap         : 67/67 tokens agree (100.00%)\ndecoded text: 6/6 EXACT (gated \u2014 PCS truecases itself, so there is no deliberate case deviation to excuse)\nPASS\n",
+    "pass": true
+   },
+   "replay_row37_o_logit": 1.135424972,
+   "replay_decoded_exact": 6,
+   "replay_cases": 6,
+   "replay_decoded": [
+    "Hello world, this is a test.",
+    "Ask not what your country can do for you, ask what you can do for your country.",
+    "Das ist ein Test auf Deutsch. Wie geht es dir?",
+    "I'm OK, how are you? I'm fine.",
+    "The quick brown fox jumps over the lazy dog.",
+    "Je voudrais un caf\u00e9, s'il vous pla\u00eet."
+   ],
+   "replay_rc": 0
+  },
+  "enc0to5-tc": {
+   "q8_0_globs": [
+    "enc.0.*",
+    "enc.1.*",
+    "enc.2.*",
+    "enc.3.*",
+    "enc.4.*",
+    "enc.5.*",
+    "head.tc.*"
+   ],
+   "quantize_rc": 0,
+   "sha256": "b8833dd3e3526dd05bc7e0b400467b68a36321573301b8e91bb8cd486d09bdc7",
+   "bytes": 184333376,
+   "types": {
+    "F32": {
+     "emb.ln": 2,
+     "emb.type_emb": 1,
+     "enc.0": 10,
+     "enc.1": 10,
+     "enc.10": 10,
+     "enc.11": 10,
+     "enc.2": 10,
+     "enc.3": 10,
+     "enc.4": 10,
+     "enc.5": 10,
+     "enc.6": 10,
+     "enc.7": 10,
+     "enc.8": 10,
+     "enc.9": 10,
+     "head.post": 2,
+     "head.post_emb": 1,
+     "head.pre": 2,
+     "head.sbd": 3,
+     "head.tc": 3
+    },
+    "Q4_K": {
+     "emb.pos_emb": 1,
+     "emb.tok_emb": 1,
+     "enc.10": 6,
+     "enc.11": 6,
+     "enc.6": 6,
+     "enc.7": 6,
+     "enc.8": 6,
+     "enc.9": 6,
+     "head.post": 2,
+     "head.pre": 2
+    },
+    "Q8_0": {
+     "enc.0": 6,
+     "enc.1": 6,
+     "enc.2": 6,
+     "enc.3": 6,
+     "enc.4": 6,
+     "enc.5": 6,
+     "head.tc": 1
+    },
+    "Q4_0": {
+     "head.sbd": 1
+    }
+   },
+   "native_strict": {
+    "rc": 0,
+    "stdout": "post preds  : 67/67 tokens agree (100.00%)\npre         : 67/67 tokens agree (100.00%)\nseg         : 67/67 tokens agree (100.00%)\ncap         : 67/67 tokens agree (100.00%)\ndecoded text: 6/6 EXACT (gated \u2014 PCS truecases itself, so there is no deliberate case deviation to excuse)\nPASS\n",
+    "pass": true
+   },
+   "replay_row37_o_logit": 1.136600614,
+   "replay_decoded_exact": 6,
+   "replay_cases": 6,
+   "replay_decoded": [
+    "Hello world, this is a test.",
+    "Ask not what your country can do for you, ask what you can do for your country.",
+    "Das ist ein Test auf Deutsch. Wie geht es dir?",
+    "I'm OK, how are you? I'm fine.",
+    "The quick brown fox jumps over the lazy dog.",
+    "Je voudrais un caf\u00e9, s'il vous pla\u00eet."
+   ],
+   "replay_rc": 0
+  }
+ },
+ "cpu": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+ "cpu_flags_avx512f": false,
+ "recipe": "crispembed-quantize pcs-xlmr-base.gguf OUT q4_k --imatrix pcs-xlmr-base.imatrix",
+ "repro": {
+  "rc": 0,
+  "sha256": "b0b4e54fc987a86d37ea492dd7a502cc9bb2406b00ff35076885563f1f9ac69f",
+  "byte_identical_to_published": false
+ },
+ "elapsed_s": 1869.3,
+ "kernel": "tools/kaggle/pcs-mixed-q4 (Kaggle CPU)",
+ "selected": {
+  "name": "enc0-tc",
+  "published_as": "cstr/pcs-xlmr-base-GGUF pcs-xlmr-base-q4_k-mixed.gguf",
+  "hub_revision": "a685c2ead4c14a590ba657c1ea5eaa1b7da7f955",
+  "sha256": "341c26b8309a398a2ed597020876abe40a98236a09baab67b314797f657c2839",
+  "bytes": 166638656,
+  "size_delta_vs_q4_k_imatrix_bytes": 3539968,
+  "rule": "smallest measured Q8_0 set whose exact-replay row37 o logit is >= +0.5 (about half the F32 +1.083) with native strict parity and 6/6 replay decoded",
+  "note": "The re-run of the published recipe is not byte-identical to the published q4_k-imatrix (same per-tensor types); candidates are built with the current quantizer, and each is gated on its own bytes."
+ }
+}
