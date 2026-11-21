@@ -313,6 +313,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "587fafad614a656273aa7a602acc7f6ec19277e2",
+          "to": "842bd9f3cf1ac95db3a868554d358e1624c8d2d8",
+          "changed_by": [
+            "6d2c913eaa813640588992bbf51a393899ac4532 Release prep v0.17.20: version bumps, release notes"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release preparation only (6d2c913e, PR #267): Cargo.lock records the crispembed/crispembed-sys 0.17.20 package versions. No dependency changes."
         }
       ]
     },
@@ -442,6 +451,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: version number, complete native OCR record reads and OCR free/last-error functions in the Dart binding."
+        },
+        {
+          "from": "2ec542235ce64114c39ac0b2f91bbb5554da6670",
+          "to": "de4e93c1d6b694b68e2681c594267043d8b2d76f",
+          "changed_by": [
+            "6d2c913eaa813640588992bbf51a393899ac4532 Release prep v0.17.20: version bumps, release notes"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release preparation only (6d2c913e, PR #267): flutter/crispembed/CHANGELOG.md gains the 0.17.20 notes. No code changes."
         }
       ]
     },
@@ -1079,6 +1097,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
+        },
+        {
+          "from": "587fafad614a656273aa7a602acc7f6ec19277e2",
+          "to": "842bd9f3cf1ac95db3a868554d358e1624c8d2d8",
+          "changed_by": [
+            "6d2c913eaa813640588992bbf51a393899ac4532 Release prep v0.17.20: version bumps, release notes"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release preparation only (6d2c913e, PR #267): Cargo.lock records the crispembed/crispembed-sys 0.17.20 package versions. No dependency changes."
         }
       ]
     },
@@ -1208,6 +1235,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh replays of the final-integrated v2 lane on this exact runtime tree (2ae58b3e; Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1, run 44876199768) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer, both owning OCR cases exact, all 1,841 first-F16 IDs/text/EOS exact, gate0 confidences exact and gate1 drift 2.4796e-05 as originally (tests/results/frozen-guards/replays/ovisocr2-final-integrated-20261121.json). Changes: version number, complete native OCR record reads and OCR free/last-error functions in the Dart binding."
+        },
+        {
+          "from": "2ec542235ce64114c39ac0b2f91bbb5554da6670",
+          "to": "de4e93c1d6b694b68e2681c594267043d8b2d76f",
+          "changed_by": [
+            "6d2c913eaa813640588992bbf51a393899ac4532 Release prep v0.17.20: version bumps, release notes"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release preparation only (6d2c913e, PR #267): flutter/crispembed/CHANGELOG.md gains the 0.17.20 notes. No code changes."
         }
       ]
     },
