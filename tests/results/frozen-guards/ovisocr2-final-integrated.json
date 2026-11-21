@@ -1315,6 +1315,24 @@
         }
       ],
       "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout"
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py",
+      "kind": "git-object",
+      "path": "tools/ci-heavy/successor_assets.py",
+      "frozen": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
+      "repins": [
+        {
+          "from": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
+          "to": "819f98b3ac7dfc3b0338a4812b82e661f7531799",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 841179b8 adds an explicit opt-in desktop-candidate mode (--desktop-candidate with --runtime-source-commit/--runtime-source-root, scope='desktop' manifests, DESKTOP_REQUIRED) and its tests. The default full-scope producer/consumer path is unchanged: build(..., scope='full') returns the identical manifest (new control test_default_and_explicit_full_manifest_remain_identical); prepare() without the flag rejects desktop manifests and still requires the exact runtime closure, now also requiring a 40-hex producer commit (stricter, never looser). The MSVC consumer compile only gains /Fo so the object file stays next to the external executable. No archive, manifest, receipt or runtime source changes. Successor tooling is outside the OvisOCR2 runtime/scorer closure."
+        }
+      ]
     }
   ]
 }

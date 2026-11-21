@@ -24,6 +24,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Guard-only redesign. The 'outside owned files' check now compares BASE against the declaration commit e3df7cfd (where only the nine owned files differ) instead of HEAD, so unrelated later commits no longer fail it. Protected hashes are still compared exactly and byte-equal to BASE; owned hashes still exact on HEAD via this chain. decode(), gates, coverage and the causal/artifact pins are unchanged."
+        },
+        {
+          "from": "5613ca4556e283553c20a2c3fd0c47b0a69b50431faf2c38c8987f82687dc263",
+          "to": "1d1b7fde3ec5c7d7a334343d1f868948b549ffc3c2f7c985f4a1809035609549",
+          "changed_by": [
+            "afea2465dab0ee035842b38eb4b00a935cae9e91 Plain pytest lane: clean skips, collection hygiene, anchored WASM guards; ccache keyed on host ISA"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Guard-code change by this re-pin (afea2465): the 'Frozen dependency changed' check compares the protected file at the declaration commit e3df7cfd with BASE instead of HEAD, so a reviewed re-pin of a protected dependency is accepted; HEAD bytes stay held to the exact amended hash on the line above. No other line changes."
         }
       ]
     },
@@ -43,6 +52,78 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "clang-format only: line wrapping, braces on their own lines and a '// namespace' comment. With whitespace and // comments removed the file is token-identical to the frozen bytes. The test-only operator, ggml_cast/mul_mat graph and return codes are unchanged."
+        }
+      ]
+    },
+    {
+      "guard": "wasm-layer3-f32",
+      "test": "tests/test_wasm_layer3_f32_v1.py",
+      "kind": "sha256",
+      "path": "tests/test_wasm_q8k_cross_v1.py",
+      "frozen": "bdce1d3d358bab8ace87a1872115c987084ac9737bc1c48604ebc5625f843c9c",
+      "repins": [
+        {
+          "from": "bdce1d3d358bab8ace87a1872115c987084ac9737bc1c48604ebc5625f843c9c",
+          "to": "65bbfe1f10686797859eef52cf9d3dbe6453c292007a9aeab11cb3a8bab89f83",
+          "changed_by": [
+            "afea2465dab0ee035842b38eb4b00a935cae9e91 Plain pytest lane: clean skips, collection hygiene, anchored WASM guards; ccache keyed on host ISA"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Guard-code change by this re-pin (afea2465): the frozen/owned hash loop of test_frozen_dependency_and_owned_closure_complete goes through tools/frozen_guard_amendments.py (guard wasm-q8k-cross) with the same exact-match semantics. No other line changes."
+        }
+      ]
+    },
+    {
+      "guard": "wasm-layer3-f32",
+      "test": "tests/test_wasm_layer3_f32_v1.py",
+      "kind": "sha256",
+      "path": "tools/ci-heavy/successor_assets.py",
+      "frozen": "e9698154b7381351b53ba9305b934ad2cefc8a993175c1077109a1ce4ab511d8",
+      "repins": [
+        {
+          "from": "e9698154b7381351b53ba9305b934ad2cefc8a993175c1077109a1ce4ab511d8",
+          "to": "93a9219842f905caaf30ed1b70f29f63c5939670d8965c97efa71c0d66503177",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 841179b8 adds an explicit opt-in desktop-candidate mode (--desktop-candidate with --runtime-source-commit/--runtime-source-root, scope='desktop' manifests, DESKTOP_REQUIRED) and its tests. The default full-scope producer/consumer path is unchanged: build(..., scope='full') returns the identical manifest (new control test_default_and_explicit_full_manifest_remain_identical); prepare() without the flag rejects desktop manifests and still requires the exact runtime closure, now also requiring a 40-hex producer commit (stricter, never looser). The MSVC consumer compile only gains /Fo so the object file stays next to the external executable. No archive, manifest, receipt or runtime source changes."
+        }
+      ]
+    },
+    {
+      "guard": "wasm-layer3-f32",
+      "test": "tests/test_wasm_layer3_f32_v1.py",
+      "kind": "sha256",
+      "path": "tools/successor_asset_manifest.py",
+      "frozen": "b9d144185daf38a9e1e48ffe02c3d3703eb4a6c78428bdb1626f4a5f26d5a041",
+      "repins": [
+        {
+          "from": "b9d144185daf38a9e1e48ffe02c3d3703eb4a6c78428bdb1626f4a5f26d5a041",
+          "to": "052eff7b851ea1d697c16474e3ceb498ee20241d67f96c7bd3c5f330cbd32165",
+          "changed_by": [
+            "841179b848f8d3aa15e44dd2d5aea65070c82f71 Prepare unpublished source-bound desktop runtime candidates [skip ci]"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 841179b8 adds DESKTOP_REQUIRED and an explicit scope='desktop' option to build(); scope='full' (the default, the only scope a wasm manifest accepts) builds the identical manifest. No archive, manifest or receipt changes."
+        }
+      ]
+    },
+    {
+      "guard": "wasm-layer3-f32",
+      "test": "tests/test_wasm_layer3_f32_v1.py",
+      "kind": "sha256",
+      "path": "tests/test_wasm_layer3_f32_v1.py",
+      "frozen": "877bc75e06f917721d1c32a78c06e504f2a015886ddc561671d300895120fdb2",
+      "repins": [
+        {
+          "from": "877bc75e06f917721d1c32a78c06e504f2a015886ddc561671d300895120fdb2",
+          "to": "5bca2a7fc16449103baea521b148b51951c658f3e89954babd6a6388e6d1168b",
+          "changed_by": [
+            "afea2465dab0ee035842b38eb4b00a935cae9e91 Plain pytest lane: clean skips, collection hygiene, anchored WASM guards; ccache keyed on host ISA"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Guard-code change by this re-pin (afea2465): test_frozen_source_bodies_unchanged compares the protected dependency bodies at the declaration commit e3df7cfd with BASE instead of the working tree (anchored like the delta check); HEAD bytes stay held to the amended hashes by protocol.source()."
         }
       ]
     }
