@@ -1,3 +1,10 @@
+## 0.17.20
+
+- Native library update: the `pcs` alias resolves to a mixed-precision 4-bit
+  file (`pcs-q4k-imatrix` keeps the old one) and the PCS licence is Apache-2.0.
+  The Unlimited-OCR-2 fused decode step is on by default
+  (`CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP=0` opts out).
+
 ## 0.17.19
 
 - Native library update: the OvisOCR2 / Qwen3.5-OCR graph decoder (`native`
