@@ -330,7 +330,7 @@ jobs:
       - name: Build the punctuation drivers
         run: |
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --target punct-ab firered-punct-ab -j"$(nproc)"
+          cmake --build build --target punct-ab firered-punct-ab crispembed-shared -j"$(nproc)"
       - name: Fetch models
         run: |
           unset HF_TOKEN HUGGING_FACE_HUB_TOKEN
@@ -341,10 +341,12 @@ jobs:
           # f16 for fireredpunc: the gate there is structural (cos >= 0.99), and
           # f16 is the arm that separates a graph bug from quantisation — a
           # k-quant alone cannot make that call.
-          # pcs: q8_0 is the strict ground-truth arm (matches the original graph);
-          # q4_k-imatrix is the downloaded default, gated exactly except for its
-          # one recorded, artifact-bound quantization loss (I'm OK -> I'm oK, see
-          # docs/pcs-quality-root-cause.md).
+          # pcs: q8_0 is the strict ground-truth arm (matches the original graph).
+          # q4_k-imatrix is the PREVIOUS default (alias pcs-q4k-imatrix), gated
+          # exactly except for its one recorded, artifact-bound quantization loss
+          # (I'm OK -> I'm oK, see docs/pcs-quality-root-cause.md). The current
+          # default (alias pcs, q4_k-mixed) is fetched below through the
+          # library's own registry resolver and gated strictly.
           # q4_k for fullstop-punc: q8_0 is 600 MB and the structural break this
           # guards against is visible at either precision (with a looser floor).
           for repo, name in (
@@ -367,6 +369,28 @@ jobs:
         run: |
           python tests/pcs_parity.py build \
             .punct-models/pcs-xlmr-base-q8_0.gguf \
+            tests/regression/pcs/blueprint_ref.txt
+      - name: Resolve the PCS default through the registry (crispembed_resolve_model)
+        env: { LD_LIBRARY_PATH: build, CRISPEMBED_CACHE_DIR: .punct-models/registry }
+        run: |
+          unset HF_TOKEN HUGGING_FACE_HUB_TOKEN
+          python - <<'PY'
+          import ctypes, glob, os
+          lib = ctypes.CDLL(sorted(glob.glob("build/libcrispembed.so*"))[0])
+          lib.crispembed_resolve_model.restype = ctypes.c_char_p
+          lib.crispembed_resolve_model.argtypes = [ctypes.c_char_p, ctypes.c_int]
+          path = (lib.crispembed_resolve_model(b"pcs", 1) or b"").decode()
+          # download_file() refuses a payload whose SHA-256 differs from the
+          # model_hashes.h pin, so a non-empty path is a verified readback.
+          assert path.endswith("pcs-xlmr-base-q4_k-mixed.gguf") and os.path.isfile(path), path
+          os.symlink(os.path.abspath(path), ".punct-models/pcs-default.gguf")
+          print("resolved", path, os.path.getsize(path), flush=True)
+          PY
+      - name: PCS default (q4_k-mixed) — all four heads vs blueprint (strict)
+        env: { LD_LIBRARY_PATH: build }
+        run: |
+          python tests/pcs_parity.py build \
+            .punct-models/pcs-default.gguf \
             tests/regression/pcs/blueprint_ref.txt
       - name: PCS q4_k-imatrix — all four heads vs blueprint (recorded quant loss only)
         env: { LD_LIBRARY_PATH: build }

@@ -3,6 +3,10 @@
 
 This does not create a model for distribution or change any quantization recipe.
 All tensor replacements are mapped by actual original operators and shape-checked.
+
+    python tools/pcs_weight_replay.py [--model STORED.gguf]
+
+Without `--model` it replays `.pcs-models/pcs-xlmr-base-q4_k-imatrix.gguf`.
 """
 import gc
 import hashlib
@@ -123,7 +127,13 @@ def map_stored_weights(graph, model_path, out, selected_rows=None):
 
 
 def main():
+    # `--model PATH` replays another stored PCS GGUF (default: the published
+    # q4_k-imatrix download location used by the original blocker record).
+    model = ROOT / '.pcs-models/pcs-xlmr-base-q4_k-imatrix.gguf'
     out = ROOT / 'pcs-weight-replay'
+    if len(sys.argv) == 3 and sys.argv[1] == '--model':
+        model = Path(sys.argv[2]).resolve()
+        out = ROOT / ('pcs-weight-replay-' + model.stem)
     out.mkdir(exist_ok=True)
     repo = '1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase'
     revision = 'd1769a597ce8dfaa070d436bc67d4ee761f58884'
@@ -138,13 +148,15 @@ def main():
     graph = onnx.load(str(paths['model.onnx']))
     nodes = {n.name: n for n in graph.graph.node}
     initializers = {i.name: i for i in graph.graph.initializer}
-    manifest = map_stored_weights(graph, ROOT / '.pcs-models/pcs-xlmr-base-q4_k-imatrix.gguf', out)
+    manifest = map_stored_weights(graph, model, out)
     capture = ['/_decoder/_cap_head/_linears.1/Add_output_0', '/_decoder/Concat_4_output_0']
     capture += [n.output[0] for n in graph.graph.node if n.op_type == 'LayerNormalization']
     for name in capture:
         graph.graph.output.append(helper.make_tensor_value_info(name, TensorProto.FLOAT, None))
     report = {'original': {'repository': repo, 'revision': revision, 'sha256': expected},
-              'model': json.loads((ROOT / '.pcs-models/pcs-xlmr-base-q4_k-imatrix.gguf.origin.json').read_text()),
+              'model': (json.loads(Path(str(model) + '.origin.json').read_text())
+                        if Path(str(model) + '.origin.json').exists()
+                        else {'path': model.name, 'sha256': hashlib.sha256(model.read_bytes()).hexdigest()}),
               'tensor_replacements': manifest, 'all_native_tensors_mapped': True, 'cases': []}
     (out / 'summary.json').write_text(json.dumps(report, indent=2))
     onnx.save_model(graph, str(out / 'replay.onnx'), save_as_external_data=True,

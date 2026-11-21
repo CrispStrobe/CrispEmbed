@@ -708,6 +708,8 @@ static const ModelHash k_model_hashes[] = {
       "0fb4711ec0b9b7a59aa4b64f493d81cca85c171e8ebdfc42b88851c05b44af69" },
     { "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF/resolve/main/fullstop-punc-q8_0.gguf",
       "11e84d69a2a52fc79b3baa10ef52a5568e4369c3023208b33dda1a2d06dcd1b9" },
+    { "https://huggingface.co/cstr/pcs-xlmr-base-GGUF/resolve/a685c2ead4c14a590ba657c1ea5eaa1b7da7f955/pcs-xlmr-base-q4_k-mixed.gguf",
+      "341c26b8309a398a2ed597020876abe40a98236a09baab67b314797f657c2839" },
     { "https://huggingface.co/cstr/pcs-xlmr-base-GGUF/resolve/main/pcs-xlmr-base-q4_k-imatrix.gguf",
       "faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da" },
     { "https://huggingface.co/cstr/pcs-xlmr-base-GGUF/resolve/main/pcs-xlmr-base-iq4_xs.gguf",

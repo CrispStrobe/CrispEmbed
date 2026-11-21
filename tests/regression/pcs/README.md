@@ -9,8 +9,8 @@ The measurements below are historical; references and acceptance remain unchange
 
 Ground truth for the **PCS** engine (punctuation + capitalisation + sentence
 boundary, `1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase`), the third
-and last of the three punctuation engines to get one. Four registry entries
-(`pcs`, `pcs-iq4xs`, `pcs-q4k`, `pcs-q8`), four classification heads, and until
+and last of the three punctuation engines to get one. Five registry entries
+(`pcs`, `pcs-q4k-imatrix`, `pcs-iq4xs`, `pcs-q4k`, `pcs-q8`), four classification heads, and until
 now nothing checking any of them.
 
 ```bash
@@ -39,7 +39,8 @@ gate since they are what produce the text.
 | local `pcs-xlmr-base.gguf` | 67/67 | **6/6 exact** |
 | local `pcs-xlmr-base-q4_k.gguf` (no imatrix) | 67/67 | 5/6 |
 | registry `pcs-xlmr-base-q8_0.gguf` | 67/67 | **6/6 exact** |
-| registry `pcs-xlmr-base-q4_k-imatrix.gguf` (**the default**) | 67/67 | 6/6 on some CPUs, 5/6 on others ⚠ |
+| registry `pcs-xlmr-base-q4_k-mixed.gguf` (**the default** since 20 Nov 2026) | 67/67 | **6/6 exact** |
+| registry `pcs-xlmr-base-q4_k-imatrix.gguf` (previous default) | 67/67 | 6/6 on some CPUs, 5/6 on others ⚠ |
 
 ⚠ **Corrected 20 November 2026.** The q4_k-imatrix 6/6 above was CPU-dependent.
 In exact arithmetic (the original ONNX graph running this artifact's dequantized
@@ -50,7 +51,9 @@ not a runtime or conversion defect — see
 [the root-cause record](../../../docs/pcs-quality-root-cause.md). CI therefore
 gates **q8_0 strictly** (ground truth, +0.992) and gates q4_k-imatrix exactly
 except for that one recorded, SHA-bound loss
-(`q4_k-imatrix-recorded-loss.json`, `--recorded-quant-loss`).
+(`q4_k-imatrix-recorded-loss.json`, `--recorded-quant-loss`). The default is now
+the mixed file (enc.0 and the truecase head at Q8_0, +0.688), which CI resolves
+through the registry and gates **strictly**.
 
 Decoded text is gated on EXACT equality here, unlike the other two punctuation
 harnesses. Those excuse case differences because their runtimes deliberately
