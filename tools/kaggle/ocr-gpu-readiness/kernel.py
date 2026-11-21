@@ -20,8 +20,8 @@ wall time; engine stage lines (bench/timing env) and generated IDs are taken fro
 and the ops left on CPU; nvidia-smi is sampled during every run (mean utilisation, peak memory).
 Unlimited-OCR-2 engines (`uocr2`, `uocr2-fused`) also run the four trial pages whose ORIGINAL model IDs and
 decoded text are frozen in tests/results/unlimited-ocr2/trial.json (reference.cases; pages re-rendered with
-tools/kaggle/unlimited-ocr2-trial/trial_worker.py and checked against the trial's page SHA-256), so the default-off
-CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP is judged against the original as well as against the unfused path.
+tools/kaggle/unlimited-ocr2-trial/trial_worker.py and checked against the trial's page SHA-256), so
+CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP (default on since 21 November; `uocr2` pins =0) is judged against the original as well as against the unfused path.
 Pusher substitutes __SHA__, __DEVICE__ and (optional) __ENGINES__. Output: summary.json only (small); the
 ccache seed export is disabled here (CE_CCACHE_EXPORT=never) so no cache tar lands in the outputs.
 """
@@ -50,7 +50,7 @@ ENGINES = [  # name, (repo, revision, file) or None, env, prompt
      {"CRISPEMBED_DEEPSEEK_OCR2_BENCH": "1", "DS_DBG": "1"}, ""),
     ("uocr2", ("cstr/Unlimited-OCR-2-GGUF", "e3af0c0c4bfa241c161db64ca36f3c63d3ca8378", "unlimited-ocr-2-f16.gguf"),
      {"CRISPEMBED_UNLIMITED_OCR2": "1", "CRISPEMBED_UNLIMITED_OCR2_FAST": "1", "CRISPEMBED_UNLIMITED_OCR2_TILES": "1",
-      "UOCR_DBG": "1", "CRISPEMBED_UNLIMITED_OCR_BENCH": "1"}, ""),
+      "UOCR_DBG": "1", "CRISPEMBED_UNLIMITED_OCR_BENCH": "1", "CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP": "0"}, ""),
     ("uocr2-fused", ("cstr/Unlimited-OCR-2-GGUF", "e3af0c0c4bfa241c161db64ca36f3c63d3ca8378", "unlimited-ocr-2-f16.gguf"),
      {"CRISPEMBED_UNLIMITED_OCR2": "1", "CRISPEMBED_UNLIMITED_OCR2_FAST": "1", "CRISPEMBED_UNLIMITED_OCR2_TILES": "1",
       "UOCR_DBG": "1", "CRISPEMBED_UNLIMITED_OCR_BENCH": "1", "CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP": "1"}, ""),

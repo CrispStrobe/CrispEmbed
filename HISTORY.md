@@ -1,3 +1,13 @@
+## Unlimited-OCR-2 fused decode step on by default — 21 November 2026
+
+`CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP` now defaults on (`core_env::explicitly_off`; `=0`/`false`/`off`/`no`
+restores the unfused two-graphs-per-layer step). Evidence is the 20 November receipt
+([deepseek-uocr2-20261120.json](tests/results/ocr-gpu-readiness/deepseek-uocr2-20261120.json)): IDs, text, EOS
+and bit-identical confidences against the unfused path in 21/21 pairs on CPU and T4 CUDA, every trial page
+original-exact, CUDA decode 1.13-1.32x faster, CPU within noise. The `ocr-gpu-readiness` kernel's `uocr2`
+engine now pins `=0` so it keeps measuring the unfused path. The frozen Unlimited-OCR-2 source guards
+authenticate against their pinned commits and are unchanged.
+
 ## PCS default is now a mixed-precision 4-bit file — 20 November 2026
 
 Closes the PLAN item "PCS mixed-precision 4-bit artifact" (20 November). The
