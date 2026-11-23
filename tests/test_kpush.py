@@ -17,6 +17,13 @@ SPEC.loader.exec_module(kpush)
 
 
 class OvisBenchSubmission(unittest.TestCase):
+    def setUp(self):
+        # subprocess.run is mocked below; resolving the real CLI would make the
+        # tests depend on whether the runner happens to have kaggle installed.
+        resolver = patch.object(kpush, "kaggle_cmd", return_value=["kaggle"])
+        resolver.start()
+        self.addCleanup(resolver.stop)
+
     def test_private_service_output_preserves_exit_and_soft_failure_status(self):
         marker = "private-owner-fixture/private-execution-fixture"
         for rc, stdout, stderr, expected, category in (
