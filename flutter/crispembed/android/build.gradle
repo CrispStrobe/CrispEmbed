@@ -81,11 +81,24 @@ tasks.register('fetchCrispembedLibs') {
                 logger.lifecycle("crispembed: fetching prebuilt Android lib (${abi}) -> ${url}")
                 def tmp = File.createTempFile('crispembed', '.tgz')
                 new URL(url).withInputStream { input -> tmp.withOutputStream { out -> out << input } }
-                execOps.exec {
-                    commandLine 'tar', '-xzf', tmp.absolutePath, '-C',
-                            dst.parentFile.absolutePath, 'libcrispembed.so'
+                // Release archives store members as ./libcrispembed.so, which a
+                // bare member name does not match in GNU tar: unpack everything
+                // into a scratch directory and copy only the library.
+                def unpacked = File.createTempDir('crispembed', '')
+                try {
+                    execOps.exec {
+                        commandLine 'tar', '-xzf', tmp.absolutePath, '-C', unpacked.absolutePath
+                    }
+                    def lib = new File(unpacked, 'libcrispembed.so')
+                    if (!lib.isFile()) {
+                        throw new GradleException("crispembed: ${url} has no libcrispembed.so")
+                    }
+                    java.nio.file.Files.copy(lib.toPath(), dst.toPath(),
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                } finally {
+                    unpacked.deleteDir()
+                    tmp.delete()
                 }
-                tmp.delete()
             }
         }
     }
