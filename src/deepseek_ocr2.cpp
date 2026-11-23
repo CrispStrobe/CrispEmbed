@@ -46,7 +46,7 @@ static bool ds_env_on(const char * name) {
 // persistent step graph, per MoE layer, the router's K-th and (K+1)-th softmax probabilities and
 // expert ids ("R step layer eK pK eK1 pK1"). Used to tell a near-tie from a device/ISA defect.
 static FILE * ds_trace_file() {
-    static FILE * f = [] () -> FILE * {
+    static FILE * f = []() -> FILE * {
         const char * p = getenv("CRISPEMBED_DEEPSEEK_OCR2_TRACE_OUT");
         return (p && *p) ? fopen(p, "w") : nullptr;
     }();
