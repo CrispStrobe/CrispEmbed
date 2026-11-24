@@ -1,3 +1,7 @@
+## 0.17.21
+
+- Restore PP-OCRv6 recognition on Vulkan for individual lines and batches.
+
 ## 0.17.20
 
 - Native library update: the `pcs` alias resolves to a mixed-precision 4-bit
