@@ -399,7 +399,9 @@ static bool map_model(ppocrv6_ocr_context * c) {
             int out = widths[si];
             pp_block b;
             const bool down = bi == 0 && (si == 2 || si == 3);
-            b.dw = conv(m, q + ".dw", in, in, 3, down ? 2 : 1, in, down && !tiny ? 1 : 0);
+            // Both downsampling blocks use Paddle's (height, width) stride
+            // of (2, 1). The width axis becomes the CTC time sequence.
+            b.dw = conv(m, q + ".dw", in, in, 3, down ? 2 : 1, in, 1);
             b.cm1 = conv(m, q + ".cm1", in, in * 2, 1, 1);
             b.cm2 = conv(m, q + ".cm2", in * 2, out, 1, 1);
             b.se = get(m, q + ".se1.weight") != nullptr;
@@ -1781,6 +1783,17 @@ extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int n_threa
     c->n_threads = std::max(1, n_threads);
     const bool force_cpu = core_env::on("CRISPEMBED_PPOCRV6_FORCE_CPU");
     c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend_shared();
+#ifdef _WIN32
+    if (c->backend) {
+        auto * device = ggml_backend_get_device(c->backend);
+        auto * registry = device ? ggml_backend_dev_backend_reg(device) : nullptr;
+        if (registry && std::strcmp(ggml_backend_reg_name(registry), "Vulkan") == 0) {
+            fprintf(stderr, "ppocrv6: using CPU recognition for Windows Vulkan output parity\n");
+            crispasr_free_gpu_backend(c->backend);
+            c->backend = nullptr;
+        }
+    }
+#endif
     if (!c->backend) c->backend = ggml_backend_cpu_init();
     if (c->backend && ggml_backend_is_cpu(c->backend)) ggml_backend_cpu_set_n_threads(c->backend, c->n_threads);
     gguf_context * meta = core_gguf::open_metadata(path);

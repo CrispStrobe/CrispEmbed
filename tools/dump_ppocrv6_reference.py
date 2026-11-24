@@ -231,12 +231,10 @@ def dump(model_dir: Path, image: Path, output: Path):
     stages["stem1"] = x
     x = ref.layer(x, "model.backbone.encoder.convolution.conv2", stride=2)
     stages["stem2"] = x
-    configs = [[(3, 48, 48, 1, True)], [(3, 48, 48, 1, False)],
-               [(3, 48, 96, 2, False), (3, 96, 96, 1, True), (3, 96, 96, 1, False)],
-               [(3, 96, 160, 2, False), (3, 160, 160, 1, True), (3, 160, 160, 1, False), (3, 160, 160, 1, False)]]
+    configs = cfg["backbone_config"]["block_configs"]
     for si, blocks in enumerate(configs):
         for bi, (_, inc, outc, stride, se) in enumerate(blocks):
-            x = ref.block(x, si, bi, inc, outc, stride if isinstance(stride, int) else stride[0], se, stages)
+            x = ref.block(x, si, bi, inc, outc, stride if isinstance(stride, int) else tuple(stride), se, stages)
         stages[f"stage{si + 1}"] = x
     x = F.avg_pool2d(x, (3, 2))
     x = x.squeeze(2)
