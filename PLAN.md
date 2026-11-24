@@ -1,11 +1,12 @@
 # CrispEmbed plan — open work (updated 20 November 2026)
 
 PP-OCRv6 tiny preserves horizontal CTC steps on scalar and GGML CPU. The
-Windows Vulkan bundle routes PP-OCRv6 recognition to CPU while its graph
-output differs from the reference. Qualify the full-page and accelerator
-paths, regenerate the tiny activation archive
-from the official stride configuration, and qualify CTC confidence with
-explicit detector and recognizer provenance before changing OCR defaults.
+ordered Vulkan graph and direct batched depthwise convolution restore tiny,
+small and medium line output on Windows. Use the
+[recognition benchmark](PERFORMANCE.md#pp-ocrv6-vulkan-recognition-24-november-2026)
+as the crop baseline for full-page qualification. Regenerate the tiny
+activation archive from the official stride configuration and qualify CTC
+confidence with explicit detector and recognizer provenance.
 
 ## MoGe-3 native geometry runtime — 20 November 2026
 

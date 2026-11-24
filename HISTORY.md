@@ -1,3 +1,15 @@
+## 24 November 2026 — PP-OCRv6 Vulkan recognition
+
+PP-OCRv6 now allocates and executes its Vulkan graphs in build order. On
+Windows, the prior Vulkan scheduler path corrupted tiny recognizer text.
+Disabling Vulkan graph reordering restored parity on the comparison crops.
+The recognizer now avoids the reordering locally and uses direct depthwise
+convolution for Vulkan batches, where the im2col lowering requires a matrix
+broadcast the backend rejects. Unsupported graphs use the existing fallback.
+The tiny Vulkan recognizer accepts successful ordered graphs by default.
+Tiny, small and medium passed on the RTX A1000 and Iris Xe. See
+[the recognition benchmark](PERFORMANCE.md#pp-ocrv6-vulkan-recognition-24-november-2026).
+
 ## 24 November 2026 — PP-OCRv6 tiny line parity
 
 The two tiny recognizer backbone downsampling stages now use Paddle's

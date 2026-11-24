@@ -1,3 +1,37 @@
+## PP-OCRv6 Vulkan recognition (24 November 2026)
+
+Five generated German and English line crops were checked against their
+transcriptions with the packaged head-only Q8 tiny, small and medium weights. The
+Windows probe compiled the recognizer from source and linked the same GGML
+libraries as the v0.17.20 runtime. Single-crop tests used native line widths.
+Batch tests used production width bucketing and ran each crop twice through
+the same call, in fused groups of two and four.
+
+| Backend | Tiny single | Small single | Medium single | Tiny batch | Small batch | Medium batch |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| CPU scalar | 5/5 | 5/5 | 5/5 | — | — | — |
+| CPU GGML | 5/5 | 5/5 | 5/5 | — | — | — |
+| Vulkan, RTX A1000 Laptop | 5/5 | 5/5 | 5/5 | 10/10 | 10/10 | 10/10 |
+| Vulkan, Iris Xe | 5/5 | 5/5 | 5/5 | 10/10 | 10/10 | 10/10 |
+
+The RTX A1000 also passed 25/25 outputs each for tiny and small with five
+repetitions and a fused group of eight at the default batch limit.
+
+Median single-crop GPU graph execution was 18.0 ms tiny and 52.3 ms small on
+the RTX A1000 and 33.8 ms tiny and 82.3 ms small on the Iris Xe. These
+measurements cover graph execution and exclude graph construction, readback,
+CPU decoding and page detection.
+
+The first four values of the first line's stage 3 tensor were within 0.002
+of GGML CPU on the original scheduled Vulkan path. Stage 4 values diverged
+by 12 to 21. Disabling Vulkan graph reordering restored all five tiny
+transcriptions. Disabling FP16, cooperative matrices or kernel fusion
+individually did not restore them. The recognizer uses ordered allocation
+on Vulkan without changing process-wide GPU settings. Batched depthwise
+convolution uses the direct Vulkan kernel because Vulkan rejects the
+fourth-dimension broadcast in the generic depthwise matrix product.
+[Pinned GGML Vulkan backend](https://github.com/CrispStrobe/ggml/blob/3a27b6c665b191cb230be367db5c52d81dd3e2ac/src/ggml-vulkan/ggml-vulkan.cpp).
+
 ## Native spaCy transformer pipeline (fr_dep_news_trf, 18 November 2026)
 
 Hosted runners, exact against original spaCy in all 48 configurations; best
