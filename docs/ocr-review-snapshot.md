@@ -97,8 +97,9 @@ Some whole-page engines use a legacy engine score of 1 when no measurement is
 available; the snapshot does not promote that placeholder to full certainty.
 Invalid/out-of-range scores and nonfinite numbers serialize as null, not invalid
 JSON. UI clients must not index Unicode characters with model-token positions.
-The PP-OCRv6 orchestrator currently copies its detector score into the legacy
-recognition field; the snapshot identifies that score as detector confidence.
+PP-OCRv6 reports its detector score and leaves recognition confidence
+unavailable. The snapshot also identifies detector scores on releases whose
+legacy recognition field duplicated that value.
 
 Malformed UTF-8 decoder bytes are replacement-decoded for JSON transport. An
 additional sibling field such as text_bytes_hex preserves the exact original

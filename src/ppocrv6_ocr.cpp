@@ -1783,6 +1783,17 @@ extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int n_threa
     c->n_threads = std::max(1, n_threads);
     const bool force_cpu = core_env::on("CRISPEMBED_PPOCRV6_FORCE_CPU");
     c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend_shared();
+#ifdef _WIN32
+    if (c->backend) {
+        auto * device = ggml_backend_get_device(c->backend);
+        auto * registry = device ? ggml_backend_dev_backend_reg(device) : nullptr;
+        if (registry && std::strcmp(ggml_backend_reg_name(registry), "Vulkan") == 0) {
+            fprintf(stderr, "ppocrv6: using CPU recognition for Windows Vulkan output parity\n");
+            crispasr_free_gpu_backend(c->backend);
+            c->backend = nullptr;
+        }
+    }
+#endif
     if (!c->backend) c->backend = ggml_backend_cpu_init();
     if (c->backend && ggml_backend_is_cpu(c->backend)) ggml_backend_cpu_set_n_threads(c->backend, c->n_threads);
     gguf_context * meta = core_gguf::open_metadata(path);

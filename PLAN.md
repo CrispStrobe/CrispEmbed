@@ -1,7 +1,9 @@
 # CrispEmbed plan — open work (updated 20 November 2026)
 
-PP-OCRv6 tiny preserves horizontal CTC steps on scalar and GGML CPU. Qualify
-the full-page and accelerator paths, regenerate the tiny activation archive
+PP-OCRv6 tiny preserves horizontal CTC steps on scalar and GGML CPU. The
+Windows Vulkan bundle routes PP-OCRv6 recognition to CPU while its graph
+output differs from the reference. Qualify the full-page and accelerator
+paths, regenerate the tiny activation archive
 from the official stride configuration, and qualify CTC confidence with
 explicit detector and recognizer provenance before changing OCR defaults.
 
