@@ -60,6 +60,7 @@ struct pp_graph_state {
     ggml_backend_t backend = nullptr;
     ggml_backend_t cpu_backend = nullptr;
     ggml_backend_sched_t sched = nullptr;
+    ggml_gallocr_t ordered_alloc = nullptr;
     ggml_context * graph_ctx = nullptr;
     ggml_cgraph * graph = nullptr;
     ggml_tensor * input = nullptr;
@@ -613,10 +614,8 @@ static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, gg
             fprintf(stderr, "ppocrv6 graph resident conv allocation failed\n");
         return nullptr;
     }
-    // Keep the generic depthwise im2col path here: it supports the explicit
-    // [W,H,C] graph layout on both CPU and accelerator backends. The direct
-    // depthwise kernel was tested but did not improve parity and remains out
-    // of the accepted path until its layout contract is independently gated.
+    // The generic depthwise im2col path supports the [W,H,C] graph layout
+    // on CPU and on accelerators that accept its matrix product.
     // ggml names the spatial arguments x/y ([W,H]); pp_conv stores them as
     // height/width to match the scalar reference.
     // GGML_OP_CONV_2D (direct convolution, no materialized im2col) has a
@@ -626,9 +625,17 @@ static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, gg
     // requires F32 input and contiguous F16/F32 kernel (both true here).
     static const bool conv_direct =
         core_env::on("CRISPEMBED_PPOCRV6_CONV_DIRECT") && !ggml_backend_is_cpu(c->graph.backend);
-    ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1)
-                         : (conv_direct ? ggml_conv_2d_direct(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1)
-                                        : ggml_conv_2d(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1));
+    ggml_tensor * y;
+    if (dw) {
+        // The generic depthwise convolution broadcasts its kernel across
+        // dimension 3 in MUL_MAT, which Vulkan does not support.
+        y = c->graph.ordered_alloc && x->ne[3] > 1
+                ? ggml_conv_2d_dw_direct(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1)
+                : ggml_conv_2d_dw(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1);
+    } else {
+        y = conv_direct ? ggml_conv_2d_direct(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1)
+                        : ggml_conv_2d(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1);
+    }
     if (p.b) {
         ggml_tensor * b = pp_graph_resident(c, p.b, GGML_TYPE_F32, p.out_ch, 1, 1, 1);
         if (!b) return nullptr;
@@ -737,6 +744,23 @@ static bool pp_graph_enabled() {
     return !off;
 }
 
+static bool pp_graph_allocate(pp_graph_state & state) {
+    if (state.ordered_alloc) {
+        for (int i = 0; i < ggml_graph_n_nodes(state.graph); ++i) {
+            const auto * node = ggml_graph_node(state.graph, i);
+            if (!ggml_backend_supports_op(state.backend, node)) {
+                if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_BENCH"))
+                    fprintf(stderr, "[ppocrv6-graph-bench] backend=%s unsupported_op=%s\n",
+                            ggml_backend_name(state.backend), ggml_op_name(node->op));
+                return false;
+            }
+        }
+        return ggml_gallocr_alloc_graph(state.ordered_alloc, state.graph);
+    }
+    ggml_backend_sched_reset(state.sched);
+    return ggml_backend_sched_alloc_graph(state.sched, state.graph);
+}
+
 static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
     batch = std::max(1, batch);
     if (c->graph.attempted && c->graph.width == width && c->graph.batch == batch) return c->graph.ready;
@@ -752,15 +776,18 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         c->graph.resident_ctxs.clear();
         c->graph.resident.clear();
         c->graph.debug_taps.clear();
+        if (c->graph.ordered_alloc) ggml_gallocr_free(c->graph.ordered_alloc);
         if (c->graph.sched) ggml_backend_sched_free(c->graph.sched);
         if (c->graph.cpu_backend) ggml_backend_free(c->graph.cpu_backend);
         if (c->graph.graph_ctx) ggml_free(c->graph.graph_ctx);
         c->graph.sched = nullptr;
+        c->graph.ordered_alloc = nullptr;
         c->graph.cpu_backend = nullptr;
         c->graph.graph_ctx = nullptr;
         c->graph.graph = nullptr;
         c->graph.input = nullptr;
         c->graph.output = nullptr;
+        c->graph.svtr_skip = nullptr;
         c->graph.attempted = false;
         c->graph.ready = false;
         c->graph.allocated = false;
@@ -773,7 +800,14 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
     if (!pp_graph_enabled()) return false;
     c->graph.backend = c->backend;
     if (!c->graph.backend) return false;
-    if (ggml_backend_is_cpu(c->graph.backend)) {
+    const auto device = ggml_backend_get_device(c->graph.backend);
+    const auto registry = device ? ggml_backend_dev_backend_reg(device) : nullptr;
+    if (registry && std::strcmp(ggml_backend_reg_name(registry), "Vulkan") == 0) {
+        // Vulkan's scheduler graph optimizer can change PP-OCRv6 output.
+        // Allocate and execute in builder order on this device. Unsupported
+        // shapes or operations still fall back to the scalar recognizer.
+        c->graph.ordered_alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(c->graph.backend));
+    } else if (ggml_backend_is_cpu(c->graph.backend)) {
         ggml_backend_t backends[] = { c->graph.backend };
         c->graph.sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
     } else {
@@ -783,9 +817,9 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         ggml_backend_t backends[] = { c->graph.backend, c->graph.cpu_backend };
         c->graph.sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
     }
-    if (!c->graph.sched) {
+    if (!c->graph.sched && !c->graph.ordered_alloc) {
         if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
-            fprintf(stderr, "ppocrv6 graph scheduler creation failed\n");
+            fprintf(stderr, "ppocrv6 graph allocator creation failed\n");
         return false;
     }
     constexpr int H = 48;
@@ -870,8 +904,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         ggml_set_name(value, "ppocrv6_graph_output");
         ggml_set_output(value);
         ggml_build_forward_expand(c->graph.graph, value);
-        ggml_backend_sched_reset(c->graph.sched);
-        if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
+        if (!pp_graph_allocate(c->graph)) return false;
         c->graph.allocated = c->graph.ready = true;
         c->graph.width = width;
         c->graph.batch = batch;
@@ -908,8 +941,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         ggml_set_name(x, "ppocrv6_graph_output");
         ggml_set_output(x);
         ggml_build_forward_expand(c->graph.graph, x);
-        ggml_backend_sched_reset(c->graph.sched);
-        if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
+        if (!pp_graph_allocate(c->graph)) return false;
         c->graph.allocated = c->graph.ready = true;
         c->graph.width = width;
         c->graph.batch = batch;
@@ -1031,8 +1063,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
             ggml_set_name(x, "ppocrv6_graph_output");
             ggml_set_output(x);
             ggml_build_forward_expand(c->graph.graph, x);
-            ggml_backend_sched_reset(c->graph.sched);
-            if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
+            if (!pp_graph_allocate(c->graph)) return false;
             c->graph.allocated = c->graph.ready = true;
             c->graph.width = width;
             c->graph.batch = batch;
@@ -1123,8 +1154,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
     ggml_set_name(x, "ppocrv6_graph_output");
     ggml_set_output(x);
     ggml_build_forward_expand(c->graph.graph, x);
-    ggml_backend_sched_reset(c->graph.sched);
-    if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) {
+    if (!pp_graph_allocate(c->graph)) {
         if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph allocation failed\n");
         return false;
     }
@@ -1164,6 +1194,14 @@ static bool pp_graph_run_batch(ppocrv6_ocr_context * c, const std::vector<float>
                     (long long)ggml_nelements(c->graph.input));
         return false;
     }
+    const auto t_alloc0 = std::chrono::steady_clock::now();
+    // Keep the ordered Vulkan allocation and the static CPU allocation.
+    // Re-plan scheduled accelerator buffers before uploading the input.
+    if (!c->graph.allocated || (c->graph.sched && !ggml_backend_is_cpu(c->graph.backend))) {
+        c->graph.allocated = pp_graph_allocate(c->graph);
+        if (!c->graph.allocated) return false;
+    }
+    const auto t_alloc1 = std::chrono::steady_clock::now();
     const auto t_stage0 = std::chrono::steady_clock::now();
     std::vector<float> graph_input = input;
     ggml_backend_tensor_set(c->graph.input, graph_input.data(), 0, graph_input.size() * sizeof(float));
@@ -1175,24 +1213,10 @@ static bool pp_graph_run_batch(ppocrv6_ocr_context * c, const std::vector<float>
         fprintf(stderr, "[ppocrv6-graph-diff] staged-input cos=%.6f global=%.6f %s\n", report.cos_min,
                 report.cos_global, report.is_pass() ? "PASS" : "FAIL");
     }
-    // Reuse of mixed Metal/CPU scheduler allocations is unstable on the
-    // current pre-tensor Apple backend across repeated line crops. Rebuild
-    // the static allocation per crop until backend reuse is validated.
-    // This is a static-shape graph, so retain the scheduler allocation between
-    // crops. If a future dynamic-shape path invalidates it, it must clear
-    // `allocated` before reaching this function.
-    // The Apple backend can invalidate mixed graph allocations after a
-    // completed execution (especially when a width-keyed graph is invoked
-    // repeatedly). Re-plan Metal buffers per invocation; CPU safely reuses
-    // its static allocation.
-    const auto t_alloc0 = std::chrono::steady_clock::now();
-    if (!c->graph.allocated || !ggml_backend_is_cpu(c->graph.backend)) {
-        ggml_backend_sched_reset(c->graph.sched);
-        if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
-        c->graph.allocated = true;
-    }
     const auto started = std::chrono::steady_clock::now();
-    if (ggml_backend_sched_graph_compute(c->graph.sched, c->graph.graph) != GGML_STATUS_SUCCESS) return false;
+    const auto status = c->graph.ordered_alloc ? ggml_backend_graph_compute(c->graph.backend, c->graph.graph)
+                                               : ggml_backend_sched_graph_compute(c->graph.sched, c->graph.graph);
+    if (status != GGML_STATUS_SUCCESS) return false;
     const auto finished = std::chrono::steady_clock::now();
     output.resize(ggml_nelements(c->graph.output));
     ggml_backend_tensor_get(c->graph.output, output.data(), 0, output.size() * sizeof(float));
@@ -1275,7 +1299,7 @@ static bool pp_graph_run_batch(ppocrv6_ocr_context * c, const std::vector<float>
                 "[ppocrv6-graph-bench] backend=%s graph_ms=%.3f stage_ms=%.3f alloc_ms=%.3f readback_ms=%.3f "
                 "readback_mb=%.1f output=%dx%d\n",
                 ggml_backend_name(c->graph.backend), ms(started, finished), ms(t_stage0, t_stage1),
-                ms(t_alloc0, started), ms(finished, t_readback1),
+                ms(t_alloc0, t_alloc1), ms(finished, t_readback1),
                 (double)(output.size() + c->graph.svtr_skip_host.size()) * sizeof(float) / (1024.0 * 1024.0), w, h);
     }
     return true;
@@ -1521,8 +1545,9 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
             fprintf(stderr, "[ppocrv6-graph-decode] t=%d best=%d value=%.7g blank=%.7g\n", t, best, row[best], row[0]);
         }
     }
-    const bool graph_accept =
-        c->graph_accept_override >= 0 ? c->graph_accept_override != 0 : core_env::on("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT");
+    const bool graph_accept = c->graph_accept_override >= 0
+                                  ? c->graph_accept_override != 0
+                                  : c->graph.ordered_alloc || core_env::on("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT");
     if (graph_done && c->graph.logits_output && !graph_accept) {
         fprintf(stderr, "ppocrv6: recognizer graph is diagnostic-only; using CPU reference\n");
         graph_done = false;
@@ -1659,7 +1684,8 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
             }
         }
     if (c->large_stem)
-        return recognize_svtr(c, x, h, w, out_len, c->graph.svtr_prefix_output, c->graph.svtr_decoder_output);
+        return recognize_svtr(c, x, h, w, out_len, graph_done && c->graph.svtr_prefix_output,
+                              graph_done && c->graph.svtr_decoder_output);
     if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
         fprintf(stderr, "[ppocrv6-cpu-tap] backbone shape=%dx%d first=%.7g %.7g %.7g %.7g\n", h, w,
                 x.size() > 0 ? x[0] : 0.0f, x.size() > 1 ? x[1] : 0.0f, x.size() > 2 ? x[2] : 0.0f,
@@ -1783,17 +1809,6 @@ extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int n_threa
     c->n_threads = std::max(1, n_threads);
     const bool force_cpu = core_env::on("CRISPEMBED_PPOCRV6_FORCE_CPU");
     c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend_shared();
-#ifdef _WIN32
-    if (c->backend) {
-        auto * device = ggml_backend_get_device(c->backend);
-        auto * registry = device ? ggml_backend_dev_backend_reg(device) : nullptr;
-        if (registry && std::strcmp(ggml_backend_reg_name(registry), "Vulkan") == 0) {
-            fprintf(stderr, "ppocrv6: using CPU recognition for Windows Vulkan output parity\n");
-            crispasr_free_gpu_backend(c->backend);
-            c->backend = nullptr;
-        }
-    }
-#endif
     if (!c->backend) c->backend = ggml_backend_cpu_init();
     if (c->backend && ggml_backend_is_cpu(c->backend)) ggml_backend_cpu_set_n_threads(c->backend, c->n_threads);
     gguf_context * meta = core_gguf::open_metadata(path);
@@ -1830,6 +1845,7 @@ extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int n_threa
 
 extern "C" void ppocrv6_ocr_free(ppocrv6_ocr_context * c) {
     if (!c) return;
+    if (c->graph.ordered_alloc) ggml_gallocr_free(c->graph.ordered_alloc);
     for (auto * buf : c->graph.resident_bufs)
         if (buf) ggml_backend_buffer_free(buf);
     for (auto * ctx : c->graph.resident_ctxs)
