@@ -1,3 +1,15 @@
+## 24 November 2026 — PP-OCRv6 tiny line parity
+
+The two tiny recognizer backbone downsampling stages now use Paddle's
+`(2, 1)` height and width strides. The same weights read all five generated
+line crops exactly after the fix on scalar and GGML CPU paths. The official
+tiny ONNX artifact read four exactly and had one character error on the
+fifth. The previous native decoder failed all five, including with freshly
+converted F32 weights. The torch parity dumper now reads the official
+stride tuples. The legacy result retains detector confidence and reports
+recognition confidence as unavailable for PP-OCRv6. The nightly OCR suite
+checks the generated long line against its transcription.
+
 ## 21 November 2026 — v0.17.20 released; CrispSorter pinned
 
 - **Release.** PR #267 added `RELEASE_NOTES_v0.17.20.md` and bumped the remaining version strings

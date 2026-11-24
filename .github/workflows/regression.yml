@@ -270,6 +270,8 @@ jobs:
           GOT_OCR_FORCE_CPU: '1'
           LD_LIBRARY_PATH: build
         run: python tests/regression/run_one.py --name got-ocr2
+      - name: Verify PP-OCRv6 tiny long-line output (CPU)
+        run: python tests/regression/run_one.py --name ppocrv6-tiny-long-line
       # The smoke-tier copy of this can only skip: it has no build and no
       # models. Here both exist, and the two face models are small (37 MB +
       # 0.2 MB), so this is where POLICY.md §4 actually gets enforced.

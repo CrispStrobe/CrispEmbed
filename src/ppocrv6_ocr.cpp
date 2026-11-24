@@ -399,7 +399,9 @@ static bool map_model(ppocrv6_ocr_context * c) {
             int out = widths[si];
             pp_block b;
             const bool down = bi == 0 && (si == 2 || si == 3);
-            b.dw = conv(m, q + ".dw", in, in, 3, down ? 2 : 1, in, down && !tiny ? 1 : 0);
+            // Both downsampling blocks use Paddle's (height, width) stride
+            // of (2, 1). The width axis becomes the CTC time sequence.
+            b.dw = conv(m, q + ".dw", in, in, 3, down ? 2 : 1, in, 1);
             b.cm1 = conv(m, q + ".cm1", in, in * 2, 1, 1);
             b.cm2 = conv(m, q + ".cm2", in * 2, out, 1, 1);
             b.se = get(m, q + ".se1.weight") != nullptr;

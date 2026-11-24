@@ -1,5 +1,10 @@
 # CrispEmbed plan — open work (updated 20 November 2026)
 
+PP-OCRv6 tiny preserves horizontal CTC steps on scalar and GGML CPU. Qualify
+the full-page and accelerator paths, regenerate the tiny activation archive
+from the official stride configuration, and qualify CTC confidence with
+explicit detector and recognizer provenance before changing OCR defaults.
+
 ## MoGe-3 native geometry runtime — 20 November 2026
 
 The [MoGe-3 design and implementation plan](docs/moge3.md) adds the requested

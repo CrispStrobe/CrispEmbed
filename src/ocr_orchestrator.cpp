@@ -835,7 +835,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             r.box = { b.x, b.y, b.w, b.h, b.score };
             r.text.assign(batch_text[i].data(), (size_t)batch_lengths[i]);
             r.confidence = b.score;
-            r.rec_confidence = b.score;
+            // This batch recognizer returns text only. Preserve the detector
+            // score separately and leave recognition confidence unavailable.
+            r.rec_confidence = -1.0f;
             r.orientation_corrected = crop_orientations[i].corrected;
             r.orientation_angle = crop_orientations[i].angle;
             r.orientation_confidence = crop_orientations[i].confidence;
